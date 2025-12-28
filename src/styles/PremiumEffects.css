@@ -1,0 +1,69 @@
+/* Luxury Motion & Theming */
+
+:root {
+  --reveal-duration: 1.2s;
+  --reveal-delay: 0.2s;
+}
+
+/* Scroll Reveal Animation */
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity var(--reveal-duration) cubic-bezier(0.16, 1, 0.3, 1),
+              transform var(--reveal-duration) cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Slow Zoom Effect */
+.slow-zoom {
+  overflow: hidden;
+}
+
+.slow-zoom img {
+  transition: transform 10s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.slow-zoom:hover img {
+  transform: scale(1.15);
+}
+
+/* Dynamic Theming Classes */
+.theme-halloween {
+  --primary: #ff6b00;
+  --primary-rgb: 255, 107, 0;
+}
+
+.theme-anime {
+  --primary: #00f2ff;
+  --primary-rgb: 0, 242, 255;
+}
+
+/* Premium Text Gradient */
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fff 0%, #d4b99a 50%, #fff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #050505;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #222;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
