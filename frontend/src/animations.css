@@ -1,0 +1,30 @@
+/* Global Reveal Animation */
+.reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+}
+
+.reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Fail-safe: If JS fails or takes too long, force specific critical elements to be visible after 1s */
+/* This is a hack but prevents "invisible site" issues */
+@keyframes forceReveal {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Apply to products specifically if they get stuck */
+.product-card {
+    animation: forceReveal 0.5s forwards 0.2s;
+    /* Native CSS animation as backup */
+}
