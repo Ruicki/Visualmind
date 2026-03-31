@@ -1,0 +1,24 @@
+﻿[dotenv@17.3.1] injecting env (7) from .env -- tip: ÔÜÖ´©Å  suppress all logs with { quiet: true }
+--- Inspecting Database Schema ---
+ÔöîÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö¼ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö¼ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö¼ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÉ
+Ôöé (index) Ôöé table_name Ôöé column_name    Ôöé data_type                  Ôöé
+Ôö£ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö╝ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöñ
+Ôöé 0       Ôöé 'orders'   Ôöé 'created_at'   Ôöé 'timestamp with time zone' Ôöé
+Ôöé 1       Ôöé 'orders'   Ôöé 'id'           Ôöé 'uuid'                     Ôöé
+Ôöé 2       Ôöé 'orders'   Ôöé 'items'        Ôöé 'jsonb'                    Ôöé
+Ôöé 3       Ôöé 'orders'   Ôöé 'status'       Ôöé 'character varying'        Ôöé
+Ôöé 4       Ôöé 'orders'   Ôöé 'total'        Ôöé 'numeric'                  Ôöé
+Ôöé 5       Ôöé 'orders'   Ôöé 'user_id'      Ôöé 'uuid'                     Ôöé
+Ôöé 6       Ôöé 'products' Ôöé 'category'     Ôöé 'character varying'        Ôöé
+Ôöé 7       Ôöé 'products' Ôöé 'created_at'   Ôöé 'timestamp with time zone' Ôöé
+Ôöé 8       Ôöé 'products' Ôöé 'description'  Ôöé 'text'                     Ôöé
+Ôöé 9       Ôöé 'products' Ôöé 'discount'     Ôöé 'numeric'                  Ôöé
+Ôöé 10      Ôöé 'products' Ôöé 'id'           Ôöé 'character varying'        Ôöé
+Ôöé 11      Ôöé 'products' Ôöé 'image_url'    Ôöé 'character varying'        Ôöé
+Ôöé 12      Ôöé 'products' Ôöé 'is_new'       Ôöé 'boolean'                  Ôöé
+Ôöé 13      Ôöé 'products' Ôöé 'price'        Ôöé 'numeric'                  Ôöé
+Ôöé 14      Ôöé 'products' Ôöé 'sku'          Ôöé 'character varying'        Ôöé
+Ôöé 15      Ôöé 'products' Ôöé 'stock'        Ôöé 'integer'                  Ôöé
+Ôöé 16      Ôöé 'products' Ôöé 'sub_category' Ôöé 'character varying'        Ôöé
+Ôöé 17      Ôöé 'products' Ôöé 'title'        Ôöé 'character varying'        Ôöé
+ÔööÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö┤ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö┤ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔö┤ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÿ
