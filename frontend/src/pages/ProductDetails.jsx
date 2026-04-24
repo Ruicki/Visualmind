@@ -60,6 +60,10 @@ export default function ProductDetails() {
         }
 
         if (found) {
+          const isSeasonExpired = found.season_end_date ? new Date(found.season_end_date) < new Date() : false;
+          const isLegacy = found.lifecycle_state === 'legacy' || found.season_is_active === false || isSeasonExpired;
+          found.isLegacy = isLegacy;
+          
           setProduct(found);
           const firstColor = found.colors?.[0] || null;
           setSelectedColor(firstColor);
@@ -150,7 +154,19 @@ export default function ProductDetails() {
           </div>
 
           {/* Precio */}
-          <div style={{ fontSize: '2.2rem', fontWeight: '800', marginBottom: '2rem' }}>${product.price}</div>
+          <div style={{ fontSize: '2.2rem', fontWeight: '800', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            ${product.isLegacy ? (product.price * 0.5).toFixed(2) : product.price}
+            {product.isLegacy && (
+              <>
+                <span style={{ fontSize: '1.2rem', textDecoration: 'line-through', color: 'var(--text-secondary)' }}>
+                  ${product.price}
+                </span>
+                <span style={{ fontSize: '0.9rem', color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)', padding: '4px 12px', borderRadius: '50px', fontWeight: '700' }}>
+                  50% OFF - LEGACY
+                </span>
+              </>
+            )}
+          </div>
 
           {/* Descripción */}
           <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: '1.8', marginBottom: '2.5rem', maxWidth: '600px' }}>
@@ -220,8 +236,9 @@ export default function ProductDetails() {
               className="btn-primary"
               style={{ flex: 1, minWidth: '180px', height: '55px', borderRadius: '14px', fontSize: '1rem', gap: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               onClick={() => {
+                const finalPrice = product.isLegacy ? product.price * 0.5 : product.price;
                 for (let i = 0; i < quantity; i++) {
-                  addToCart({ ...product, image: mainImage, selectedColor, selectedSize });
+                  addToCart({ ...product, price: finalPrice, image: mainImage, selectedColor, selectedSize });
                 }
               }}
             >

@@ -45,9 +45,13 @@ export default function Collections() {
     const { t } = useLanguage();
     const [activeCollection, setActiveCollection] = useState(null);
     const [allProducts, setAllProducts] = useState(PRODUCTS);
-    const collections = getCollections(t);
+    const [campaignCollections, setCampaignCollections] = useState([]);
+    
+    const staticCollections = getCollections(t);
+    const collections = [...campaignCollections, ...staticCollections];
 
     useEffect(() => {
+        // Fetch products
         axiosInstance.get('/products').then(res => {
             if (res.data?.length > 0) {
                 const apiIds = new Set(res.data.map(p => p.id));
@@ -55,10 +59,31 @@ export default function Collections() {
                 setAllProducts([...res.data, ...uniqueStatic]);
             }
         }).catch(() => {});
+
+        // Fetch campaigns to show as collections
+        axiosInstance.get('/campaigns').then(res => {
+            if (res.data?.length > 0) {
+                const campaignsAsCols = res.data.map(camp => ({
+                    id: camp.id,
+                    title: camp.name,
+                    subtitle: camp.status === 'active' ? 'COLECCIÓN ACTIVA' : 'ARCHIVO',
+                    image: camp.banner_url || '/placeholder-banner.jpg',
+                    description: camp.description,
+                    campaign_id: camp.id,
+                    featured: camp.status === 'active'
+                }));
+                setCampaignCollections(campaignAsCols);
+            }
+        }).catch(() => {});
     }, []);
 
     if (activeCollection) {
-        const filteredProducts = allProducts.filter(p => p.category === activeCollection.category);
+        const filteredProducts = allProducts.filter(p => {
+            if (activeCollection.campaign_id) {
+                return p.campaign_id === activeCollection.campaign_id;
+            }
+            return p.category === activeCollection.category;
+        });
         return (
             <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: '120px' }}>
                 <div className="container">

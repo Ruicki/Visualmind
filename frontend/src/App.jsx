@@ -15,6 +15,7 @@ import Lookbook from './pages/Lookbook';
 import Login from './pages/Login';
 import UserProfile from './pages/UserProfile';
 import InfoPage from './pages/InfoPage';
+import OrderSuccess from './pages/OrderSuccess';
 
 // Páginas de administración
 import AdminLayout from './pages/admin/AdminLayout';
@@ -22,6 +23,9 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminCampaigns from './pages/admin/AdminCampaigns';
+import AdminSeasons from './pages/admin/AdminSeasons';
+import AdminCollections from './pages/admin/AdminCollections';
 
 // Contextos (LanguageProvider se provee desde main.jsx)
 import { CartProvider } from './context/CartContext';
@@ -67,6 +71,17 @@ function PageController() {
     const timeoutId = setTimeout(() => {
       const revealElements = document.querySelectorAll('.reveal');
       revealElements.forEach(el => observer.observe(el));
+      
+      // Safeguard: force visibility after 2 seconds if still hidden
+      const forceVisibleId = setTimeout(() => {
+        revealElements.forEach(el => {
+          if (!el.classList.contains('visible')) {
+            el.classList.add('reveal-stuck');
+          }
+        });
+      }, 2000);
+      
+      return () => clearTimeout(forceVisibleId);
     }, 100);
 
     return () => {
@@ -112,6 +127,7 @@ function InnerApp() {
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/info/:page" element={<InfoPage />} />
+            <Route path="/order-success" element={<OrderSuccess />} />
 
             {/* Rutas de administración */}
             <Route path="/admin" element={
@@ -123,6 +139,9 @@ function InnerApp() {
               <Route path="products" element={<AdminProducts />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="campaigns" element={<AdminCampaigns />} />
+              <Route path="seasons" element={<AdminSeasons />} />
+              <Route path="collections" element={<AdminCollections />} />
             </Route>
           </Routes>
           <Cart />

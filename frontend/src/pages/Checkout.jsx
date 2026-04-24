@@ -25,6 +25,17 @@ const CheckoutForm = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [shippingInfo, setShippingInfo] = useState({
+    name: '',
+    email: user?.email || '',
+    address: '',
+    city: '',
+    zip: ''
+  });
+
+  const handleShippingChange = (e) => {
+    setShippingInfo({ ...shippingInfo, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +61,7 @@ const CheckoutForm = () => {
       console.log('[PaymentMethod Success]', paymentMethod);
 
       // 2. Crear orden en Backend Local
-      await api.post('/orders', {
+      const orderResponse = await api.post('/orders', {
         items: cartItems.map(item => ({
           product_id: item.id,
           title: item.title,
@@ -60,12 +71,23 @@ const CheckoutForm = () => {
           color: item.selectedColor
         })),
         total: getCartTotal(),
+        shippingDetails: shippingInfo,
         paymentMethodId: paymentMethod.id
       });
 
       // 3. Limpiar carrito y redirigir
       clearCart();
-      navigate('/profile');
+      navigate('/order-success', { 
+        state: { 
+          order: {
+            id: orderResponse.data.id || Math.floor(Math.random() * 1000000),
+            items: cartItems,
+            total: getCartTotal(),
+            date: new Date().toLocaleDateString(),
+            shippingDetails: shippingInfo
+          }
+        } 
+      });
 
     } catch (err) {
       console.error("Error en checkout:", err);
@@ -86,24 +108,24 @@ const CheckoutForm = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           <div>
             <label className="label-text">{t('checkout.name')}</label>
-            <input required className="input-field" type="text" />
+            <input required name="name" value={shippingInfo.name} onChange={handleShippingChange} className="input-field" type="text" />
           </div>
           <div>
             <label className="label-text">{t('checkout.email')}</label>
-            <input required className="input-field" type="email" />
+            <input required name="email" value={shippingInfo.email} onChange={handleShippingChange} className="input-field" type="email" />
           </div>
           <div>
             <label className="label-text">{t('checkout.address')}</label>
-            <input required className="input-field" type="text" />
+            <input required name="address" value={shippingInfo.address} onChange={handleShippingChange} className="input-field" type="text" />
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <div>
               <label className="label-text">{t('checkout.city')}</label>
-              <input required className="input-field" type="text" />
+              <input required name="city" value={shippingInfo.city} onChange={handleShippingChange} className="input-field" type="text" />
             </div>
             <div>
               <label className="label-text">{t('checkout.zip') || 'Código Postal'}</label>
-              <input required className="input-field" type="text" />
+              <input required name="zip" value={shippingInfo.zip} onChange={handleShippingChange} className="input-field" type="text" />
             </div>
           </div>
         </div>
@@ -135,11 +157,20 @@ const CheckoutForm = () => {
         type="submit"
         disabled={!stripe || loading}
         className="btn-primary"
-        style={{ width: '100%', padding: '1.15rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', opacity: loading ? 0.7 : 1 }}
+        style={{ width: '100%', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: loading ? 0.7 : 1, marginTop: '1rem', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
       >
         {loading ? <Loader className="spin" /> : <CreditCard size={20} />}
-        {loading ? (t('common.processing') || 'Procesando...') : (t('checkout.btn_complete') || 'Completar Pedido')}
+        {loading ? (t('common.processing') || 'Procesando...') : (t('checkout.btn_complete') || 'Pagar Ahora')}
       </button>
+
+      <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+        <p>Tus datos están protegidos por encriptación SSL de 256 bits.</p>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', opacity: 0.6, filter: 'grayscale(1)' }}>
+            <span style={{ fontWeight: '800', fontSize: '0.9rem' }}>VISA</span>
+            <span style={{ fontWeight: '800', fontSize: '0.9rem' }}>MASTERCARD</span>
+            <span style={{ fontWeight: '800', fontSize: '0.9rem' }}>AMERICAN EXPRESS</span>
+        </div>
+      </div>
     </form>
   );
 };
@@ -186,8 +217,20 @@ export default function Checkout() {
             ))}
           </div>
 
-          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.15rem', fontWeight: '800' }}>
+          <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <span>Subtotal</span>
+              <span>${getCartTotal().toFixed(2)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <span>Envío</span>
+              <span style={{ color: '#10b981', fontWeight: '600' }}>Gratis</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <span>Impuestos (Estimado)</span>
+              <span>$0.00</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.3rem', fontWeight: '900', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
               <span>Total</span>
               <span>${getCartTotal().toFixed(2)}</span>
             </div>

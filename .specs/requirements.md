@@ -67,6 +67,8 @@ Panamá y proxima latinoamerica aun no estamos local
 - [x] Gestionar descuentos / cupones y promociones (Fechas de lanzamiento, destacados)
 - [x] Configurar información de la tienda (logo, nombre, etc.)
 - [x] Control de inventario avanzado (Stock inicial, aumento de stock, variantes por talla/color)
+- [x] **Gestión Orgánica de Campañas:** Crear eventos estacionales (Anime Seasons, Halloween, etc.) con banners dinámicos y contadores.
+- [x] **Sistema de Ayuda Visual:** Guía de proporciones y tamaños de imagen integradas en el panel para diseñadores.
 - [ ] Otro: **\*\*\*\***\_**\*\*\*\***
 
 ### 3.2 Clientes / Visitantes
@@ -122,6 +124,8 @@ por el momento si hablamios de stock no lo teno a mano ya que es por pedido se r
 - [x] SKU / código de producto
 - [x] Producto destacado / nuevo (Control de visibilidad en Home/Novedades)
 - [x] Descuento / precio de oferta / Fechas de lanzamiento
+- [x] **Estatus de Ciclo de Vida:** (Nuevo Drop, Legacy/Archive, Próximamente).
+- [x] **Sincronización con Campañas:** Asociar productos a eventos específicos (ej: Colección JJK T3).
 - [ ] Otro: **\*\*\*\***\_**\*\*\*\***
 
 **¿Las categorías son fijas o dinámicas?**

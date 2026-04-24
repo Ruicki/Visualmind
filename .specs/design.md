@@ -23,6 +23,8 @@
 | **Hosting Backend+DB**| Railway / Render | Free tier generoso para Node.js y PostgreSQL. |
 | **SEO Base** | Meta tags, Open Graph, Sitemap | Optimización básica estructurada en el frontend. |
 | **Notificaciones** | Botón Flotante WhatsApp | Solución práctica y sin costo extra (enlaza a WA Business con mensaje predefinido). |
+| **Optimización Imágenes** | Browser-side compression (lazysizes/native) | Compresión antes de subir al servidor para ahorrar ancho de banda y mejorar carga. |
+| **Ayuda Visual Admin** | Tooltips de proporción (SVG/Schematics) | Guía visual de tamaños y recortes para el administrador durante la carga. |
 
 ---
 
@@ -32,7 +34,10 @@
 - id (UUID), email, password_hash, role ('admin', 'customer'), created_at
 
 ### `products`
-- id (UUID), title, description, price, category, sub_category, image_url, sku, stock, is_new, discount, created_at
+- id (UUID), title, description, price, original_price (para tachado), category, sub_category, image_url, sku, stock, is_new, lifecycle_state ('new', 'published', 'legacy', 'draft', 'archived'), campaign_id (relación), launch_date (timestamp), created_at
+
+### `campaigns` (Gestión Orgánica)
+- id (UUID), name, slug, active (bool), start_date, end_date, banner_url, accent_color, design_template ('grid', 'editorial', 'masonry'), countdown_enabled (bool), created_at
 
 ### `product_variants` (Para tallas y colores)
 - id (UUID), product_id, size, color_name, color_hex, image_url, stock_override

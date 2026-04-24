@@ -4,10 +4,10 @@ import api from '../../api/axiosConfig';
 import { 
     Plus, Edit, Trash2, Search, Loader, X, Save, 
     Image as ImageIcon, Upload, Link as LinkIcon, 
-    Star, Zap, Calendar, Package, Layers, Info 
+    Star, Zap, Calendar, Package, Layers, Info, Settings 
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { getProductImage } from '../../utils/imageUtils';
+import { getProductImage, compressImage } from '../../utils/imageUtils';
 
 /**
  * Panel de administración de productos mejorado con variantes y marketing.
@@ -17,7 +17,10 @@ export default function AdminProducts() {
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState('basic'); // 'basic', 'variants', 'marketing'
+    const [activeTab, setActiveTab] = useState('basic'); // 'basic', 'variants', 'marketing', 'advanced'
+    const [availableCampaigns, setAvailableCampaigns] = useState([]);
+    const [availableSeasons, setAvailableSeasons] = useState([]);
+    const [availableCollections, setAvailableCollections] = useState([]);
 
     // Modal y formulario
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,6 +38,13 @@ export default function AdminProducts() {
         featured: false,
         new_arrival: false,
         launch_date: '',
+        lifecycle_state: 'Published',
+        priority: 0,
+        campaign_id: '',
+        season_id: '',
+        collection_id: '',
+        layout_preference: 'standard',
+        admin_notes: '',
         variants: [] // Array de { size, color, stock, sku }
     });
 
@@ -49,7 +59,31 @@ export default function AdminProducts() {
     useEffect(() => {
         fetchProducts();
         fetchDynamicMetadata();
+        fetchCampaigns();
+        fetchSeasonsAndCollections();
     }, []);
+
+    const fetchSeasonsAndCollections = async () => {
+        try {
+            const [seasonsRes, collectionsRes] = await Promise.all([
+                api.get('/seasons'),
+                api.get('/collections')
+            ]);
+            setAvailableSeasons(seasonsRes.data || []);
+            setAvailableCollections(collectionsRes.data || []);
+        } catch (error) {
+            console.error('Error fetching seasons/collections:', error);
+        }
+    };
+
+    const fetchCampaigns = async () => {
+        try {
+            const response = await api.get('/campaigns');
+            setAvailableCampaigns(response.data || []);
+        } catch (error) {
+            console.error('Error fetching campaigns:', error);
+        }
+    };
 
     const fetchDynamicMetadata = async () => {
         try {
@@ -100,6 +134,13 @@ export default function AdminProducts() {
             featured: product.featured || false,
             new_arrival: product.new_arrival || false,
             launch_date: product.launch_date ? new Date(product.launch_date).toISOString().split('T')[0] : '',
+            lifecycle_state: product.lifecycle_state || 'Published',
+            priority: product.priority || 0,
+            campaign_id: product.campaign_id || '',
+            season_id: product.season_id || '',
+            collection_id: product.collection_id || '',
+            layout_preference: product.layout_preference || 'standard',
+            admin_notes: product.admin_notes || '',
             variants: product.variants || []
         });
         setImageMode(product.image_url && !product.image_url.startsWith('uploads/') ? 'url' : 'upload');
@@ -122,6 +163,13 @@ export default function AdminProducts() {
             featured: false,
             new_arrival: false,
             launch_date: new Date().toISOString().split('T')[0],
+            lifecycle_state: 'Published',
+            priority: 0,
+            campaign_id: '',
+            season_id: '',
+            collection_id: '',
+            layout_preference: 'standard',
+            admin_notes: '',
             variants: []
         });
         setImageMode('upload');
@@ -221,23 +269,30 @@ export default function AdminProducts() {
     };
 
     // Imagen
-    const processImage = (file) => {
+    const processImage = async (file) => {
         if (!file) return;
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
         if (!validTypes.includes(file.type)) {
             setUploadError('Solo se permiten imágenes (JPG, PNG, WebP, AVIF)');
             return;
         }
-        if (file.size > 5 * 1024 * 1024) {
-            setUploadError('La imagen no debe superar 5MB');
-            return;
-        }
+        
+        // Mostrar loader de procesamiento si es necesario
         setUploadError(null);
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setFormData(prev => ({ ...prev, image_file: file, image_url: reader.result }));
-        };
-        reader.readAsDataURL(file);
+        
+        try {
+            // Comprimir antes de procesar
+            const compressedFile = await compressImage(file);
+            
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({ ...prev, image_file: compressedFile, image_url: reader.result }));
+            };
+            reader.readAsDataURL(compressedFile);
+        } catch (error) {
+            console.error("Error processing image:", error);
+            setUploadError("Error al procesar la imagen");
+        }
     };
 
     return (
@@ -283,6 +338,7 @@ export default function AdminProducts() {
                                     <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Categoría</th>
                                     <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Stock</th>
                                     <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Precio</th>
+                                    <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Ciclo / Info</th>
                                     <th style={{ padding: '1.2rem', textAlign: 'right', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Acciones</th>
                                 </tr>
                             </thead>
@@ -315,6 +371,23 @@ export default function AdminProducts() {
                                             </div>
                                         </td>
                                         <td style={{ padding: '1rem 1.2rem', fontWeight: '700', color: 'var(--primary)' }}>${product.price}</td>
+                                        <td style={{ padding: '1rem 1.2rem' }}>
+                                            <span style={{ 
+                                                padding: '0.3rem 0.6rem', 
+                                                borderRadius: '8px', 
+                                                background: product.lifecycle_state === 'Legacy' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)', 
+                                                color: product.lifecycle_state === 'Legacy' ? '#ef4444' : '#10b981',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '600'
+                                            }}>
+                                                {product.lifecycle_state || 'Published'}
+                                            </span>
+                                            {product.season_id && (
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                    <Calendar size={12} /> Temporada Asignada
+                                                </div>
+                                            )}
+                                        </td>
                                         <td style={{ padding: '1rem 1.2rem', textAlign: 'right' }}>
                                             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.6rem' }}>
                                                 <button onClick={() => handleEdit(product)} className="icon-btn-blue"><Edit size={16} /></button>
@@ -354,7 +427,8 @@ export default function AdminProducts() {
                                 {[
                                     { id: 'basic', label: 'Info Básica', icon: Info },
                                     { id: 'variants', label: 'Variantes', icon: Layers },
-                                    { id: 'marketing', label: 'Marketing', icon: Star }
+                                    { id: 'marketing', label: 'Marketing', icon: Star },
+                                    { id: 'advanced', label: 'Avanzado', icon: Settings }
                                 ].map(tab => (
                                     <button 
                                         key={tab.id}
@@ -391,9 +465,16 @@ export default function AdminProducts() {
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                                 <div className="form-group">
                                                     <label className="label-text">Categoría</label>
-                                                    <select value={formData.category} onChange={e => setFormData({ ...formData, category: e.target.value })} className="custom-select">
+                                                    <input 
+                                                        list="categories-list" 
+                                                        value={formData.category} 
+                                                        onChange={e => setFormData({ ...formData, category: e.target.value })} 
+                                                        className="input-field" 
+                                                        placeholder="Ej: streetwear" 
+                                                    />
+                                                    <datalist id="categories-list">
                                                         {categories.map(cat => <option key={cat} value={cat}>{cat.toUpperCase()}</option>)}
-                                                    </select>
+                                                    </datalist>
                                                 </div>
                                                 <div className="form-group">
                                                     <label className="label-text">Subcategoría</label>
@@ -449,8 +530,24 @@ export default function AdminProducts() {
                                                                 {formData.image_file ? formData.image_file.name : 'No hay archivo seleccionado'}
                                                             </div>
                                                         )}
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.8rem' }}>
+                                                            <div className="tooltip-container">
+                                                                <Info size={14} style={{ color: 'var(--primary)' }} />
+                                                                <div className="tooltip-content">
+                                                                    <strong>Guía de Imagen:</strong><br/>
+                                                                    • <strong>Vertical (4:5):</strong> Recomendado para catálogo estándar.<br/>
+                                                                    • <strong>Horizontal (16:9):</strong> Para productos tipo "Hero".<br/>
+                                                                    • <strong>Cuadrado (1:1):</strong> Formato flexible.<br/>
+                                                                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+                                                                        <div className="ratio-preview ratio-4-5">4:5</div>
+                                                                        <div className="ratio-preview ratio-16-9">16:9</div>
+                                                                        <div className="ratio-preview ratio-1-1">1:1</div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Usa proporción 4:5 para mejor visualización.</span>
+                                                        </div>
                                                         {uploadError && <p style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '0.5rem' }}>{uploadError}</p>}
-                                                        {!uploadError && <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Formatos: JPG, PNG, WebP, AVIF. Max: 5MB.</p>}
                                                     </div>
                                                 </div>
                                             </div>
@@ -551,7 +648,110 @@ export default function AdminProducts() {
                                                     <Calendar size={16} /> Fecha de Lanzamiento
                                                 </label>
                                                 <input type="date" value={formData.launch_date} onChange={e => setFormData({ ...formData, launch_date: e.target.value })} className="input-field" />
-                                                <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Útil para programar visibilidad futura o mostrar fecha de salida.</p>
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                                <div className="form-group">
+                                                    <label className="label-text">Estado del Ciclo de Vida</label>
+                                                    <select 
+                                                        value={formData.lifecycle_state} 
+                                                        onChange={e => setFormData({ ...formData, lifecycle_state: e.target.value })} 
+                                                        className="custom-select"
+                                                    >
+                                                        <option value="Draft">Borrador (Oculto)</option>
+                                                        <option value="Published">Publicado (Activo)</option>
+                                                        <option value="Legacy">Legado (Versión anterior)</option>
+                                                        <option value="Archived">Archivado (Solo histórico)</option>
+                                                    </select>
+                                                </div>
+                                                <div className="form-group">
+                                                    <label className="label-text">Prioridad (Orden)</label>
+                                                    <input 
+                                                        type="number" 
+                                                        value={formData.priority} 
+                                                        onChange={e => setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })} 
+                                                        className="input-field" 
+                                                        placeholder="0 es normal, mayor es más arriba"
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                                <div className="form-group">
+                                                    <label className="label-text">Temporada</label>
+                                                    <select 
+                                                        value={formData.season_id} 
+                                                        onChange={e => setFormData({ ...formData, season_id: e.target.value })} 
+                                                        className="custom-select"
+                                                    >
+                                                        <option value="">Sin Temporada</option>
+                                                        {availableSeasons.map(s => <option key={s.id} value={s.id}>{s.name} {s.is_active ? '(Activa)' : ''}</option>)}
+                                                    </select>
+                                                </div>
+                                                <div className="form-group">
+                                                    <label className="label-text">Colección</label>
+                                                    <select 
+                                                        value={formData.collection_id} 
+                                                        onChange={e => setFormData({ ...formData, collection_id: e.target.value })} 
+                                                        className="custom-select"
+                                                    >
+                                                        <option value="">Sin Colección</option>
+                                                        {availableCollections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label className="label-text">Asociar a Campaña</label>
+                                                <select 
+                                                    value={formData.campaign_id} 
+                                                    onChange={e => setFormData({ ...formData, campaign_id: e.target.value })} 
+                                                    className="custom-select"
+                                                >
+                                                    <option value="">Sin Campaña Específica</option>
+                                                    {availableCampaigns.map(camp => (
+                                                        <option key={camp.id} value={camp.id}>{camp.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
+                                    {activeTab === 'advanced' && (
+                                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                            <div className="form-group">
+                                                <label className="label-text">Preferencia de Layout (Composición)</label>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                                                    {[
+                                                        { id: 'standard', label: 'Estándar', desc: '4:5 Grid' },
+                                                        { id: 'portrait', label: 'Retrato', desc: 'Full Height' },
+                                                        { id: 'hero', label: 'Hero', desc: 'Featured 16:9' }
+                                                    ].map(opt => (
+                                                        <div 
+                                                            key={opt.id}
+                                                            onClick={() => setFormData({ ...formData, layout_preference: opt.id })}
+                                                            style={{ 
+                                                                padding: '1rem', borderRadius: '12px', border: `1px solid ${formData.layout_preference === opt.id ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`,
+                                                                background: formData.layout_preference === opt.id ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                                                                cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s'
+                                                            }}
+                                                        >
+                                                            <div style={{ fontWeight: '700', fontSize: '0.9rem', marginBottom: '0.2rem' }}>{opt.label}</div>
+                                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{opt.desc}</div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label className="label-text">Notas Internas (Admin)</label>
+                                                <textarea 
+                                                    value={formData.admin_notes} 
+                                                    onChange={e => setFormData({ ...formData, admin_notes: e.target.value })} 
+                                                    className="input-field" 
+                                                    style={{ minHeight: '120px', fontSize: '0.85rem' }}
+                                                    placeholder="Notas sobre el lanzamiento, ideas o recordatorios..."
+                                                />
                                             </div>
                                         </motion.div>
                                     )}
@@ -589,6 +789,24 @@ export default function AdminProducts() {
                 .close-btn { background: rgba(255,255,255,0.05); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; alignItems: center; justifyContent: center; }
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 .spin { animation: spin 1s linear infinite; }
+                
+                .tooltip-container { position: relative; display: inline-block; cursor: help; }
+                .tooltip-content {
+                    position: absolute; bottom: 120%; left: 0; width: 220px;
+                    background: #1a1a1a; color: white; padding: 1rem; border-radius: 12px;
+                    border: 1px solid rgba(255,255,255,0.1); font-size: 0.75rem;
+                    opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 100;
+                    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+                }
+                .tooltip-container:hover .tooltip-content { opacity: 1; visibility: visible; bottom: 130%; }
+                .ratio-preview { 
+                    margin-top: 0.8rem; border: 1px solid var(--primary); 
+                    background: rgba(var(--primary-rgb), 0.1); border-radius: 4px;
+                    display: flex; align-items: center; justify-content: center; font-size: 0.6rem;
+                }
+                .ratio-4-5 { width: 40px; height: 50px; }
+                .ratio-16-9 { width: 60px; height: 34px; }
+                .ratio-1-1 { width: 40px; height: 40px; }
             `}</style>
         </motion.div>
     );

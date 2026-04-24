@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import { ChevronDown, Search, Filter } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
@@ -23,12 +24,29 @@ export default function Shop() {
   const [categories, setCategories] = useState([]);
   const [selectedSize, setSelectedSize] = useState("all");
   const [selectedColor, setSelectedColor] = useState("all");
+  const [showLegacyOnly, setShowLegacyOnly] = useState(false);
+  const [searchParams] = useSearchParams();
+  const [activeCampaignData, setActiveCampaignData] = useState(null);
 
   // Obtener productos y categorías al montar
   useEffect(() => {
     fetchProducts();
     fetchCategories();
-  }, []);
+    
+    const campaignSlug = searchParams.get('campaign');
+    if (campaignSlug) {
+      fetchCampaignDetails(campaignSlug);
+    }
+  }, [searchParams]);
+
+  const fetchCampaignDetails = async (slug) => {
+    try {
+      const response = await axiosInstance.get(`/campaigns/${slug}`);
+      setActiveCampaignData(response.data);
+    } catch (err) {
+      console.warn("Error fetching campaign details:", err);
+    }
+  };
 
   const fetchCategories = async () => {
     try {
@@ -106,12 +124,44 @@ export default function Shop() {
       const inVariants = product.variants?.some(v => v.color === colorName);
       if (!inColors && !inVariants) return false;
     }
+    
+    // Filtro por campaña (URL param)
+    const campaignSlug = searchParams.get('campaign');
+    if (campaignSlug && activeCampaignData) {
+      if (product.campaign_id !== activeCampaignData.id) return false;
+    }
+
+    // Filtro Legacy (Dinamismo por Temporada)
+    const isSeasonExpired = product.season_end_date ? new Date(product.season_end_date) < new Date() : false;
+    const isLegacy = product.lifecycle_state === 'legacy' || product.season_is_active === false || isSeasonExpired;
+    
+    if (showLegacyOnly && !isLegacy) return false;
+
     return true;
   });
 
   return (
     <div style={{ paddingTop: '120px', paddingBottom: '100px', minHeight: '100vh', background: 'var(--bg-primary)', color: 'white' }}>
       <div className="container">
+        
+        {/* Campaign Header context */}
+        {activeCampaignData && (
+          <div style={{ 
+            marginBottom: '4rem', 
+            borderRadius: '32px', 
+            overflow: 'hidden', 
+            background: activeCampaignData.banner_url ? `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${activeCampaignData.banner_url})` : 'rgba(255,255,255,0.02)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            padding: '4rem 2rem',
+            textAlign: 'center',
+            border: activeCampaignData.accent_color ? `1px solid ${activeCampaignData.accent_color}` : '1px solid rgba(255,255,255,0.1)'
+          }}>
+            <span style={{ color: activeCampaignData.accent_color || 'var(--primary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Campaña Especial</span>
+            <h1 style={{ fontSize: '3.5rem', fontWeight: '900', marginTop: '1rem' }}>{activeCampaignData.name}</h1>
+            <p style={{ color: 'rgba(255,255,255,0.8)', maxWidth: '600px', margin: '1.5rem auto' }}>{activeCampaignData.description}</p>
+          </div>
+        )}
 
         {/* Categorías Premium - Barra Horizontal */}
         <div style={{ marginBottom: '2rem', overflowX: 'auto', WebkitOverflowScrolling: 'touch', paddingBottom: '0.5rem' }} className="no-scrollbar">
@@ -264,8 +314,28 @@ export default function Shop() {
               <ChevronDown size={16} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--text-secondary)' }} />
             </div>
 
+            <button
+              onClick={() => setShowLegacyOnly(!showLegacyOnly)}
+              style={{
+                background: showLegacyOnly ? 'var(--primary)' : 'rgba(16, 185, 129, 0.1)',
+                color: showLegacyOnly ? 'white' : '#10b981',
+                border: 'none',
+                borderRadius: '50px',
+                padding: '0.8rem 1.5rem',
+                cursor: 'pointer',
+                fontWeight: '600',
+                transition: 'all 0.3s',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                fontSize: '0.9rem'
+              }}
+            >
+              <span style={{ fontSize: '1.2rem' }}>🏷️</span> {t('shop.legacy_deals') || 'Ofertas (50% OFF)'}
+            </button>
+
             <button 
-              onClick={() => { setCategory('all'); setPriceRange('all'); setSearchQuery(''); setSelectedSize('all'); setSelectedColor('all'); }}
+              onClick={() => { setCategory('all'); setPriceRange('all'); setSearchQuery(''); setSelectedSize('all'); setSelectedColor('all'); setShowLegacyOnly(false); }}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer', textDecoration: 'underline' }}
             >
               Limpiar

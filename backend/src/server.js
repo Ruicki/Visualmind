@@ -8,6 +8,10 @@ import productRoutes from '../routes/productRoutes.js';
 import orderRoutes from '../routes/orderRoutes.js';
 import adminRoutes from '../routes/adminRoutes.js';
 import addressRoutes from '../routes/addressRoutes.js';
+import campaignRoutes from '../routes/campaignRoutes.js';
+import seasonRoutes from '../routes/seasonRoutes.js';
+import collectionRoutes from '../routes/collectionRoutes.js';
+import { expireSeasons } from '../services/seasonService.js';
 
 
 dotenv.config();
@@ -69,6 +73,9 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/addresses', addressRoutes);
+app.use('/api/campaigns', campaignRoutes);
+app.use('/api/seasons', seasonRoutes);
+app.use('/api/collections', collectionRoutes);
 
 
 
@@ -90,6 +97,14 @@ app.get('/api/health', async (req, res) => {
 
 
 // Iniciar servidor
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+  
+  // Ejecutar servicio de expiración de temporadas al arrancar
+  try {
+    await expireSeasons();
+  } catch (err) {
+    // No crítico: si falla no bloqueamos el servidor
+    console.warn('[Startup] No se pudo ejecutar el servicio de temporadas:', err.message);
+  }
 });

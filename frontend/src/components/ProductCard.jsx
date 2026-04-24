@@ -22,19 +22,27 @@ export default function ProductCard(props) {
         return () => clearTimeout(timer);
     }, []);
 
+    const layoutPref = props.layout_preference || 'standard';
+
+    // Dynamic legacy logic
+    const isSeasonExpired = props.season_end_date ? new Date(props.season_end_date) < new Date() : false;
+    const isLegacy = props.lifecycle_state === 'legacy' || 
+                     props.season_is_active === false || 
+                     isSeasonExpired;
+
     return (
         <>
-            <div className={`product-card reveal ${isVisible ? 'visible' : ''}`} style={{
+            <div className={`product-card layout-${layoutPref} reveal ${isVisible ? 'visible' : ''}`} style={{
                 background: 'var(--bg-secondary)',
                 borderRadius: '24px',
                 overflow: 'hidden',
                 border: '1px solid var(--border-light)',
                 transition: 'var(--transition-base)',
-                position: 'relative'
+                position: 'relative',
+                gridColumn: layoutPref === 'hero' ? '1 / -1' : 'auto', // Hero spans full width if supported
             }}>
                 {/* Image Container */}
-                <div className="slow-zoom" style={{
-                    height: '320px',
+                <div className="slow-zoom product-card-image" style={{
                     width: '100%',
                     background: '#1e293b',
                     position: 'relative',
@@ -118,6 +126,7 @@ export default function ProductCard(props) {
                             const displayImg = defaultColor?.image || getProductImage(props.image, props.image_url);
                             addToCart({
                                 ...props,
+                                price: isLegacy ? price * 0.5 : price,
                                 image: displayImg,
                                 selectedColor: defaultColor,
                                 selectedSize: defaultSize,
@@ -145,19 +154,50 @@ export default function ProductCard(props) {
                 {/* Content */}
                 <div style={{ padding: '1.5rem' }}>
                     <div style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--text-accent)',
-                        fontWeight: '700',
-                        textTransform: 'uppercase',
-                        marginBottom: '0.5rem',
-                        letterSpacing: '0.05em'
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        marginBottom: '0.5rem'
                     }}>
-                        {category}
+                        <div style={{
+                            fontSize: '0.75rem',
+                            color: 'var(--text-accent)',
+                            fontWeight: '700',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em'
+                        }}>
+                            {category}
+                        </div>
+                        
+                        {/* Status Badges */}
+                        {isLegacy && (
+                            <span style={{ background: '#f59e0b', color: 'black', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: '900' }}>LEGACY</span>
+                        )}
+                        {props.priority > 8 && !isLegacy && props.lifecycle_state === 'published' && (
+                            <span style={{ background: 'var(--primary)', color: 'black', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: '900' }}>NEW</span>
+                        )}
+                        {props.lifecycle_state === 'draft' && (
+                            <span style={{ background: '#64748b', color: 'white', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: '900' }}>DRAFT</span>
+                        )}
                     </div>
+
                     <Link to={`/product/${id}`} style={{ textDecoration: 'none' }}>
                         <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem', fontWeight: '600', color: 'white' }}>{title}</h3>
                     </Link>
-                    <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>${price}</div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'white' }}>
+                            ${isLegacy ? (price * 0.5).toFixed(2) : price}
+                        </div>
+                        {isLegacy && (
+                            <div style={{ fontSize: '0.9rem', textDecoration: 'line-through', color: 'var(--text-secondary)' }}>
+                                ${price}
+                            </div>
+                        )}
+                        {isLegacy && (
+                            <div style={{ color: '#22c55e', fontWeight: '800', fontSize: '0.8rem' }}>50% OFF</div>
+                        )}
+                    </div>
                 </div>
             </div>
 
