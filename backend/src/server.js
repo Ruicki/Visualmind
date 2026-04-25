@@ -53,7 +53,7 @@ const registerLimiter = rateLimit({
 });
 
 // Middleware
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,https://visualmind-one-vercel.app').split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,https://visualmind-one-vercel.app,https://visualmind-g3vpabx9e-ruickis-projects.vercel.app').split(',');
 
 app.use(cors({
   origin: (origin, callback) => {
