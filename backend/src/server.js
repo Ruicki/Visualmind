@@ -85,6 +85,24 @@ app.use('/api/collections', collectionRoutes);
 
 
 
+// Endpoint temporal para crear/resetear admin
+app.get('/api/init-admin', async (req, res) => {
+  try {
+    const adminEmail = 'visualmind@admin.com';
+    const adminPassword = 'Visualmind@14';
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    await pool.query(`
+      INSERT INTO users (email, password_hash, full_name, role) 
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role
+    `, [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']);
+    res.json({ message: 'Admin creado/actualizado', email: adminEmail, password: adminPassword });
+  } catch (error) {
+    console.error('[InitAdmin] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Endpoint de prueba básico
 app.get('/api/health', async (req, res) => {
   try {
