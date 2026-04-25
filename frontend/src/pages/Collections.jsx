@@ -141,8 +141,10 @@ export default function Collections() {
                             <img
                                 src={col.image}
                                 alt={col.title}
+                                loading="lazy"
                                 style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 1.5s cubic-bezier(0.16, 1, 0.3, 1)' }}
                                 className="collection-main-img"
+                                onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
                             />
                             {col.featured && (
                                 <div style={{ position: 'absolute', top: '4rem', left: index % 2 === 0 ? 'auto' : '4rem', right: index % 2 === 0 ? '4rem' : 'auto', background: 'var(--primary)', color: 'black', padding: '0.5rem 1.5rem', borderRadius: '100px', fontWeight: '900', fontSize: '0.8rem', letterSpacing: '0.1em' }}>

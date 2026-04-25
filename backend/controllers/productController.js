@@ -103,6 +103,16 @@ export const createProduct = async (req, res) => {
     try {
         await client.query('BEGIN');
         
+        // Validar unicidad de SKU
+        if (sku) {
+            const skuCheck = await client.query('SELECT id FROM products WHERE sku = $1', [sku]);
+            if (skuCheck.rows.length > 0) {
+                await client.query('ROLLBACK');
+                client.release();
+                return res.status(409).json({ error: `El SKU '${sku}' ya está en uso por otro producto.` });
+            }
+        }
+        
         const productResult = await client.query(
             `INSERT INTO products 
             (title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, is_new, discount, featured, new_arrival, parent_category, launch_date, lifecycle_state, priority, campaign_id, season_id, collection_id, layout_preference, admin_notes) 
@@ -159,6 +169,16 @@ export const updateProduct = async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
+        
+        // Validar unicidad de SKU (excluyendo el producto actual)
+        if (sku) {
+            const skuCheck = await client.query('SELECT id FROM products WHERE sku = $1 AND id != $2', [sku, id]);
+            if (skuCheck.rows.length > 0) {
+                await client.query('ROLLBACK');
+                client.release();
+                return res.status(409).json({ error: `El SKU '${sku}' ya está en uso por otro producto.` });
+            }
+        }
         
         let updateQuery = `
             UPDATE products 

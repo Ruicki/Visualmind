@@ -161,7 +161,7 @@ export default function Shop() {
             textAlign: 'center',
             border: activeCampaignData.accent_color ? `1px solid ${activeCampaignData.accent_color}` : '1px solid rgba(255,255,255,0.1)'
           }}>
-            <span style={{ color: activeCampaignData.accent_color || 'var(--primary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.2em' }}>Campaña Especial</span>
+            <span style={{ color: activeCampaignData.accent_color || 'var(--primary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.2em' }}>{t('shop.campaign_special')}</span>
             <h1 style={{ fontSize: '3.5rem', fontWeight: '900', marginTop: '1rem' }}>{activeCampaignData.name}</h1>
             <p style={{ color: 'rgba(255,255,255,0.8)', maxWidth: '600px', margin: '1.5rem auto' }}>{activeCampaignData.description}</p>
           </div>

@@ -212,7 +212,8 @@ export default function Checkout() {
                 <div style={{ width: '55px', height: '55px', borderRadius: '8px', overflow: 'hidden', background: '#333', flexShrink: 0 }}>
                   <img
                     src={item.image || getProductImage(item.image, item.image_url)}
-                    onError={(e) => { e.target.src = 'https://via.placeholder.com/55x55?text=?'; }}
+                    onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                    loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     alt={item.title}
                   />

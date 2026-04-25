@@ -70,6 +70,8 @@ export default function ProductCard(props) {
                         <img
                             src={displayImage}
                             alt={title}
+                            loading="lazy"
+                            onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
                             style={{
                                 width: '100%',
                                 height: '100%',
@@ -86,6 +88,8 @@ export default function ProductCard(props) {
                             <img
                                 src={hoverImage}
                                 alt={`${title} hover`}
+                                loading="lazy"
+                                onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
                                 style={{
                                     width: '100%',
                                     height: '100%',

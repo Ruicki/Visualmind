@@ -111,7 +111,7 @@ export default function AdminDashboard() {
                                 {stat.trend === 'up' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
                                 {stat.change}
                             </span>
-                            <span style={{ color: 'var(--text-secondary)' }}>vs mes anterior</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>{t('admin.vs_previous') || 'vs mes anterior'}</span>
                         </div>
                     </div>
                 ))}
@@ -121,10 +121,10 @@ export default function AdminDashboard() {
                 {/* Sales Chart */}
                 <div style={{ background: 'var(--bg-secondary)', borderRadius: '24px', padding: '1.5rem', border: '1px solid var(--border-light)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>Análisis de Ventas</h3>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>{t('admin.sales_analysis') || 'Análisis de Ventas'}</h3>
                         <select className="premium-input" style={{ width: 'auto', padding: '0.4rem 1rem', fontSize: '0.85rem' }}>
-                            <option>Últimos 7 días</option>
-                            <option>Últimos 30 días</option>
+                            <option>{t('admin.last_7_days') || 'Últimos 7 días'}</option>
+                            <option>{t('admin.last_30_days') || 'Últimos 30 días'}</option>
                         </select>
                     </div>
                     <div style={{ width: '100%', height: 300 }}>
@@ -168,7 +168,7 @@ export default function AdminDashboard() {
 
                 {/* Top Sellers */}
                 <div style={{ background: 'var(--bg-secondary)', borderRadius: '24px', padding: '1.5rem', border: '1px solid var(--border-light)' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1.5rem' }}>Productos Más Vendidos</h3>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1.5rem' }}>{t('admin.top_sellers') || 'Productos Más Vendidos'}</h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                         {data?.topSellers?.length > 0 ? data.topSellers.map((product, i) => (
                             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -188,14 +188,14 @@ export default function AdminDashboard() {
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <p style={{ margin: 0, fontWeight: '600', fontSize: '0.95rem' }}>{product.title}</p>
-                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{product.items_sold} vendidos</p>
+                                    <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{product.items_sold} {t('admin.items_sold') || 'vendidos'}</p>
                                 </div>
                                 <div style={{ fontSize: '0.9rem', fontWeight: '600' }}>
                                     {Math.round((product.items_sold / (data.topSellers[0].items_sold || 1)) * 100)}%
                                 </div>
                             </div>
                         )) : (
-                            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0' }}>Sin registros de ventas aún</p>
+                            <p style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem 0' }}>{t('admin.no_sales') || 'Sin registros de ventas aún'}</p>
                         )}
                     </div>
                 </div>
@@ -205,18 +205,18 @@ export default function AdminDashboard() {
                 {/* Recent Orders */}
                 <div style={{ background: 'var(--bg-secondary)', borderRadius: '24px', padding: '2rem', border: '1px solid var(--border-light)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>Pedidos Recientes</h3>
-                        <button className="premium-btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>Ver Todos</button>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>{t('admin.recent_orders') || 'Pedidos Recientes'}</h3>
+                        <button className="premium-btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>{t('admin.view_all') || 'Ver Todos'}</button>
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
                             <thead>
                                 <tr style={{ borderBottom: '1px solid var(--border-light)', textAlign: 'left' }}>
-                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>ID Pedido</th>
-                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>Cliente</th>
-                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>Fecha</th>
-                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>Estado</th>
-                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>Total</th>
+                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>{t('admin.table_id')}</th>
+                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>{t('admin.table_customer')}</th>
+                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>{t('admin.table_date')}</th>
+                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>{t('admin.table_status')}</th>
+                                    <th style={{ paddingBottom: '1rem', color: 'white' }}>{t('admin.table_total')}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -246,21 +246,21 @@ export default function AdminDashboard() {
                 <div style={{ background: 'var(--bg-secondary)', borderRadius: '24px', padding: '2rem', border: '1px solid var(--border-light)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
                         <AlertTriangle size={20} color="#f59e0b" />
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>Alertas de Stock</h3>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', margin: 0 }}>{t('admin.low_stock')}</h3>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         {data?.lowStock?.map((item, i) => (
                             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <div style={{ width: '48px', height: '48px', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
-                                    <img src={getProductImage(null, item.image_url)} alt={item.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img src={getProductImage(null, item.image_url)} alt={item.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ color: 'white', fontWeight: '600', fontSize: '0.9rem' }}>{item.title}</div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.4rem' }}>
                                         <span style={{ color: item.stock === 0 ? '#ef4444' : '#f59e0b', fontSize: '0.8rem', fontWeight: '600' }}>
-                                            {item.stock} en stock
+                                            {item.stock} {t('admin.stock_units') || 'en stock'}
                                         </span>
-                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Stock crítico</span>
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{t('admin.critical_stock') || 'Stock crítico'}</span>
                                     </div>
                                     <div style={{ width: '100%', height: '6px', background: '#333', marginTop: '0.6rem', borderRadius: '100px', overflow: 'hidden' }}>
                                         <div style={{ width: `${Math.max(5, (item.stock / 10) * 100)}%`, height: '100%', background: item.stock === 0 ? '#ef4444' : '#f59e0b' }} />

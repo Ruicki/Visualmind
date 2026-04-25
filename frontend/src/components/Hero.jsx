@@ -7,8 +7,8 @@ export default function Hero({ activeCampaign }) {
 
     const heroStyle = activeCampaign ? {
         paddingTop: 'calc(var(--navbar-height) + 30px)',
-        paddingBottom: '80px',
-        minHeight: 'calc(80vh)',
+        paddingBottom: 'clamp(2.5rem, 6vw, 5rem)',
+        minHeight: 'clamp(60vh, 80vh, 85vh)',
         display: 'flex',
         alignItems: 'center',
         position: 'relative',
@@ -18,8 +18,8 @@ export default function Hero({ activeCampaign }) {
         backgroundPosition: 'center'
     } : {
         paddingTop: 'calc(var(--navbar-height) + 60px)',
-        paddingBottom: '80px',
-        minHeight: '90vh',
+        paddingBottom: 'clamp(2.5rem, 6vw, 5rem)',
+        minHeight: 'clamp(70vh, 90vh, 95vh)',
         display: 'flex',
         alignItems: 'center',
         position: 'relative',
