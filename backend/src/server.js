@@ -84,15 +84,22 @@ app.use('/api/collections', collectionRoutes);
 // Endpoint de prueba básico
 app.get('/api/health', async (req, res) => {
   try {
-    // Probamos hacer una consulta simple a la BD
     const result = await pool.query('SELECT NOW()');
     res.json({ 
       status: 'ok', 
       message: 'Servidor Express funcionando 🚀',
-      db_time: result.rows[0].now 
+      db_time: result.rows[0].now,
+      env: process.env.NODE_ENV || 'development'
     });
   } catch (error) {
-    res.status(500).json({ status: 'error', message: 'Error de conexión a la BD', error: error.message });
+    console.error('[Health] DB error:', error.message);
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Error de conexión a la BD', 
+      error: error.message,
+      has_db_url: !!process.env.DATABASE_URL,
+      has_jwt: !!process.env.JWT_SECRET
+    });
   }
 });
 

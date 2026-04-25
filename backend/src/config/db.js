@@ -9,7 +9,7 @@ dotenv.config({ override: false }); // No sobreescribir variables ya definidas e
 const poolConfig = process.env.DATABASE_URL 
   ? { 
       connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      ssl: { rejectUnauthorized: false }
     }
   : {
       user: process.env.DB_USER,
