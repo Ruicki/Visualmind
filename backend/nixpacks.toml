@@ -1,11 +1,11 @@
 [phases.setup]
-nixPkgs = ["nodejs", "python"]
+nixPkgs = ["nodejs"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm install --production=false"]
 
 [phases.build]
-cmds = ["echo 'Build skipped'"]
+cmds = ["echo 'No build step needed'"]
 
-[phases.start]
-cmd = "npm start"
+[start]
+cmd = "node scripts/init_prod_db.js && node src/server.js"

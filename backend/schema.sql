@@ -101,3 +101,78 @@ CREATE TABLE IF NOT EXISTS coupons (
   expires_at       TIMESTAMPTZ,
   created_at       TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Campañas de marketing (banners dinámicos, cuenta regresiva)
+CREATE TABLE IF NOT EXISTS campaigns (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name              VARCHAR(255) NOT NULL,
+  slug              VARCHAR(255) UNIQUE,
+  description       TEXT,
+  banner_url        VARCHAR(500),
+  accent_color      VARCHAR(50),
+  template_type     VARCHAR(50) DEFAULT 'grid',
+  start_date        TIMESTAMPTZ,
+  end_date          TIMESTAMPTZ,
+  is_active         BOOLEAN DEFAULT false,
+  countdown_enabled BOOLEAN DEFAULT false,
+  updated_at        TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Temporadas (colecciones estacionales: Halloween, Anime Season, etc.)
+CREATE TABLE IF NOT EXISTS seasons (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        VARCHAR(255) NOT NULL,
+  slug        VARCHAR(255) UNIQUE,
+  description TEXT,
+  start_date  TIMESTAMPTZ,
+  end_date    TIMESTAMPTZ,
+  is_active   BOOLEAN DEFAULT false,
+  updated_at  TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Colecciones de productos (agrupaciones editoriales)
+CREATE TABLE IF NOT EXISTS collections (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        VARCHAR(255) NOT NULL,
+  slug        VARCHAR(255) UNIQUE,
+  description TEXT,
+  image_url   VARCHAR(500),
+  is_active   BOOLEAN DEFAULT true,
+  updated_at  TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Columnas adicionales en products para lifecycle, campañas y temporadas
+-- (Se agregan con IF NOT EXISTS para no fallar si ya existen)
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='lifecycle_state') THEN
+    ALTER TABLE products ADD COLUMN lifecycle_state VARCHAR(50) DEFAULT 'Published';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='priority') THEN
+    ALTER TABLE products ADD COLUMN priority INTEGER DEFAULT 0;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='campaign_id') THEN
+    ALTER TABLE products ADD COLUMN campaign_id UUID REFERENCES campaigns(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='season_id') THEN
+    ALTER TABLE products ADD COLUMN season_id UUID REFERENCES seasons(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='collection_id') THEN
+    ALTER TABLE products ADD COLUMN collection_id UUID REFERENCES collections(id) ON DELETE SET NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='hover_image_url') THEN
+    ALTER TABLE products ADD COLUMN hover_image_url VARCHAR(500);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='layout_preference') THEN
+    ALTER TABLE products ADD COLUMN layout_preference VARCHAR(50) DEFAULT 'standard';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='admin_notes') THEN
+    ALTER TABLE products ADD COLUMN admin_notes TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='shipping_details') THEN
+    ALTER TABLE orders ADD COLUMN shipping_details JSONB;
+  END IF;
+END $$;
