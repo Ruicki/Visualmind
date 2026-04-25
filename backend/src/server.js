@@ -17,17 +17,17 @@ import { expireSeasons } from '../services/seasonService.js';
 dotenv.config();
 
 // Validación de variables de entorno críticas
+const missingVars = [];
 if (!process.env.DATABASE_URL) {
-  const REQUIRED_ENV = ['JWT_SECRET', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
-  for (const key of REQUIRED_ENV) {
-    if (!process.env[key]) {
-      console.error(`❌ Variable de entorno requerida no definida: ${key}`);
-      process.exit(1);
-    }
-  }
-} else if (!process.env.JWT_SECRET) {
-  console.error(`❌ Variable de entorno requerida no definida: JWT_SECRET`);
-  process.exit(1);
+  const localVars = ['DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+  localVars.forEach(k => { if (!process.env[k]) missingVars.push(k); });
+}
+if (!process.env.JWT_SECRET) missingVars.push('JWT_SECRET');
+
+if (missingVars.length > 0) {
+  console.error(`❌ Variables de entorno faltantes: ${missingVars.join(', ')}`);
+  console.error('El servidor puede no funcionar correctamente.');
+  // No hacemos process.exit(1) para que Railway no crashee en el health check
 }
 
 const app = express();

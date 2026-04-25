@@ -5,7 +5,7 @@ nixPkgs = ["nodejs"]
 cmds = ["npm install --production=false"]
 
 [phases.build]
-cmds = ["echo 'No build step needed'"]
+cmds = ["node scripts/init_prod_db.js || echo 'DB init skipped'"]
 
 [start]
-cmd = "node scripts/init_prod_db.js && node src/server.js"
+cmd = "node src/server.js"
