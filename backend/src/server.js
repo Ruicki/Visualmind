@@ -53,7 +53,7 @@ const registerLimiter = rateLimit({
 });
 
 // Middleware
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,https://visualmind-one-vercel.app').split(',');
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -104,33 +104,6 @@ app.get('/api/health', async (req, res) => {
       has_db_url: !!process.env.DATABASE_URL,
       has_jwt: !!process.env.JWT_SECRET
     });
-  }
-});
-
-
-
-// Endpoint temporal para crear/resetear admin
-app.get('/api/init-admin', async (req, res) => {
-  try {
-    const adminEmail = 'visualmind@admin.com';
-    const adminPassword = 'Visualmind@14';
-    
-    // Siempre recrear el admin con la contraseña correcta
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    
-    // Upsert: actualizar si existe, insertar si no
-    await pool.query(`
-      INSERT INTO users (email, password_hash, full_name, role) 
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (email) DO UPDATE SET 
-        password_hash = EXCLUDED.password_hash,
-        role = EXCLUDED.role
-    `, [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']);
-    
-    res.json({ message: 'Admin creado/actualizado', email: adminEmail, password: adminPassword });
-  } catch (error) {
-    console.error('[InitAdmin] Error:', error);
-    res.status(500).json({ error: error.message });
   }
 });
 
