@@ -67,8 +67,7 @@ export default function Navbar() {
           {/* Logo */}
           <div className="navbar-logo">
             <Link to="/">
-              <img src="/logo.png" alt="Visualmind" />
-              <span className="navbar-logo-text">Visualmind</span>
+              <span className="navbar-logo-text" style={{fontSize: '1.5rem', fontWeight: 'bold'}}>V</span>
             </Link>
           </div>
 

@@ -49,11 +49,25 @@
 
 ---
 
-- [x] Sincronización final con GitHub (main branch).
-- [ ] Auditoría visual completa con `browser subagent`.
-- [ ] Prueba de estrés de subida de imágenes optimizadas.
-- [ ] Sincronización final con Vercel.
+---
+
+## 🚀 Bloque 5: Despliegue y Producción (MVP)
+- [x] **Infraestructura Railway (Backend):**
+    - [x] Configuración de monorepo con `nixpacks.toml` en `/backend`.
+    - [x] Sincronización con GitHub corregida.
+    - [x] Limpieza de raíz para evitar errores de autodetección.
+- [x] **Infraestructura Vercel (Frontend):**
+    - [x] Root directory configurado en `/frontend`.
+    - [x] Fix de `vercel.json` para despliegues fallidos.
+- [/] **Persistencia de Datos:**
+    - [x] Script de inicialización de DB (`init_prod_db.js`) creado.
+    - [ ] Ejecución de migraciones en producción.
+    - [ ] Verificación de credenciales Admin (`visualmind@admin.com`).
+- [/] **Conectividad:**
+    - [x] Fix de CORS con logging de diagnóstico.
+    - [ ] Verificación de `Network Error` resuelto.
 
 ---
+
 
 > **Última actualización**: 24 de Abril, 2026.

@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import pool from './config/db.js';
 import authRoutes from '../routes/authRoutes.js';
 import productRoutes from '../routes/productRoutes.js';
@@ -12,6 +14,8 @@ import campaignRoutes from '../routes/campaignRoutes.js';
 import seasonRoutes from '../routes/seasonRoutes.js';
 import collectionRoutes from '../routes/collectionRoutes.js';
 import { expireSeasons } from '../services/seasonService.js';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 
 dotenv.config({ override: false }); // No sobreescribir variables ya definidas en el entorno (Railway)
@@ -109,6 +113,13 @@ app.get('/api/health', async (req, res) => {
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   
+  // Inicializar base de datos si es necesario
+  try {
+    await initializeDatabase();
+  } catch (err) {
+    console.warn('[Startup] Error al inicializar DB:', err.message);
+  }
+  
   // Ejecutar servicio de expiración de temporadas al arrancar
   try {
     await expireSeasons();
@@ -117,3 +128,44 @@ app.listen(PORT, async () => {
     console.warn('[Startup] No se pudo ejecutar el servicio de temporadas:', err.message);
   }
 });
+
+// Función para inicializar la base de datos automáticamente
+async function initializeDatabase() {
+  try {
+    // Verificar si la tabla users existe
+    const tableCheck = await pool.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      )
+    `);
+    
+    if (!tableCheck.rows[0].exists) {
+      console.log('[InitDB] Tablas no encontradas, ejecutando schema.sql...');
+      
+      // Ejecutar schema.sql
+      const schemaPath = path.join(process.cwd(), 'schema.sql');
+      const schema = fs.readFileSync(schemaPath, 'utf8');
+      await pool.query(schema);
+      console.log('[InitDB] Schema ejecutado correctamente');
+      
+      // Crear usuario admin si no existe
+      const adminEmail = 'visualmind@admin.com';
+      const adminPassword = process.env.ADMIN_PASSWORD || 'Visualmind@14';
+      
+      const adminCheck = await pool.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
+      if (adminCheck.rows.length === 0) {
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        await pool.query(
+          'INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4)',
+          [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']
+        );
+        console.log(`[InitDB] Admin creado: ${adminEmail}`);
+      }
+    }
+  } catch (error) {
+    console.error('[InitDB] Error:', error.message);
+    throw error;
+  }
+}
