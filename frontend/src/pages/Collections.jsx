@@ -72,7 +72,7 @@ export default function Collections() {
                     campaign_id: camp.id,
                     featured: camp.status === 'active'
                 }));
-                setCampaignCollections(campaignAsCols);
+                setCampaignCollections(campaignsAsCols);
             }
         }).catch(() => {});
     }, []);
@@ -114,7 +114,7 @@ export default function Collections() {
             <section style={{ height: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 1.5rem', background: 'radial-gradient(circle at center, #111 0%, #050505 100%)' }}>
                 <div className="container">
                     <span style={{ color: 'var(--primary)', fontWeight: '800', letterSpacing: '0.5em', fontSize: '0.9rem', textTransform: 'uppercase', marginBottom: '1.5rem', display: 'block' }}>{t('collections_page.archive_title')}</span>
-                    <h1 style={{ fontSize: '12vw', fontWeight: '900', lineHeight: 0.8, letterSpacing: '-0.05em', margin: 0, textTransform: 'uppercase' }}>{t('collections_page.curations')}</h1>
+                    <h1 style={{ fontSize: 'clamp(3rem, 12vw, 10rem)', fontWeight: '900', lineHeight: 0.8, letterSpacing: '-0.05em', margin: 0, textTransform: 'uppercase' }}>{t('collections_page.curations')}</h1>
                     <div style={{ marginTop: '3rem' }}>
                         <ChevronDown size={40} strokeWidth={1} style={{ opacity: 0.3 }} />
                     </div>
@@ -152,7 +152,7 @@ export default function Collections() {
                         </div>
                         <div style={{ flex: 1, padding: '0 8rem', textAlign: 'left', zIndex: 10 }}>
                             <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>{col.subtitle}</span>
-                            <h2 style={{ fontSize: '5rem', fontWeight: '900', margin: '1rem 0 2rem 0', lineHeight: 0.9 }}>{col.title}</h2>
+                            <h2 style={{ fontSize: 'clamp(2.5rem, 5vw, 5rem)', fontWeight: '900', margin: '1rem 0 2rem 0', lineHeight: 0.9 }}>{col.title}</h2>
                             <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: '3rem', maxWidth: '400px' }}>
                                 {col.description}
                             </p>

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { Mail, Lock, User, ArrowRight, Loader } from 'lucide-react';
 
@@ -8,6 +8,9 @@ export default function Login() {
     const { signIn, signUp } = useAuth();
     const { t } = useLanguage();
     const navigate = useNavigate();
+    const location = useLocation();
+    const redirectTo = location.state?.from || '/';
+    const contextMsg = location.state?.message;
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
@@ -26,12 +29,11 @@ export default function Login() {
             if (isLogin) {
                 const { error } = await signIn(formData.email, formData.password);
                 if (error) throw error;
-                navigate('/');
+                navigate(redirectTo, { replace: true });
             } else {
                 const { error } = await signUp(formData.email, formData.password);
                 if (error) throw error;
-                alert(t('auth.success_create'));
-                navigate('/');
+                navigate(redirectTo, { replace: true });
             }
         } catch (err) {
             setError(err.message);
@@ -74,6 +76,22 @@ export default function Login() {
                         {isLogin ? t('auth.login_subtitle') : t('auth.signup_subtitle')}
                     </p>
                 </div>
+
+                {/* Mensaje de contexto (ej: "Inicia sesión para completar tu compra") */}
+                {contextMsg && (
+                    <div style={{
+                        background: 'rgba(59,130,246,0.1)',
+                        color: '#60a5fa',
+                        padding: '1rem',
+                        borderRadius: '12px',
+                        marginBottom: '1rem',
+                        fontSize: '0.9rem',
+                        textAlign: 'center',
+                        border: '1px solid rgba(59,130,246,0.2)'
+                    }}>
+                        {contextMsg}
+                    </div>
+                )}
 
                 {error && (
                     <div style={{

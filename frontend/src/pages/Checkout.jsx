@@ -181,6 +181,18 @@ const CheckoutForm = () => {
 export default function Checkout() {
   const { cartItems, getCartTotal } = useCart();
   const { t } = useLanguage();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  // Guard: redirigir si no está autenticado
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login', { state: { from: '/checkout', message: 'Inicia sesión para completar tu compra.' }, replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  // Mostrar nada mientras se verifica la sesión
+  if (loading || !user) return null;
 
   return (
     <div className="container" style={{ paddingTop: '120px', paddingBottom: '4rem' }}>

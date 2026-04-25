@@ -11,18 +11,37 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    /** Verifica si un JWT (formato header.payload.sig) no ha expirado */
+    const isTokenValid = (token) => {
+        try {
+            const payloadB64 = token.split('.')[1];
+            // base64url → base64 estándar
+            const padded = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
+            const payload = JSON.parse(atob(padded));
+            // exp es en segundos, Date.now() en ms
+            return payload.exp > Math.floor(Date.now() / 1000);
+        } catch {
+            return false;
+        }
+    };
+
     useEffect(() => {
-        const checkAuth = async () => {
+        const checkAuth = () => {
             const token = localStorage.getItem('token');
             const storedUser = localStorage.getItem('user');
-            
+
             if (token && storedUser) {
+                // Validar expiración antes de confiar en el token
+                if (!isTokenValid(token)) {
+                    console.warn('[AuthContext] Token expirado — cerrando sesión.');
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    setLoading(false);
+                    return;
+                }
                 try {
-                    // Opcional: Podríamos tener un endpoint /api/auth/me para verificar el token
-                    // Por ahora confiamos en el localStorage si hay token
                     setUser(JSON.parse(storedUser));
-                } catch (error) {
-                    console.error('Error al parsear usuario guardado:', error);
+                } catch {
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                 }

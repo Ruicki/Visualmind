@@ -4,20 +4,45 @@ import path from 'path';
 
 export const getAllProducts = async (req, res) => {
     try {
-        // Públicamente solo mostramos productos publicados y legacy
-        const result = await pool.query(`
-            SELECT p.*, s.end_date as season_end_date, s.is_active as season_is_active
-            FROM products p
-            LEFT JOIN seasons s ON p.season_id = s.id
-            WHERE p.lifecycle_state IN ('Published', 'Legacy') 
-            ORDER BY p.priority DESC, p.created_at DESC
-        `);
+        const { search } = req.query;
+
+        let query;
+        let params;
+
+        if (search && search.trim()) {
+            const term = `%${search.trim()}%`;
+            query = `
+                SELECT p.*, s.end_date as season_end_date, s.is_active as season_is_active
+                FROM products p
+                LEFT JOIN seasons s ON p.season_id = s.id
+                WHERE p.lifecycle_state IN ('Published', 'Legacy')
+                  AND (
+                    p.title ILIKE $1 OR
+                    p.category ILIKE $1 OR
+                    p.sub_category ILIKE $1
+                  )
+                ORDER BY p.priority DESC, p.created_at DESC
+            `;
+            params = [term];
+        } else {
+            query = `
+                SELECT p.*, s.end_date as season_end_date, s.is_active as season_is_active
+                FROM products p
+                LEFT JOIN seasons s ON p.season_id = s.id
+                WHERE p.lifecycle_state IN ('Published', 'Legacy')
+                ORDER BY p.priority DESC, p.created_at DESC
+            `;
+            params = [];
+        }
+
+        const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (error) {
         console.error('Error al obtener productos:', error);
         res.status(500).json({ error: 'Error del servidor' });
     }
 };
+
 
 export const getAdminProducts = async (req, res) => {
     try {
