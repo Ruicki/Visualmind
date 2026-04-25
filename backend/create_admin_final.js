@@ -5,7 +5,7 @@ dotenv.config();
 
 const createAdmin = async () => {
     const email = 'visualmind@admin.com';
-    const password = 'visualmind@14';
+    const password = 'Visualmind@14';
     const full_name = 'Visualmind Admin';
     const role = 'admin';
 
