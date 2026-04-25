@@ -6,9 +6,9 @@ export default function Hero({ activeCampaign }) {
     const { t } = useLanguage();
 
     const heroStyle = activeCampaign ? {
-        paddingTop: '30px',
+        paddingTop: 'calc(var(--navbar-height) + 30px)',
         paddingBottom: '80px',
-        minHeight: 'calc(80vh - var(--navbar-height))',
+        minHeight: 'calc(80vh)',
         display: 'flex',
         alignItems: 'center',
         position: 'relative',
@@ -17,9 +17,9 @@ export default function Hero({ activeCampaign }) {
         backgroundSize: 'cover',
         backgroundPosition: 'center'
     } : {
-        paddingTop: '60px',
+        paddingTop: 'calc(var(--navbar-height) + 60px)',
         paddingBottom: '80px',
-        minHeight: 'calc(90vh - var(--navbar-height))',
+        minHeight: '90vh',
         display: 'flex',
         alignItems: 'center',
         position: 'relative',

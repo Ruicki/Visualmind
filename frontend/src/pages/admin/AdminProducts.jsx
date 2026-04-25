@@ -12,6 +12,20 @@ import { getProductImage, compressImage } from '../../utils/imageUtils';
 /**
  * Panel de administración de productos mejorado con variantes y marketing.
  */
+// Categorías predefinidas del sistema — siempre disponibles
+const SYSTEM_CATEGORIES = [
+    { value: 'anime', label: 'Anime' },
+    { value: 'caricaturas', label: 'Caricaturas / Cartoons' },
+    { value: 'videojuegos', label: 'Videojuegos' },
+    { value: 'deportes', label: 'Deportes' },
+    { value: 'san_valentin', label: 'San Valentín' },
+    { value: 'halloween', label: 'Halloween' },
+    { value: 'fiestas_patrias', label: 'Fiestas Patrias' },
+    { value: 'streetwear', label: 'Streetwear' },
+    { value: 'ropa', label: 'Ropa General' },
+    { value: 'accesorios', label: 'Accesorios' },
+];
+
 export default function AdminProducts() {
     const { t } = useLanguage();
     const [products, setProducts] = useState([]);
@@ -49,12 +63,16 @@ export default function AdminProducts() {
     });
 
     // Estado del upload de imagen e información dinámica
+    const fileInputRef = useRef(null);
+    const hoverFileInputRef = useRef(null);
     const [imageMode, setImageMode] = useState('upload'); // 'upload' o 'url'
-    const [categories, setCategories] = useState([]);
+    const [hoverImageMode, setHoverImageMode] = useState('upload'); // 'upload' o 'url'
+    const [categories, setCategories] = useState(SYSTEM_CATEGORIES.map(c => c.value));
     const [subCategories, setSubCategories] = useState([]);
+    const [customCategory, setCustomCategory] = useState(false);
     const [uploadError, setUploadError] = useState(null);
     const [dragOver, setDragOver] = useState(false);
-    const fileInputRef = useRef(null);
+    const [hoverDragOver, setHoverDragOver] = useState(false);
 
     useEffect(() => {
         fetchProducts();
@@ -91,9 +109,15 @@ export default function AdminProducts() {
                 api.get('/products/categories'),
                 api.get('/products/sub-categories')
             ]);
-            setCategories(catRes.data || []);
+            // Merge: DB categories + system categories (sin duplicados)
+            const dbCats = catRes.data || [];
+            const systemVals = SYSTEM_CATEGORIES.map(c => c.value);
+            const merged = [...new Set([...systemVals, ...dbCats])];
+            setCategories(merged);
             setSubCategories(subRes.data || []);
         } catch (error) {
+            // Si falla el backend, usar categorías del sistema
+            setCategories(SYSTEM_CATEGORIES.map(c => c.value));
             console.error('Error fetching metadata:', error);
         }
     };
@@ -131,6 +155,8 @@ export default function AdminProducts() {
             stock: product.stock || 0,
             image_url: product.image_url || '',
             image_file: null,
+            hover_image_url: product.hover_image_url || '',
+            hover_image_file: null,
             featured: product.featured || false,
             new_arrival: product.new_arrival || false,
             launch_date: product.launch_date ? new Date(product.launch_date).toISOString().split('T')[0] : '',
@@ -143,7 +169,8 @@ export default function AdminProducts() {
             admin_notes: product.admin_notes || '',
             variants: product.variants || []
         });
-        setImageMode(product.image_url && !product.image_url.startsWith('uploads/') ? 'url' : 'upload');
+        setImageMode(product.image_url && !product.image_url.startsWith('/uploads/') ? 'url' : 'upload');
+        setHoverImageMode(product.hover_image_url && !product.hover_image_url.startsWith('/uploads/') ? 'url' : 'upload');
         setUploadError(null);
         setActiveTab('basic');
         setIsModalOpen(true);
@@ -160,6 +187,8 @@ export default function AdminProducts() {
             stock: 0,
             image_url: '',
             image_file: null,
+            hover_image_url: '',
+            hover_image_file: null,
             featured: false,
             new_arrival: false,
             launch_date: new Date().toISOString().split('T')[0],
@@ -173,6 +202,7 @@ export default function AdminProducts() {
             variants: []
         });
         setImageMode('upload');
+        setHoverImageMode('upload');
         setUploadError(null);
         setActiveTab('basic');
         setIsModalOpen(true);
@@ -189,13 +219,18 @@ export default function AdminProducts() {
                     productFormData.append('variants', JSON.stringify(formData.variants));
                 } else if (key === 'image_file' && formData.image_file) {
                     productFormData.append('image', formData.image_file);
-                } else if (key !== 'image_file' && key !== 'image_url') {
+                } else if (key === 'hover_image_file' && formData.hover_image_file) {
+                    productFormData.append('hover_image', formData.hover_image_file);
+                } else if (!['image_file', 'image_url', 'hover_image_file', 'hover_image_url'].includes(key)) {
                     productFormData.append(key, formData[key]);
                 }
             });
 
             if (!formData.image_file && formData.image_url) {
                 productFormData.append('image_url', formData.image_url);
+            }
+            if (!formData.hover_image_file && formData.hover_image_url) {
+                productFormData.append('hover_image_url', formData.hover_image_url);
             }
 
             if (formData.id) {
@@ -246,30 +281,30 @@ export default function AdminProducts() {
         });
     };
 
-    const handleFileSelect = (e) => {
+    const handleFileSelect = (e, type = 'main') => {
         const file = e.target.files?.[0];
-        if (file) processImage(file);
+        if (file) processImage(file, type);
     };
 
-    const handleDragOver = (e) => {
+    const handleDragOver = (e, setDrag) => {
         e.preventDefault();
-        setDragOver(true);
+        setDrag(true);
     };
 
-    const handleDragLeave = (e) => {
+    const handleDragLeave = (e, setDrag) => {
         e.preventDefault();
-        setDragOver(false);
+        setDrag(false);
     };
 
-    const handleDrop = (e) => {
+    const handleDrop = (e, type = 'main') => {
         e.preventDefault();
-        setDragOver(false);
+        type === 'main' ? setDragOver(false) : setHoverDragOver(false);
         const file = e.dataTransfer.files?.[0];
-        if (file) processImage(file);
+        if (file) processImage(file, type);
     };
 
     // Imagen
-    const processImage = async (file) => {
+    const processImage = async (file, type = 'main') => {
         if (!file) return;
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'];
         if (!validTypes.includes(file.type)) {
@@ -277,21 +312,26 @@ export default function AdminProducts() {
             return;
         }
         
-        // Mostrar loader de procesamiento si es necesario
-        setUploadError(null);
-        
+        if (file.size > 5 * 1024 * 1024) {
+            setUploadError('La imagen es demasiado grande (máx 5MB)');
+            return;
+        }
+
         try {
-            // Comprimir antes de procesar
             const compressedFile = await compressImage(file);
-            
             const reader = new FileReader();
             reader.onloadend = () => {
-                setFormData(prev => ({ ...prev, image_file: compressedFile, image_url: reader.result }));
+                if (type === 'main') {
+                    setFormData(prev => ({ ...prev, image_file: compressedFile, image_url: reader.result }));
+                } else {
+                    setFormData(prev => ({ ...prev, hover_image_file: compressedFile, hover_image_url: reader.result }));
+                }
+                setUploadError(null);
             };
             reader.readAsDataURL(compressedFile);
         } catch (error) {
-            console.error("Error processing image:", error);
-            setUploadError("Error al procesar la imagen");
+            console.error('Error al procesar imagen:', error);
+            setUploadError('Error al procesar la imagen');
         }
     };
 
@@ -465,16 +505,38 @@ export default function AdminProducts() {
                                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                                                 <div className="form-group">
                                                     <label className="label-text">Categoría</label>
-                                                    <input 
-                                                        list="categories-list" 
-                                                        value={formData.category} 
-                                                        onChange={e => setFormData({ ...formData, category: e.target.value })} 
-                                                        className="input-field" 
-                                                        placeholder="Ej: streetwear" 
-                                                    />
-                                                    <datalist id="categories-list">
-                                                        {categories.map(cat => <option key={cat} value={cat}>{cat.toUpperCase()}</option>)}
-                                                    </datalist>
+                                                    <select
+                                                        value={customCategory ? '__custom__' : (SYSTEM_CATEGORIES.find(c => c.value === formData.category) ? formData.category : '__custom__')}
+                                                        onChange={e => {
+                                                            if (e.target.value === '__custom__') {
+                                                                setCustomCategory(true);
+                                                            } else {
+                                                                setCustomCategory(false);
+                                                                setFormData({ ...formData, category: e.target.value });
+                                                            }
+                                                        }}
+                                                        className="input-field"
+                                                        style={{ cursor: 'pointer' }}
+                                                    >
+                                                        {SYSTEM_CATEGORIES.map(cat => (
+                                                            <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                                        ))}
+                                                        {/* Categorías extra de la DB que no están en el sistema */}
+                                                        {categories.filter(c => !SYSTEM_CATEGORIES.find(s => s.value === c)).map(c => (
+                                                            <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                                                        ))}
+                                                        <option value="__custom__">✏️ Personalizado...</option>
+                                                    </select>
+                                                    {(customCategory || (!SYSTEM_CATEGORIES.find(c => c.value === formData.category) && formData.category)) && (
+                                                        <input
+                                                            type="text"
+                                                            value={formData.category}
+                                                            onChange={e => setFormData({ ...formData, category: e.target.value })}
+                                                            className="input-field"
+                                                            placeholder="Escribe la categoría personalizada"
+                                                            style={{ marginTop: '0.5rem' }}
+                                                        />
+                                                    )}
                                                 </div>
                                                 <div className="form-group">
                                                     <label className="label-text">Subcategoría</label>
@@ -500,9 +562,9 @@ export default function AdminProducts() {
                                                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                                                     <div 
                                                         onClick={() => fileInputRef.current?.click()}
-                                                        onDragOver={handleDragOver}
-                                                        onDragLeave={handleDragLeave}
-                                                        onDrop={handleDrop}
+                                                        onDragOver={e => handleDragOver(e, setDragOver)}
+                                                        onDragLeave={e => handleDragLeave(e, setDragOver)}
+                                                        onDrop={e => handleDrop(e, 'main')}
                                                         style={{ 
                                                             width: '120px', height: '120px', borderRadius: '16px', 
                                                             border: `2px dashed ${dragOver ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`, 
@@ -516,7 +578,7 @@ export default function AdminProducts() {
                                                         ) : (
                                                             <Upload size={24} style={{ color: dragOver ? 'var(--primary)' : 'rgba(255,255,255,0.2)' }} />
                                                         )}
-                                                        <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={handleFileSelect} accept="image/*" />
+                                                        <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={e => handleFileSelect(e, 'main')} accept="image/*" />
                                                     </div>
                                                     <div style={{ flex: 1 }}>
                                                         <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '0.3rem', marginBottom: '0.8rem' }}>
@@ -548,6 +610,49 @@ export default function AdminProducts() {
                                                             <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>Usa proporción 4:5 para mejor visualización.</span>
                                                         </div>
                                                         {uploadError && <p style={{ color: '#ef4444', fontSize: '0.7rem', marginTop: '0.5rem' }}>{uploadError}</p>}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Imagen Hover Section */}
+                                            <div style={{ marginTop: '1rem' }}>
+                                                <label className="label-text" style={{ marginBottom: '1rem', display: 'block' }}>Imagen al Pasar el Mouse (Hover)</label>
+                                                <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                                    <div 
+                                                        onClick={() => hoverFileInputRef.current?.click()}
+                                                        onDragOver={e => handleDragOver(e, setHoverDragOver)}
+                                                        onDragLeave={e => handleDragLeave(e, setHoverDragOver)}
+                                                        onDrop={e => handleDrop(e, 'hover')}
+                                                        style={{ 
+                                                            width: '120px', height: '120px', borderRadius: '16px', 
+                                                            border: `2px dashed ${hoverDragOver ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`, 
+                                                            background: hoverDragOver ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
+                                                            transition: 'all 0.3s'
+                                                        }}
+                                                    >
+                                                        {formData.hover_image_url ? (
+                                                            <img src={formData.hover_image_url.startsWith('data:') ? formData.hover_image_url : getProductImage(null, formData.hover_image_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                                        ) : (
+                                                            <Upload size={24} style={{ color: hoverDragOver ? 'var(--primary)' : 'rgba(255,255,255,0.2)' }} />
+                                                        )}
+                                                        <input ref={hoverFileInputRef} type="file" style={{ display: 'none' }} onChange={e => handleFileSelect(e, 'hover')} accept="image/*" />
+                                                    </div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '0.3rem', marginBottom: '0.8rem' }}>
+                                                            <button type="button" onClick={() => setHoverImageMode('upload')} style={{ flex: 1, padding: '0.4rem', borderRadius: '8px', background: hoverImageMode === 'upload' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: 'white', fontSize: '0.75rem', cursor: 'pointer' }}>Archivo</button>
+                                                            <button type="button" onClick={() => setHoverImageMode('url')} style={{ flex: 1, padding: '0.4rem', borderRadius: '8px', background: hoverImageMode === 'url' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: 'white', fontSize: '0.75rem', cursor: 'pointer' }}>URL</button>
+                                                        </div>
+                                                        {hoverImageMode === 'url' ? (
+                                                            <input type="text" value={formData.hover_image_url} onChange={e => setFormData({ ...formData, hover_image_url: e.target.value })} className="input-field" placeholder="https://..." />
+                                                        ) : (
+                                                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                                                {formData.hover_image_file ? formData.hover_image_file.name : 'No hay archivo seleccionado'}
+                                                            </div>
+                                                        )}
+                                                        <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.8rem' }}>
+                                                            Esta imagen se mostrará cuando el usuario pase el mouse sobre el producto en la tienda.
+                                                        </p>
                                                     </div>
                                                 </div>
                                             </div>

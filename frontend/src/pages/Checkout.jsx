@@ -219,20 +219,24 @@ export default function Checkout() {
 
           <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              <span>Subtotal</span>
+              <span>{t('cart.subtotal')}</span>
               <span>${getCartTotal().toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              <span>Envío</span>
-              <span style={{ color: '#10b981', fontWeight: '600' }}>Gratis</span>
+              <span>{t('cart.shipping')}</span>
+              <span style={{ color: getCartTotal() > 50 ? '#10b981' : 'white', fontWeight: getCartTotal() > 50 ? '700' : 'normal' }}>
+                {getCartTotal() > 50 ? t('cart.free') : '$5.00'}
+              </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              <span>Impuestos (Estimado)</span>
-              <span>$0.00</span>
+              <span>{t('cart.taxes')} (7%)</span>
+              <span>${(getCartTotal() * 0.07).toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.3rem', fontWeight: '900', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
-              <span>Total</span>
-              <span>${getCartTotal().toFixed(2)}</span>
+              <span>{t('cart.total')}</span>
+              <span style={{ color: 'var(--primary)' }}>
+                ${(getCartTotal() + (getCartTotal() > 50 ? 0 : 5) + (getCartTotal() * 0.07)).toFixed(2)}
+              </span>
             </div>
           </div>
         </div>

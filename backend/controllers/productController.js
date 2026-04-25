@@ -71,7 +71,8 @@ export const createProduct = async (req, res) => {
         season_id, collection_id, layout_preference, admin_notes
     } = req.body;
     
-    const image_url = req.file ? `/uploads/products/${req.file.filename}` : req.body.image_url;
+    const image_url = req.files?.['image'] ? `/uploads/products/${req.files['image'][0].filename}` : req.body.image_url;
+    const hover_image_url = req.files?.['hover_image'] ? `/uploads/products/${req.files['hover_image'][0].filename}` : req.body.hover_image_url;
 
     const client = await pool.connect();
     try {
@@ -79,11 +80,11 @@ export const createProduct = async (req, res) => {
         
         const productResult = await client.query(
             `INSERT INTO products 
-            (title, description, price, category, sub_category, image_url, sku, stock, is_new, discount, featured, new_arrival, parent_category, launch_date, lifecycle_state, priority, campaign_id, season_id, collection_id, layout_preference, admin_notes) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21) 
+            (title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, is_new, discount, featured, new_arrival, parent_category, launch_date, lifecycle_state, priority, campaign_id, season_id, collection_id, layout_preference, admin_notes) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) 
             RETURNING *`,
             [
-                title, description, price, category, sub_category, image_url, sku, stock, 
+                title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, 
                 is_new, discount, featured || false, new_arrival || false, parent_category, 
                 launch_date, lifecycle_state || 'Published', priority || 0, campaign_id || null,
                 season_id || null, collection_id || null, layout_preference || 'standard', admin_notes || ''
@@ -149,14 +150,32 @@ export const updateProduct = async (req, res) => {
             season_id, collection_id, layout_preference, admin_notes
         ];
 
-        if (req.file) {
-            const image_url = `/uploads/products/${req.file.filename}`;
-            updateQuery += `, image_url = $21 WHERE id = $22 RETURNING *`;
-            values.push(image_url, id);
-        } else {
-            updateQuery += ` WHERE id = $21 RETURNING *`;
-            values.push(id);
+        let paramCount = 21;
+        
+        if (req.files?.['image']) {
+            const image_url = `/uploads/products/${req.files['image'][0].filename}`;
+            updateQuery += `, image_url = $${paramCount}`;
+            values.push(image_url);
+            paramCount++;
+        } else if (req.body.image_url) {
+            updateQuery += `, image_url = $${paramCount}`;
+            values.push(req.body.image_url);
+            paramCount++;
         }
+
+        if (req.files?.['hover_image']) {
+            const hover_image_url = `/uploads/products/${req.files['hover_image'][0].filename}`;
+            updateQuery += `, hover_image_url = $${paramCount}`;
+            values.push(hover_image_url);
+            paramCount++;
+        } else if (req.body.hover_image_url) {
+            updateQuery += `, hover_image_url = $${paramCount}`;
+            values.push(req.body.hover_image_url);
+            paramCount++;
+        }
+
+        updateQuery += ` WHERE id = $${paramCount} RETURNING *`;
+        values.push(id);
 
         const result = await client.query(updateQuery, values);
         

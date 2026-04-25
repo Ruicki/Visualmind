@@ -100,6 +100,10 @@ export const translations = {
             back: 'Back to Shopping',
             items_count: 'items',
             qty: 'Qty',
+            shipping: 'Shipping',
+            taxes: 'Taxes',
+            total: 'Total',
+            free: 'Free',
         },
         checkout: {
             title: 'Checkout',
@@ -144,6 +148,7 @@ export const translations = {
             limited_stock: 'LIMITED STOCK',
             limited_time_drop: 'LIMITED TIME DROP',
             seasonal_specials: 'Seasonal Specials',
+            shop_now: 'Shop Now',
             seasonal_desc: 'Exclusive collections created for special moments. Available only for a few weeks.',
             view_full_drop: 'View Full Drop',
             visual_experience: 'Visual Experience',
@@ -266,6 +271,7 @@ export const translations = {
             tooltip_product: 'Format: 800x1000. Ratio 4:5. Standard for clothing detail.',
             tooltip_collection: 'Format: 1200x800. Ratio 3:2. Balanced for galleries.',
             // Campaigns
+            campaigns: 'Campaigns',
             manage_campaigns: 'Manage Campaigns',
             add_campaign: 'New Campaign',
             label_event_name: 'Event Name',
@@ -273,6 +279,7 @@ export const translations = {
             label_countdown: 'Countdown Date',
             label_template: 'Design Template',
             // Orders
+            orders: 'Orders',
             filter_pending: 'Pending',
             filter_shipped: 'Shipped',
             filter_delivered: 'Delivered',
@@ -381,6 +388,32 @@ export const translations = {
         },
         search_modal: {
             trending_items: ['Outerwear', 'Knitwear', 'Essentials'],
+        },
+        footer: {
+            description: 'Defining the future of original fashion. Premium designs made for those who think different.',
+            shop: 'Shop',
+            support: 'Support',
+            follow: 'Follow Us',
+            rights: 'All rights reserved.',
+            privacy: 'Privacy Policy',
+            terms: 'Terms of Service',
+            shipping: 'Shipping',
+            returns: 'Returns',
+            category_anime: 'Anime',
+            category_gaming: 'Gaming',
+            category_sports: 'Sports',
+            category_lifestyle: 'Lifestyle',
+        },
+        info: {
+            back: 'Back to Home',
+            shipping_title: 'Shipping Information',
+            shipping_body: `<h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Shipping to Panama and the World</h3><p style="margin-bottom:1.5rem;color:#9ca3af">We ship nationally and internationally. All orders are processed within 1-3 business days. Delivery times vary by location, but generally range from 5-10 business days for international orders.</p><h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Order Tracking</h3><p style="margin-bottom:1.5rem;color:#9ca3af">Once your order is shipped, you will receive a tracking number via email so you can track its journey to your door.</p><h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Customs and Taxes</h3><p style="color:#9ca3af">International orders may be subject to customs charges or taxes upon arrival in your country. These charges are the responsibility of the customer.</p>`,
+            returns_title: 'Returns and Exchanges',
+            returns_body: `<h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">30-Day Policy</h3><p style="margin-bottom:1.5rem;color:#9ca3af">We offer a 30-day return policy for all unused items in their original packaging. If 30 days have gone by since your purchase, unfortunately we cannot offer you a refund or exchange.</p><h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">How to Return</h3><p style="margin-bottom:1.5rem;color:#9ca3af">To start a return, contact us at support@visualmind.com with your order number. We will provide you with a return shipping label and instructions.</p><h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Refunds</h3><p style="color:#9ca3af">Once your return is received and inspected, we will notify you by email about the approval or rejection of your refund.</p>`,
+            faq_title: 'Frequently Asked Questions',
+            faq_body: `<div style="margin-bottom:2rem"><h3 style="font-size:1.1rem;font-weight:700;color:white;margin-bottom:0.5rem">How do I find my size?</h3><p style="color:#9ca3af">We have a comprehensive size guide on each product page. If you are unsure, we recommend choosing a size up for a looser fit.</p></div><div style="margin-bottom:2rem"><h3 style="font-size:1.1rem;font-weight:700;color:white;margin-bottom:0.5rem">Can I cancel my order?</h3><p style="color:#9ca3af">You can cancel your order within 24 hours of placing it. Contact us immediately if you need to make changes.</p></div><div><h3 style="font-size:1.1rem;font-weight:700;color:white;margin-bottom:0.5rem">Where are you located?</h3><p style="color:#9ca3af">Visualmind is a Panamanian brand with original designs and worldwide shipping.</p></div>`,
+            not_found: 'Page not found',
+            not_found_body: 'The requested page does not exist.'
         }
     },
     es: {
@@ -480,6 +513,10 @@ export const translations = {
             back: 'Volver a Comprar',
             items_count: 'artículos',
             qty: 'Cant',
+            shipping: 'Envío',
+            taxes: 'Impuestos',
+            total: 'Total',
+            free: 'Gratis',
         },
         checkout: {
             title: 'Pago',
@@ -683,6 +720,7 @@ export const translations = {
             tooltip_product: 'Formato: 800x1000. Ratio 4:5. Estándar para detalle de ropa.',
             tooltip_collection: 'Formato: 1200x800. Ratio 3:2. Balanceado para galerías.',
             // Campañas
+            campaigns: 'Campañas',
             manage_campaigns: 'Gestionar Campañas',
             add_campaign: 'Nueva Campaña',
             label_event_name: 'Nombre del Evento',
@@ -761,6 +799,32 @@ export const translations = {
         },
         search_modal: {
             trending_items: ['Abrigos', 'Tejidos', 'Esenciales'],
+        },
+        footer: {
+            description: 'Definiendo el futuro de la moda original. Diseños premium para quienes piensan diferente.',
+            shop: 'Tienda',
+            support: 'Soporte',
+            follow: 'Síguenos',
+            rights: 'Todos los derechos reservados.',
+            privacy: 'Política de Privacidad',
+            terms: 'Términos de Servicio',
+            shipping: 'Envíos',
+            returns: 'Devoluciones',
+            category_anime: 'Anime',
+            category_gaming: 'Videojuegos',
+            category_sports: 'Deportes',
+            category_lifestyle: 'Estilo de Vida',
+        },
+        info: {
+            back: 'Volver al Inicio',
+            shipping_title: 'Información de Envíos',
+            shipping_body: `<h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Envíos a Panamá y el Mundo</h3><p style="margin-bottom:1.5rem;color:#9ca3af">Realizamos envíos a nivel nacional e internacional. Todos los pedidos se procesan en un plazo de 1 a 3 días hábiles. Los tiempos de entrega varían según la ubicación, pero generalmente oscilan entre 5 y 10 días hábiles para pedidos internacionales.</p><h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Seguimiento de Pedido</h3><p style="margin-bottom:1.5rem;color:#9ca3af">Una vez que tu pedido sea despachado, recibirás un número de seguimiento por correo electrónico para que puedas rastrear su camino hasta tu puerta.</p><h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Aduanas e Impuestos</h3><p style="color:#9ca3af">Los pedidos internacionales pueden estar sujetos a cargos de aduana o impuestos al llegar a tu país. Estos cargos son responsabilidad del cliente.</p>`,
+            returns_title: 'Devoluciones y Cambios',
+            returns_body: `<h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Política de 30 Días</h3><p style="margin-bottom:1.5rem;color:#9ca3af">Ofrecemos una política de devolución de 30 días para todos los artículos sin usar en su empaque original. Si han pasado más de 30 días desde tu compra, lamentablemente no podemos ofrecerte un reembolso o cambio.</p><h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Cómo Devolver</h3><p style="margin-bottom:1.5rem;color:#9ca3af">Para iniciar una devolución, contáctanos en soporte@visualmind.com con tu número de pedido. Te proporcionaremos una etiqueta de envío de devolución e instrucciones.</p><h3 style="font-size:1.2rem;font-weight:700;color:white;margin-bottom:1rem">Reembolsos</h3><p style="color:#9ca3af">Una vez recibida e inspeccionada tu devolución, te notificaremos por correo electrónico sobre la aprobación o rechazo de tu reembolso.</p>`,
+            faq_title: 'Preguntas Frecuentes',
+            faq_body: `<div style="margin-bottom:2rem"><h3 style="font-size:1.1rem;font-weight:700;color:white;margin-bottom:0.5rem">¿Cómo encuentro mi talla?</h3><p style="color:#9ca3af">Tenemos una guía de tallas completa en cada página de producto. Si no estás seguro, recomendamos elegir una talla más grande para un ajuste más holgado.</p></div><div style="margin-bottom:2rem"><h3 style="font-size:1.1rem;font-weight:700;color:white;margin-bottom:0.5rem">¿Puedo cancelar mi pedido?</h3><p style="color:#9ca3af">Puedes cancelar tu pedido dentro de las 24 horas posteriores a realizarlo. Contáctanos de inmediato si necesitas hacer cambios.</p></div><div><h3 style="font-size:1.1rem;font-weight:700;color:white;margin-bottom:0.5rem">¿Dónde están ubicados?</h3><p style="color:#9ca3af">Visualmind es una marca panameña con diseños originales y envíos a todo el mundo.</p></div>`,
+            not_found: 'Página no encontrada',
+            not_found_body: 'La página solicitada no existe.'
         }
     }
 };

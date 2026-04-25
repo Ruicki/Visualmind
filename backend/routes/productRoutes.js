@@ -10,8 +10,8 @@ router.get('/admin', productController.getAdminProducts);
 router.get('/categories', productController.getCategories);
 router.get('/sub-categories', productController.getSubcategories);
 router.get('/:id', productController.getProductById);
-router.post('/', protect, checkRole('admin'), upload.single('image'), productController.createProduct);
-router.put('/:id', protect, checkRole('admin'), upload.single('image'), productController.updateProduct);
+router.post('/', protect, checkRole('admin'), upload.fields([{ name: 'image', maxCount: 1 }, { name: 'hover_image', maxCount: 1 }]), productController.createProduct);
+router.put('/:id', protect, checkRole('admin'), upload.fields([{ name: 'image', maxCount: 1 }, { name: 'hover_image', maxCount: 1 }]), productController.updateProduct);
 router.delete('/:id', protect, checkRole('admin'), productController.deleteProduct);
 
 export default router;

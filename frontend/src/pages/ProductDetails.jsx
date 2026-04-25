@@ -8,6 +8,7 @@ import { Star, ShoppingBag, Heart, ChevronRight, Truck, ShieldCheck, RotateCcw, 
 import ProductCard from '../components/ProductCard';
 import axiosInstance from '../api/axiosConfig';
 import { getProductImage } from '../utils/imageUtils';
+import SEO from '../components/SEO';
 
 /**
  * Página de detalle de producto — responsive con grid adaptable.
@@ -97,6 +98,12 @@ export default function ProductDetails() {
 
   return (
     <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: '100px' }}>
+      <SEO 
+        title={product.title}
+        description={product.description || `Buy ${product.title} at Visualmind Premium Store.`}
+        image={mainImage}
+        url={window.location.href}
+      />
       {/* Breadcrumbs */}
       <div className="container" style={{ marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem', flexWrap: 'wrap' }}>
         <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>{t('nav.home') || 'Inicio'}</Link>

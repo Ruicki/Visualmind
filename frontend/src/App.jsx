@@ -26,6 +26,7 @@ import AdminSettings from './pages/admin/AdminSettings';
 import AdminCampaigns from './pages/admin/AdminCampaigns';
 import AdminSeasons from './pages/admin/AdminSeasons';
 import AdminCollections from './pages/admin/AdminCollections';
+import AdminCategories from './pages/admin/AdminCategories';
 
 // Contextos (LanguageProvider se provee desde main.jsx)
 import { CartProvider } from './context/CartContext';
@@ -142,6 +143,7 @@ function InnerApp() {
               <Route path="campaigns" element={<AdminCampaigns />} />
               <Route path="seasons" element={<AdminSeasons />} />
               <Route path="collections" element={<AdminCollections />} />
+              <Route path="categories" element={<AdminCategories />} />
             </Route>
           </Routes>
           <Cart />

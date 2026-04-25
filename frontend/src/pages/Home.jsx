@@ -127,7 +127,7 @@ export default function Home() {
   const prevSlide = () => setCurrentSlide(prev => (prev - 1 + featuredProducts.length) % featuredProducts.length);
 
   return (
-    <div style={{ background: 'var(--bg-primary)', paddingTop: 'var(--navbar-height)' }}>
+    <div style={{ background: 'var(--bg-primary)' }}>
       <SEO 
         title={t('nav.home') || "Inicio"} 
         description="Visualmind - Tu tienda de moda premium con las últimas tendencias y colecciones exclusivas."
@@ -261,7 +261,7 @@ export default function Home() {
       </section>
 
       {/* === Sección: Drops Estacionales === */}
-      <section className="reveal theme-halloween" style={{ background: 'var(--bg-secondary)', padding: 'clamp(4rem, 8vw, 10rem) 0' }}>
+      <section style={{ background: 'var(--bg-secondary)', padding: 'clamp(4rem, 8vw, 10rem) 0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.8rem', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.6rem 1.2rem', borderRadius: '100px', color: 'var(--primary)', fontWeight: '700', fontSize: '0.85rem', marginBottom: '1.2rem' }}>

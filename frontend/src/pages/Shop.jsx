@@ -142,6 +142,10 @@ export default function Shop() {
 
   return (
     <div style={{ paddingTop: '120px', paddingBottom: '100px', minHeight: '100vh', background: 'var(--bg-primary)', color: 'white' }}>
+      <SEO 
+        title={t('shop.title') || 'Shop'} 
+        description="Explora nuestra colección exclusiva de productos premium."
+      />
       <div className="container">
         
         {/* Campaign Header context */}

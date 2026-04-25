@@ -10,7 +10,18 @@ export default function ProductCard(props) {
     // Normalizar: productos estáticos usan 'image', productos de DB usan 'image_url'
     const { id, title, price, image, image_url, category } = props;
     
+    const [isHovered, setIsHovered] = useState(false);
     const displayImage = getProductImage(image, image_url);
+    
+    // Logic for hover image: use the second color variant's image if it exists, otherwise use a slight zoom or filter
+    const hoverImage = props.hover_image_url 
+        ? getProductImage(null, props.hover_image_url)
+        : (props.colors && props.colors.length > 1 
+            ? props.colors[1].image 
+            : (props.colors && props.colors.length === 1 && props.colors[0].image !== displayImage 
+                ? props.colors[0].image 
+                : displayImage));
+
     const { addToCart } = useCart();
     const { toggleWishlist, isInWishlist } = useWishlist();
     const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
@@ -32,39 +43,61 @@ export default function ProductCard(props) {
 
     return (
         <>
-            <div className={`product-card layout-${layoutPref} reveal ${isVisible ? 'visible' : ''}`} style={{
-                background: 'var(--bg-secondary)',
-                borderRadius: '24px',
-                overflow: 'hidden',
-                border: '1px solid var(--border-light)',
-                transition: 'var(--transition-base)',
-                position: 'relative',
-                gridColumn: layoutPref === 'hero' ? '1 / -1' : 'auto', // Hero spans full width if supported
-            }}>
+            <div 
+                className={`product-card layout-${layoutPref} reveal ${isVisible ? 'visible' : ''}`} 
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+                style={{
+                    background: 'var(--bg-secondary)',
+                    borderRadius: '24px',
+                    overflow: 'hidden',
+                    border: '1px solid var(--border-light)',
+                    transition: 'var(--transition-base)',
+                    position: 'relative',
+                    gridColumn: layoutPref === 'hero' ? '1 / -1' : 'auto', 
+                }}
+            >
                 {/* Image Container */}
-                <div className="slow-zoom product-card-image" style={{
+                <div className="product-card-image" style={{
                     width: '100%',
                     background: '#1e293b',
                     position: 'relative',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    aspectRatio: '4/5'
                 }}>
                     <Link to={`/product/${id}`}>
+                        {/* Base Image */}
                         <img
                             src={displayImage}
                             alt={title}
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.src = 'https://via.placeholder.com/400x500?text=Image+Not+Found';
-                                console.log(`Failed to load image: ${displayImage}`);
-                            }}
                             style={{
                                 width: '100%',
                                 height: '100%',
                                 objectFit: 'cover',
-                                transition: 'transform 0.5s ease'
+                                transition: 'opacity 0.6s ease, transform 0.6s ease',
+                                opacity: isHovered && hoverImage !== displayImage ? 0 : 1,
+                                transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                                position: 'absolute',
+                                inset: 0
                             }}
-                            className="product-img"
                         />
+                        {/* Hover Image */}
+                        {hoverImage !== displayImage && (
+                            <img
+                                src={hoverImage}
+                                alt={`${title} hover`}
+                                style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: 'cover',
+                                    transition: 'opacity 0.6s ease, transform 0.6s ease',
+                                    opacity: isHovered ? 1 : 0,
+                                    transform: isHovered ? 'scale(1.1)' : 'scale(1.05)',
+                                    position: 'absolute',
+                                    inset: 0
+                                }}
+                            />
+                        )}
                     </Link>
 
                     {/* Wishlist Button */}

@@ -18,12 +18,17 @@ export default function Footer() {
   ];
 
   // Links de la tienda
-  const shopLinks = ['Anime', 'Videojuegos', 'Deportes', 'Halloween'];
+  const shopLinks = [
+    { key: 'footer.category_anime', label: t('footer.category_anime'), category: 'Anime' },
+    { key: 'footer.category_gaming', label: t('footer.category_gaming'), category: 'Videojuegos' },
+    { key: 'footer.category_sports', label: t('footer.category_sports'), category: 'Deportes' },
+    { key: 'footer.category_lifestyle', label: t('footer.category_lifestyle'), category: 'LifeStyle' },
+  ];
 
   // Links de soporte
   const supportLinks = [
-    { path: '/info/shipping', label: t('footer.shipping') || 'Envíos' },
-    { path: '/info/returns', label: t('footer.returns') || 'Devoluciones' },
+    { path: '/info/shipping', label: t('footer.shipping') },
+    { path: '/info/returns', label: t('footer.returns') },
     { path: '/info/faq', label: 'FAQ' },
   ];
 
@@ -55,8 +60,8 @@ export default function Footer() {
             <h4 style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '1.5rem' }}>{t('footer.shop')}</h4>
             <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
               {shopLinks.map(item => (
-                <li key={item}>
-                  <Link to="/collections" className="footer-link">{item}</Link>
+                <li key={item.key}>
+                  <Link to={`/shop?category=${item.category}`} className="footer-link">{item.label}</Link>
                 </li>
               ))}
             </ul>
@@ -93,8 +98,8 @@ export default function Footer() {
             © {new Date().getFullYear()} Visualmind. {t('footer.rights')}
           </p>
           <div style={{ display: 'flex', gap: '2rem' }}>
-            <Link to="/" className="footer-link" style={{ fontSize: '0.85rem' }}>{t('footer.privacy')}</Link>
-            <Link to="/" className="footer-link" style={{ fontSize: '0.85rem' }}>{t('footer.terms')}</Link>
+            <Link to="/info/privacy" className="footer-link" style={{ fontSize: '0.85rem' }}>{t('footer.privacy')}</Link>
+            <Link to="/info/terms" className="footer-link" style={{ fontSize: '0.85rem' }}>{t('footer.terms')}</Link>
           </div>
         </div>
       </div>

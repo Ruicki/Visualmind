@@ -95,9 +95,27 @@ export default function Cart() {
 
                     {cartItems.length > 0 && (
                         <div style={{ padding: '2rem', borderTop: '1px solid var(--border-light)', background: 'var(--bg-secondary)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                                <span style={{ color: 'var(--text-secondary)' }}>{t('cart.subtotal')}</span>
-                                <span style={{ fontSize: '1.25rem', fontWeight: '800' }}>${getCartTotal().toFixed(2)}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{t('cart.subtotal')}</span>
+                                    <span>${getCartTotal().toFixed(2)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{t('cart.shipping')}</span>
+                                    <span style={{ color: getCartTotal() > 50 ? '#10b981' : 'white', fontWeight: getCartTotal() > 50 ? '700' : 'normal' }}>
+                                        {getCartTotal() > 50 ? t('cart.free') : '$5.00'}
+                                    </span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{t('cart.taxes')} (7%)</span>
+                                    <span>${(getCartTotal() * 0.07).toFixed(2)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <span style={{ fontWeight: '700' }}>{t('cart.total')}</span>
+                                    <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--primary)' }}>
+                                        ${(getCartTotal() + (getCartTotal() > 50 ? 0 : 5) + (getCartTotal() * 0.07)).toFixed(2)}
+                                    </span>
+                                </div>
                             </div>
                             <button
                                 onClick={handleCheckout}
