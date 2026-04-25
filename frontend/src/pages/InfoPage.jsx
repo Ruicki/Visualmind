@@ -1,3 +1,7 @@
+import { useParams, Link } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
+import { ArrowLeft } from 'lucide-react';
+
 export default function InfoPage() {
     const { page } = useParams();
     const { t } = useLanguage();

@@ -12,16 +12,15 @@ import html2canvas from 'html2canvas';
  */
 export default function OrderSuccess() {
   const location = useLocation();
-  const navigate = useNavigate();
   const receiptRef = useRef();
   
   // Datos del pedido pasados vía state desde Checkout o recuperados
-  const orderData = location.state?.order || {
+  const orderData = React.useMemo(() => location.state?.order || {
     id: Math.floor(Math.random() * 1000000),
     items: [],
     total: 0,
     date: new Date().toLocaleDateString()
-  };
+  }, [location.state]);
 
   useEffect(() => {
     // Lanzar confeti al cargar
