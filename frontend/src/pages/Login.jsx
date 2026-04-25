@@ -36,7 +36,8 @@ export default function Login() {
                 navigate(redirectTo, { replace: true });
             }
         } catch (err) {
-            setError(err.message);
+            const errorMessage = typeof err === 'string' ? err : (err?.message || 'Error desconocido al iniciar sesión');
+            setError(errorMessage);
         } finally {
             setLoading(false);
         }

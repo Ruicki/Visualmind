@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -191,8 +191,13 @@ export default function Checkout() {
     }
   }, [user, loading, navigate]);
 
+  console.log('[Checkout] Render state:', { loading, userEmail: user?.email, cartItemsCount: cartItems.length });
+
   // Mostrar nada mientras se verifica la sesión
-  if (loading || !user) return null;
+  if (loading || !user) {
+    console.log('[Checkout] Returning null because loading is', loading, 'or user is null');
+    return null;
+  }
 
   return (
     <div className="container" style={{ paddingTop: '120px', paddingBottom: '4rem' }}>

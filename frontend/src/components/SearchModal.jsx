@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search as SearchIcon, X, ArrowRight, Loader } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { getProductImage } from '../utils/imageUtils';
 
@@ -117,10 +117,11 @@ export default function SearchModal({ isOpen, onClose }) {
                 {query && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1.5rem' }}>
                         {results.map(product => (
-                            <div
+                            <Link
                                 key={product.id}
-                                onClick={() => handleSelectProduct(product)}
-                                style={{ cursor: 'pointer', textDecoration: 'none', color: 'white' }}
+                                to={`/product/${product.id}`}
+                                onClick={onClose}
+                                style={{ cursor: 'pointer', textDecoration: 'none', color: 'white', display: 'block' }}
                             >
                                 <div style={{ height: '220px', borderRadius: '16px', overflow: 'hidden', marginBottom: '0.8rem', background: '#111' }}>
                                     <img
@@ -136,7 +137,7 @@ export default function SearchModal({ isOpen, onClose }) {
                                 <h4 style={{ fontSize: '0.95rem', marginBottom: '0.2rem', fontWeight: '700' }}>{product.title}</h4>
                                 <p style={{ color: 'var(--primary)', fontSize: '0.85rem', fontWeight: '800' }}>${product.price}</p>
                                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>{product.category}</p>
-                            </div>
+                            </Link>
                         ))}
 
                         {!loading && results.length === 0 && (

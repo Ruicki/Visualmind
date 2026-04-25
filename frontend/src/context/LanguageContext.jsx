@@ -290,8 +290,7 @@ export const translations = {
             label_accent_color: 'Accent Color',
             label_countdown: 'Countdown Date',
             label_template: 'Design Template',
-            // Orders
-            orders: 'Orders',
+            // Orders Filter
             filter_pending: 'Pending',
             filter_shipped: 'Shipped',
             filter_delivered: 'Delivered',
@@ -346,9 +345,13 @@ export const translations = {
             terms: 'Terms of Service',
             rights: 'All rights reserved. Built for the future.',
             desc: 'Visualmind is a premium mindset. We blend high-end design with functional aesthetics to create timeless garments.',
-            description: 'Visualmind is a premium mindset. We blend high-end design with functional aesthetics to create timeless garments.',
+            description: 'Defining the future of original fashion. Premium designs made for those who think different.',
             shipping: 'Shipping Info',
             returns: 'Returns & Exchanges',
+            category_anime: 'Anime',
+            category_gaming: 'Gaming',
+            category_sports: 'Sports',
+            category_lifestyle: 'Lifestyle',
             links: {
                 shipping: 'Shipping Info',
                 returns: 'Returns & Exchanges',
@@ -401,21 +404,7 @@ export const translations = {
         search_modal: {
             trending_items: ['Outerwear', 'Knitwear', 'Essentials'],
         },
-        footer: {
-            description: 'Defining the future of original fashion. Premium designs made for those who think different.',
-            shop: 'Shop',
-            support: 'Support',
-            follow: 'Follow Us',
-            rights: 'All rights reserved.',
-            privacy: 'Privacy Policy',
-            terms: 'Terms of Service',
-            shipping: 'Shipping',
-            returns: 'Returns',
-            category_anime: 'Anime',
-            category_gaming: 'Gaming',
-            category_sports: 'Sports',
-            category_lifestyle: 'Lifestyle',
-        },
+
         info: {
             back: 'Back to Home',
             shipping_title: 'Shipping Information',
@@ -572,9 +561,13 @@ export const translations = {
             terms: 'Términos de Servicio',
             rights: 'Todos los derechos reservados. Construido para el futuro.',
             desc: 'Visualmind es una mentalidad premium. Fusionamos diseño de alta gama con estética funcional para crear prendas atemporales.',
-            description: 'Visualmind es una mentalidad premium. Fusionamos diseño de alta gama con estética funcional para crear prendas atemporales.',
+            description: 'Definiendo el futuro de la moda original. Diseños premium para quienes piensan diferente.',
             shipping: 'Envíos',
             returns: 'Devoluciones',
+            category_anime: 'Anime',
+            category_gaming: 'Videojuegos',
+            category_sports: 'Deportes',
+            category_lifestyle: 'Estilo de Vida',
             links: {
                 shipping: 'Información de Envíos',
                 returns: 'Devoluciones y Cambios',
@@ -751,11 +744,11 @@ export const translations = {
             label_accent_color: 'Color de Acento',
             label_countdown: 'Fecha de Lanzamiento',
             label_template: 'Plantilla de Diseño',
-            // Orders
-            filter_pending: 'Pendiente',
-            filter_shipped: 'Enviado',
-            filter_delivered: 'Entregado',
-            // Settings
+            // Filtros de Pedidos
+            filter_pending: 'Pendientes',
+            filter_shipped: 'Enviados',
+            filter_delivered: 'Entregados',
+            // Ajustes
             settings_title: 'Ajustes y Permisos',
             admin_mgmt: 'Gestión de Administradores',
             admin_desc: 'Otorgar acceso de administrador a otros usuarios.',
@@ -763,7 +756,7 @@ export const translations = {
             promote_desc: 'Ingresa el correo de un usuario registrado para darle acceso total.',
             promote_warn: 'Advertencia: Esto otorga control total.',
             promote_btn: 'Promover',
-            success_promote: '¡Éxito! El usuario ahora es Admin.',
+            success_promote: '¡Éxito! El usuario ahora es Administrador.',
             user_not_found: 'Usuario no encontrado.',
             your_profile: 'Tu Perfil',
             role_label: 'Rol',
@@ -824,21 +817,7 @@ export const translations = {
         search_modal: {
             trending_items: ['Abrigos', 'Tejidos', 'Esenciales'],
         },
-        footer: {
-            description: 'Definiendo el futuro de la moda original. Diseños premium para quienes piensan diferente.',
-            shop: 'Tienda',
-            support: 'Soporte',
-            follow: 'Síguenos',
-            rights: 'Todos los derechos reservados.',
-            privacy: 'Política de Privacidad',
-            terms: 'Términos de Servicio',
-            shipping: 'Envíos',
-            returns: 'Devoluciones',
-            category_anime: 'Anime',
-            category_gaming: 'Videojuegos',
-            category_sports: 'Deportes',
-            category_lifestyle: 'Estilo de Vida',
-        },
+
         info: {
             back: 'Volver al Inicio',
             shipping_title: 'Información de Envíos',

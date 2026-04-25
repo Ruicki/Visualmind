@@ -38,14 +38,14 @@ const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10,
   message: { message: 'Demasiados intentos. Intenta de nuevo en 15 minutos.' },
-  skip: () => process.env.NODE_ENV === 'development'
+  skip: () => process.env.NODE_ENV !== 'production'
 });
 
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 60 minutes
   max: 5,
   message: { message: 'Demasiados registros desde esta IP.' },
-  skip: () => process.env.NODE_ENV === 'development'
+  skip: () => process.env.NODE_ENV !== 'production'
 });
 
 // Middleware
@@ -53,8 +53,9 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests without origin (e.g. Postman in dev) only in development
-    if (!origin && process.env.NODE_ENV !== 'production') return callback(null, true);
+    // En desarrollo permitimos todo para evitar bloqueos por localhost vs 127.0.0.1 o puertos dinámicos
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
     callback(new Error('Not allowed by CORS'));
   },

@@ -27,26 +27,34 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         const checkAuth = () => {
+            console.log('[AuthContext] Initializing checkAuth...');
             const token = localStorage.getItem('token');
             const storedUser = localStorage.getItem('user');
 
             if (token && storedUser) {
+                console.log('[AuthContext] Found token and storedUser in localStorage');
                 // Validar expiración antes de confiar en el token
                 if (!isTokenValid(token)) {
-                    console.warn('[AuthContext] Token expirado — cerrando sesión.');
+                    console.warn('[AuthContext] Token expirado o inválido — cerrando sesión.');
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                     setLoading(false);
                     return;
                 }
                 try {
-                    setUser(JSON.parse(storedUser));
-                } catch {
+                    const parsedUser = JSON.parse(storedUser);
+                    console.log('[AuthContext] Parsed user from storage:', parsedUser);
+                    setUser(parsedUser);
+                } catch (err) {
+                    console.error('[AuthContext] Error parsing stored user:', err);
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                 }
+            } else {
+                console.log('[AuthContext] No session found in localStorage');
             }
             setLoading(false);
+            console.log('[AuthContext] checkAuth complete, loading set to false');
         };
 
         checkAuth();

@@ -128,3 +128,11 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+scratch/
+*.cjs
+backend/check_users.js
+backend/create_admin_final.js
+backend/migrate_phase_6.js
+backend/src/check_admin.js
+backend/src/find_duplicates.js

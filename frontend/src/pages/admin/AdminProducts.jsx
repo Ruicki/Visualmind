@@ -71,6 +71,7 @@ export default function AdminProducts() {
     const [subCategories, setSubCategories] = useState([]);
     const [customCategory, setCustomCategory] = useState(false);
     const [uploadError, setUploadError] = useState(null);
+    const [skuError, setSkuError] = useState(null);
     const [dragOver, setDragOver] = useState(false);
     const [hoverDragOver, setHoverDragOver] = useState(false);
 
@@ -172,6 +173,7 @@ export default function AdminProducts() {
         setImageMode(product.image_url && !product.image_url.startsWith('/uploads/') ? 'url' : 'upload');
         setHoverImageMode(product.hover_image_url && !product.hover_image_url.startsWith('/uploads/') ? 'url' : 'upload');
         setUploadError(null);
+        setSkuError(null);
         setActiveTab('basic');
         setIsModalOpen(true);
     };
@@ -204,6 +206,7 @@ export default function AdminProducts() {
         setImageMode('upload');
         setHoverImageMode('upload');
         setUploadError(null);
+        setSkuError(null);
         setActiveTab('basic');
         setIsModalOpen(true);
     };
@@ -247,7 +250,12 @@ export default function AdminProducts() {
             fetchProducts();
         } catch (error) {
             console.error("Error al guardar:", error);
-            alert((t('common.error') || "Error") + ': ' + (error.response?.data?.error || error.message));
+            if (error.response?.status === 409) {
+                setSkuError(error.response.data.error || 'El SKU ya existe');
+                setActiveTab('basic');
+            } else {
+                alert((t('common.error') || "Error") + ': ' + (error.response?.data?.error || error.message));
+            }
         } finally {
             setIsSaving(false);
         }
@@ -491,18 +499,19 @@ export default function AdminProducts() {
                                 <form id="product-form" onSubmit={handleSave}>
                                     {activeTab === 'basic' && (
                                         <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                                                 <div className="form-group">
                                                     <label className="label-text">Título</label>
                                                     <input required type="text" value={formData.title} onChange={e => setFormData({ ...formData, title: e.target.value })} className="input-field" />
                                                 </div>
                                                 <div className="form-group">
                                                     <label className="label-text">SKU General</label>
-                                                    <input type="text" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} className="input-field" placeholder="P-001" />
+                                                    <input type="text" value={formData.sku} onChange={e => setFormData({ ...formData, sku: e.target.value })} className="input-field" placeholder="P-001" style={skuError ? { borderColor: '#ef4444' } : {}} />
+                                                    {skuError && <p style={{ color: '#ef4444', fontSize: '0.75rem', marginTop: '0.5rem' }}>{skuError}</p>}
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                                                 <div className="form-group">
                                                     <label className="label-text">Categoría</label>
                                                     <select
@@ -545,7 +554,7 @@ export default function AdminProducts() {
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                                                 <div className="form-group">
                                                     <label className="label-text">Precio Base ($)</label>
                                                     <input required type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="input-field" />
@@ -708,7 +717,7 @@ export default function AdminProducts() {
 
                                     {activeTab === 'marketing' && (
                                         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                                                 <div 
                                                     onClick={() => setFormData({ ...formData, featured: !formData.featured })}
                                                     style={{ 
@@ -755,7 +764,7 @@ export default function AdminProducts() {
                                                 <input type="date" value={formData.launch_date} onChange={e => setFormData({ ...formData, launch_date: e.target.value })} className="input-field" />
                                             </div>
 
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                                                 <div className="form-group">
                                                     <label className="label-text">Estado del Ciclo de Vida</label>
                                                     <select 
@@ -781,7 +790,7 @@ export default function AdminProducts() {
                                                 </div>
                                             </div>
 
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                                                 <div className="form-group">
                                                     <label className="label-text">Temporada</label>
                                                     <select 
