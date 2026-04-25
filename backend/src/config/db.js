@@ -2,7 +2,7 @@ import pkg from 'pg';
 const { Pool } = pkg;
 import dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({ override: false }); // No sobreescribir variables ya definidas en el entorno (Railway)
 
 // Configuración de la conexión a PostgreSQL
 // Soporta tanto una URL completa (estándar en la nube) como parámetros individuales (local)

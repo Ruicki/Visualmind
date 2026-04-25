@@ -14,7 +14,7 @@ import collectionRoutes from '../routes/collectionRoutes.js';
 import { expireSeasons } from '../services/seasonService.js';
 
 
-dotenv.config();
+dotenv.config({ override: false }); // No sobreescribir variables ya definidas en el entorno (Railway)
 
 // Validación de variables de entorno críticas
 const missingVars = [];
