@@ -49,7 +49,7 @@
 
 ---
 
-## ✅ Bloque 5: Verificación Final
+- [x] Sincronización final con GitHub (main branch).
 - [ ] Auditoría visual completa con `browser subagent`.
 - [ ] Prueba de estrés de subida de imágenes optimizadas.
 - [ ] Sincronización final con Vercel.
