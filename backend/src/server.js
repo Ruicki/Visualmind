@@ -109,26 +109,25 @@ app.get('/api/health', async (req, res) => {
 
 
 
-// Endpoint temporal para crear admin (solo en desarrollo/producción sin admin)
+// Endpoint temporal para crear/resetear admin
 app.get('/api/init-admin', async (req, res) => {
   try {
     const adminEmail = 'visualmind@admin.com';
     const adminPassword = 'Visualmind@14';
     
-    // Verificar si ya existe
-    const existing = await pool.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
-    if (existing.rows.length > 0) {
-      return res.json({ message: 'El admin ya existe', email: adminEmail });
-    }
-    
-    // Crear admin
+    // Siempre recrear el admin con la contraseña correcta
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    await pool.query(
-      'INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4)',
-      [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']
-    );
     
-    res.json({ message: 'Admin creado correctamente', email: adminEmail, password: adminPassword });
+    // Upsert: actualizar si existe, insertar si no
+    await pool.query(`
+      INSERT INTO users (email, password_hash, full_name, role) 
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (email) DO UPDATE SET 
+        password_hash = EXCLUDED.password_hash,
+        role = EXCLUDED.role
+    `, [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']);
+    
+    res.json({ message: 'Admin creado/actualizado', email: adminEmail, password: adminPassword });
   } catch (error) {
     console.error('[InitAdmin] Error:', error);
     res.status(500).json({ error: error.message });
