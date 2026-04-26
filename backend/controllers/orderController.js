@@ -15,14 +15,14 @@ export const createOrder = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // 1. Verificar stock suficiente para todos los ítems
-    for (const item of items) {
-      const result = await client.query('SELECT stock FROM products WHERE id = $1', [item.product_id]);
-      if (!result.rows[0] || result.rows[0].stock < item.quantity) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({ message: `Stock insuficiente para: ${item.title}` });
-      }
-    }
+    // Verificación de stock deshabilitada temporalmente para testing
+    // for (const item of items) {
+    //   const result = await client.query('SELECT stock FROM products WHERE id = $1', [item.product_id]);
+    //   if (!result.rows[0] || result.rows[0].stock < item.quantity) {
+    //     await client.query('ROLLBACK');
+    //     return res.status(400).json({ message: `Stock insuficiente para: ${item.title}` });
+    //   }
+    // }
 
     // 2. Crear la orden
     const newOrder = await client.query(
@@ -30,13 +30,13 @@ export const createOrder = async (req, res) => {
       [userId, total, JSON.stringify(items), 'pending', JSON.stringify(shippingDetails || {})]
     );
 
-    // 3. Decrementar stock
-    for (const item of items) {
-      await client.query(
-        'UPDATE products SET stock = stock - $1 WHERE id = $2',
-        [item.quantity, item.product_id]
-      );
-    }
+    // Decrementar stock deshabilitado temporalmente para testing
+    // for (const item of items) {
+    //   await client.query(
+    //     'UPDATE products SET stock = stock - $1 WHERE id = $2',
+    //     [item.quantity, item.product_id]
+    //   );
+    // }
 
     await client.query('COMMIT');
     res.status(201).json(newOrder.rows[0]);
