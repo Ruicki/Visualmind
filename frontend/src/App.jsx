@@ -32,6 +32,7 @@ import AdminCategories from './pages/admin/AdminCategories';
 import { CartProvider } from './context/CartContext';
 import { WishlistProvider } from './context/WishlistContext';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 
 // Componentes globales
 import AdminRoute from './components/AdminRoute';
@@ -102,9 +103,10 @@ function InnerApp() {
   const esRutaAdmin = location.pathname.startsWith('/admin');
 
   return (
-    <AuthProvider>
-      <WishlistProvider>
-        <CartProvider>
+    <ThemeProvider>
+      <AuthProvider>
+        <WishlistProvider>
+          <CartProvider>
           <SEO 
             title="Home" 
             description="Visualmind - Tu tienda de moda premium con las últimas tendencias."
@@ -151,6 +153,7 @@ function InnerApp() {
         </CartProvider>
       </WishlistProvider>
     </AuthProvider>
+    </ThemeProvider>
   );
 }
 

@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import SearchModal from './SearchModal';
+import ThemeToggle from './ThemeToggle';
 
 /**
  * Navbar principal con menú hamburguesa para móvil.
@@ -84,7 +85,7 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Acciones: búsqueda, idioma, usuario, carrito, hamburguesa */}
+          {/* Acciones: búsqueda, idioma, tema, usuario, carrito, hamburguesa */}
           <div className="navbar-actions">
             {/* Búsqueda */}
             <button
@@ -94,6 +95,9 @@ export default function Navbar() {
             >
               <Search size={20} />
             </button>
+
+            {/* Toggle de tema */}
+            <ThemeToggle />
 
             {/* Cambio de idioma */}
             <button
