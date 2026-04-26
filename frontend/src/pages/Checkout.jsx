@@ -4,21 +4,13 @@ import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { CreditCard, Loader, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { loadStripe } from '@stripe/stripe-js';
-import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import api from '../api/axiosConfig';
 import { getProductImage } from '../utils/imageUtils';
 
-// Inicializar Stripe
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || 'pk_test_TYooMQauvdEDq54NiTphI7jx');
-
 /**
- * Formulario de pago con Stripe Elements.
- * Gestiona el pago y crea la orden en el backend local.
+ * Formulario de checkout simplificado (sin Stripe).
  */
 const CheckoutForm = () => {
-  const stripe = useStripe();
-  const elements = useElements();
   const { cartItems, clearCart, getCartTotal } = useCart();
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -39,7 +31,6 @@ const CheckoutForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
 
     if (!user) {
       setError(t('checkout.login_required') || "Inicia sesión para completar tu compra.");
@@ -50,17 +41,7 @@ const CheckoutForm = () => {
     setError(null);
 
     try {
-      // 1. Procesar pago con Stripe (Simulado o real dependiendo de la clave)
-      const cardElement = elements.getElement(CardElement);
-      const { error: stripeError, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-      });
-
-      if (stripeError) throw new Error(stripeError.message);
-      console.log('[PaymentMethod Success]', paymentMethod);
-
-      // 2. Crear orden en Backend Local
+      // Crear orden en Backend (sin Stripe por ahora)
       const orderResponse = await api.post('/orders', {
         items: cartItems.map(item => ({
           product_id: item.id,
@@ -71,11 +52,10 @@ const CheckoutForm = () => {
           color: item.selectedColor
         })),
         total: getCartTotal(),
-        shippingDetails: shippingInfo,
-        paymentMethodId: paymentMethod.id
+        shippingDetails: shippingInfo
       });
 
-      // 3. Limpiar carrito y redirigir
+      // Limpiar carrito y redirigir
       clearCart();
       navigate('/order-success', { 
         state: { 
@@ -140,13 +120,33 @@ const CheckoutForm = () => {
           <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
             <Lock size={14} /> {t('common.secure_payment') || 'Pago seguro'}
           </div>
-          <div style={{ padding: '1rem', background: 'white', borderRadius: '8px' }}>
-            <CardElement options={{
-              style: {
-                base: { fontSize: '16px', color: '#424770', '::placeholder': { color: '#aab7c4' } },
-                invalid: { color: '#9e2146' },
-              },
-            }} />
+          {/* Simulación de tarjeta de crédito */}
+          <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              {t('checkout.payment_info') || 'Información de pago (simulado)'}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              <input 
+                type="text" 
+                placeholder="Número de tarjeta" 
+                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                disabled
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                <input 
+                  type="text" 
+                  placeholder="MM/AA" 
+                  style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                  disabled
+                />
+                <input 
+                  type="text" 
+                  placeholder="CVV" 
+                  style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
+                  disabled
+                />
+              </div>
+            </div>
           </div>
           {error && <div style={{ color: '#ff4d4d', marginTop: '1rem', fontSize: '0.85rem' }}>{error}</div>}
         </div>
@@ -155,12 +155,12 @@ const CheckoutForm = () => {
       {/* Botón de enviar */}
       <button
         type="submit"
-        disabled={!stripe || loading}
+        disabled={loading}
         className="btn-primary"
-        style={{ width: '100%', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: loading ? 0.7 : 1, marginTop: '1rem', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+        style={{ width: '100%', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: loading ? 0.7 : 1, marginTop: '1rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
       >
         {loading ? <Loader className="spin" /> : <CreditCard size={20} />}
-        {loading ? (t('common.processing') || 'Procesando...') : (t('checkout.btn_complete') || 'Pagar Ahora')}
+        {loading ? (t('common.processing') || 'Procesando...') : (t('checkout.btn_complete') || 'Completar Pedido')}
       </button>
 
       <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -204,9 +204,7 @@ export default function Checkout() {
       <h1 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.5rem)', marginBottom: '2.5rem' }}>{t('checkout.title')}</h1>
 
       <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '3rem' }}>
-        <Elements stripe={stripePromise}>
-          <CheckoutForm />
-        </Elements>
+        <CheckoutForm />
 
         {/* Resumen del pedido */}
         <div style={{ background: 'var(--bg-secondary)', padding: '2rem', borderRadius: '20px', height: 'fit-content', border: '1px solid var(--border-light)' }}>
