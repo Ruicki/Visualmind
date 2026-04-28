@@ -8,26 +8,40 @@ import {
 import { useLanguage } from '../../context/LanguageContext';
 import { getProductImage, compressImage } from '../../utils/imageUtils';
 
+/**
+ * @component AdminCollections
+ * @description Gestión de colecciones de productos.
+ * Permite agrupar productos bajo un concepto visual (ej: "Neon Genesis")
+ * y subir imágenes de portada para cada colección.
+ */
 export default function AdminCollections() {
     const { t } = useLanguage();
-    const [collections, setCollections] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // --- Estados de Datos ---
+    const [collections, setCollections] = useState([]); // Lista de colecciones registradas
+    const [loading, setLoading] = useState(true); // Estado de carga inicial
+    
+    // --- Control de UI y Guardado ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    
+    // --- Datos del Formulario ---
     const [formData, setFormData] = useState({
         id: null,
-        name: '',
-        slug: '',
-        description: '',
-        image_url: '',
-        is_active: true,
-        image_file: null
+        name: '', // Nombre de la colección (ej: "Cyberpunk")
+        slug: '', // URL amigable generada automáticamente
+        description: '', // Texto informativo
+        image_url: '', // URL de la imagen de portada
+        is_active: true, // Visibilidad en el frontend
+        image_file: null // Archivo binario para carga
     });
 
     useEffect(() => {
         fetchCollections();
     }, []);
 
+    /**
+     * Recupera la lista de colecciones desde el servidor.
+     */
     const fetchCollections = async () => {
         try {
             setLoading(true);
@@ -85,13 +99,9 @@ export default function AdminCollections() {
             });
 
             if (formData.id) {
-                await api.put(`/collections/${formData.id}`, collectionFormData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                await api.put(`/collections/${formData.id}`, collectionFormData);
             } else {
-                await api.post('/collections', collectionFormData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                await api.post('/collections', collectionFormData);
             }
             setIsModalOpen(false);
             fetchCollections();

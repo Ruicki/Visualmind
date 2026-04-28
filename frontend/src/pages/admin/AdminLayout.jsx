@@ -1,16 +1,30 @@
 import React from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
+import { Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { LayoutDashboard, Package, ShoppingCart, LogOut, Settings, Sparkles, Calendar, Layers, Tag } from 'lucide-react';
 
+/**
+ * @component AdminLayout
+ * @description Layout maestro para el panel de administración.
+ * Proporciona el marco estructural que incluye la barra lateral de navegación
+ * y el contenedor principal para las vistas administrativas.
+ * Implementa control de acceso básico mediante verificación de rol.
+ */
 export default function AdminLayout() {
-    const { user, signOut } = useAuth();
+    const { user, loading, signOut } = useAuth();
     const { t } = useLanguage();
     const navigate = useNavigate();
     const location = useLocation();
 
-    // AdminRoute ya garantiza que user existe y tiene role='admin'
+    /**
+     * Seguridad: Redirige al login si el usuario no está autenticado 
+     * o si no tiene el rol de administrador.
+     */
+    if (!loading && (!user || user.role !== 'admin')) {
+        return <Navigate to="/login" state={{ from: location }} replace />;
+    }
+
     // Solo mostramos loading si user aún no está disponible
     if (!user) return (
         <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
@@ -21,6 +35,10 @@ export default function AdminLayout() {
         </div>
     );
 
+    /**
+     * Configuración de los items de navegación lateral.
+     * Cada objeto define la ruta, el icono de Lucide y la etiqueta traducida.
+     */
     const navItems = [
         { path: '/admin', icon: <LayoutDashboard size={20} />, label: t('admin.dashboard') || 'Dashboard' },
         { path: '/admin/products', icon: <Package size={20} />, label: t('admin.products') || 'Productos' },

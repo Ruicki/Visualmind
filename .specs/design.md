@@ -25,6 +25,7 @@
 | **Notificaciones** | Botón Flotante WhatsApp | Solución práctica y sin costo extra (enlaza a WA Business con mensaje predefinido). |
 | **Optimización Imágenes** | Browser-side compression (lazysizes/native) | Compresión antes de subir al servidor para ahorrar ancho de banda y mejorar carga. |
 | **Ayuda Visual Admin** | Tooltips de proporción (SVG/Schematics) | Guía visual de tamaños y recortes para el administrador durante la carga. |
+| **Documentación** | JSDoc Integral | Estándar obligatorio para todos los componentes y servicios, facilitando el mantenimiento y la escalabilidad. |
 
 ---
 

@@ -1,5 +1,14 @@
 import pool from '../src/config/db.js';
 
+/**
+ * @function getAllCampaigns
+ * @description Obtiene todas las campañas registradas en la base de datos.
+ * Las campañas se devuelven ordenadas cronológicamente por fecha de inicio (más recientes primero).
+ * 
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON con el array de todas las campañas.
+ */
 export const getAllCampaigns = async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM campaigns ORDER BY start_date DESC');
@@ -10,6 +19,17 @@ export const getAllCampaigns = async (req, res) => {
     }
 };
 
+/**
+ * @function getActiveCampaign
+ * @description Recupera la campaña actualmente activa para mostrarla en el frontend (Home/Header).
+ * Una campaña se considera activa si:
+ * 1. is_active es true.
+ * 2. La fecha actual está dentro del rango [start_date, end_date] (o son nulas).
+ * 
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON con el objeto de la campaña activa o null.
+ */
 export const getActiveCampaign = async (req, res) => {
     try {
         const result = await pool.query(
@@ -22,12 +42,26 @@ export const getActiveCampaign = async (req, res) => {
     }
 };
 
+/**
+ * @function createCampaign
+ * @description Crea una nueva campaña publicitaria/estacional.
+ * Maneja la subida de imagen de banner mediante Multer si se proporciona un archivo.
+ * 
+ * @param {Object} req - Express request object (contiene req.body y opcionalmente req.file).
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON con la campaña creada.
+ */
 export const createCampaign = async (req, res) => {
+    if (!req.body) {
+        return res.status(400).json({ error: 'No se recibieron datos en la petición.' });
+    }
+
     const { 
         name, slug, description, banner_url, accent_color, 
         template_type, start_date, end_date, is_active, countdown_enabled 
     } = req.body;
     
+    // Prioriza el archivo subido sobre la URL de banner manual
     const bannerPath = req.file ? `uploads/${req.file.filename}` : banner_url;
     
     try {
@@ -45,8 +79,22 @@ export const createCampaign = async (req, res) => {
     }
 };
 
+/**
+ * @function updateCampaign
+ * @description Actualiza los datos de una campaña existente por su ID.
+ * Permite actualizar el banner (archivo nuevo) y el estado de activación.
+ * 
+ * @param {Object} req - Express request object (req.params.id).
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON con la campaña actualizada.
+ */
 export const updateCampaign = async (req, res) => {
     const { id } = req.params;
+
+    if (!req.body) {
+        return res.status(400).json({ error: 'No se recibieron datos para actualizar.' });
+    }
+
     const { 
         name, slug, description, banner_url, accent_color, 
         template_type, start_date, end_date, is_active, countdown_enabled 
@@ -71,6 +119,15 @@ export const updateCampaign = async (req, res) => {
     }
 };
 
+/**
+ * @function deleteCampaign
+ * @description Elimina físicamente una campaña de la base de datos.
+ * Nota: No elimina automáticamente el archivo del banner del servidor (pendiente de optimización).
+ * 
+ * @param {Object} req - Express request object (req.params.id).
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} Mensaje de confirmación.
+ */
 export const deleteCampaign = async (req, res) => {
     const { id } = req.params;
     try {

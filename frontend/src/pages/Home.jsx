@@ -1,19 +1,39 @@
+/**
+ * @file Home.jsx
+ * @description Página de inicio de la aplicación.
+ * Orquesta la visualización de campañas activas, productos destacados, colecciones estacionales
+ * y secciones editoriales mediante la integración de múltiples endpoints.
+ */
+
 import React, { useState, useEffect } from 'react';
 import Hero from '../components/Hero';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import SEO from '../components/SEO';
 import axiosInstance from '../api/axiosConfig';
-import { PRODUCTS as STATIC_PRODUCTS } from '../data/products';
 import { ChevronRight, ChevronLeft, ArrowRight, Clock, Zap } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import { isProductVisible } from '../utils/productUtils';
 
 /**
- * Página principal — carousel de productos destacados,
- * sección estacional, lookbook editorial y newsletter.
+ * Componente Home
+ * @component
+ * @description Punto de entrada visual principal. Maneja la lógica de:
+ * 1. Banners dinámicos (Campañas vs Temporadas).
+ * 2. Carousel de productos destacados (Priority > 5).
+ * 3. Countdown timer para ofertas limitadas.
+ * 4. Integración de SEO dinámico.
+ */
+/**
+ * @component Home
+ * @description Página de inicio de Visualmind.
+ * Orquestador principal que renderiza el Hero estacional, secciones de 
+ * productos destacados, categorías principales y contenido de campaña.
  */
 export default function Home() {
   const { t } = useLanguage();
+  const [isVisible, setIsVisible] = useState(false);
+  const [featuredCampaign, setFeaturedCampaign] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [products, setProducts] = useState([]);
   const [collections, setCollections] = useState([]);
@@ -22,7 +42,11 @@ export default function Home() {
   const [featuredCollection, setFeaturedCollection] = useState(null);
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // Obtener productos al montar
+  /**
+   * Efecto de Carga de Datos Inicial
+   * @description Realiza peticiones concurrentes para minimizar el tiempo de carga.
+   * Prioriza temporadas sobre campañas para el banner dinámico.
+   */
   useEffect(() => {
     const fetchHomeData = async () => {
       try {
@@ -36,20 +60,18 @@ export default function Home() {
         
         if (productsRes.data && productsRes.data.length > 0) {
           setProducts(productsRes.data);
-        } else {
-          setProducts(STATIC_PRODUCTS);
         }
 
         if (collectionsRes.data && collectionsRes.data.length > 0) {
           setCollections(collectionsRes.data);
-          // Tomar la primera colección activa como "destacada" para la editorial
+          // Selección de colección destacada para la sección editorial
           const activeCollections = collectionsRes.data.filter(c => c.is_active);
           if (activeCollections.length > 0) {
             setFeaturedCollection(activeCollections[0]);
           }
         }
 
-        // Si hay una temporada activa, le damos prioridad sobre la campaña, o usamos campaign como fallback
+        // Lógica de prioridad de Banner: Temporada > Campaña
         if (seasonRes.data) {
            setActiveCampaign({
              id: seasonRes.data.id,
@@ -64,7 +86,6 @@ export default function Home() {
         }
       } catch (err) {
         console.warn("Error fetching home data:", err);
-        setProducts(STATIC_PRODUCTS);
       } finally {
         setLoading(false);
       }
@@ -72,7 +93,10 @@ export default function Home() {
     fetchHomeData();
   }, []);
 
-  // Countdown logic
+  /**
+   * Lógica del Contador (Countdown)
+   * @description Actualiza cada segundo el tiempo restante de la campaña activa.
+   */
   useEffect(() => {
     if (!activeCampaign?.end_date) return;
 
@@ -97,24 +121,27 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [activeCampaign]);
 
-  // Productos para las distintas secciones
-  const featuredProducts = products.filter(p => p.priority > 5).slice(0, 5);
-  if (featuredProducts.length === 0) featuredProducts.push(...products.slice(0, 5));
+  // Segmentación de productos para las distintas secciones de la home
+  const availableProducts = products.filter(isProductVisible);
 
+  // Carousel: Productos con prioridad > 5
+  const featuredProducts = availableProducts.filter(p => p.priority > 5).slice(0, 5);
+  if (featuredProducts.length === 0) featuredProducts.push(...availableProducts.slice(0, 5));
+
+  // Sección Estacional: Productos vinculados a la campaña/temporada activa
   const seasonalProducts = React.useMemo(() => {
     if (activeCampaign) {
       if (activeCampaign.isSeason) {
-        return products.filter(p => p.season_id === activeCampaign.id).slice(0, 4);
+        return availableProducts.filter(p => p.season_id === activeCampaign.id).slice(0, 4);
       }
-      return products.filter(p => p.campaign_id === activeCampaign.id).slice(0, 4);
+      return availableProducts.filter(p => p.campaign_id === activeCampaign.id).slice(0, 4);
     }
-    // Fallback if no campaign/season is active
-    return products.filter(
-      p => p.category === 'halloween' || p.category === 'fiestas_patrias'
-    ).slice(0, 4);
+    return availableProducts.slice(0, 4);
   }, [products, activeCampaign]);
 
-  // Auto-slide del carousel
+  /**
+   * Auto-slide del carousel de destacados
+   */
   useEffect(() => {
     if (featuredProducts.length === 0) return;
     const timer = setInterval(() => {
@@ -133,7 +160,7 @@ export default function Home() {
         description="Visualmind - Tu tienda de moda premium con las últimas tendencias y colecciones exclusivas."
       />
       
-      {/* Dynamic Campaign Banner (Conditional) */}
+      {/* Banner de Campaña Dinámico */}
       {activeCampaign && (
         <section 
           style={{ 
@@ -179,7 +206,7 @@ export default function Home() {
 
       <Hero activeCampaign={activeCampaign} />
 
-      {/* === Sección: Carousel de Productos Destacados === */}
+      {/* Sección: Carousel de Productos Destacados */}
       <section className="container" style={{ padding: '6rem 0' }}>
         <div className="carousel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
           <div>
@@ -200,7 +227,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Carousel de imágenes hero */}
         <div className="carousel-wrapper" style={{ position: 'relative', height: '500px', overflow: 'hidden', borderRadius: '32px' }}>
           {featuredProducts.map((product, index) => (
             <div
@@ -233,14 +259,13 @@ export default function Home() {
                   </Link>
                   <div>
                     <span style={{ fontSize: '1.3rem', fontWeight: '900' }}>${product.price}</span>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: '700' }}>{t('home_extended.limited_stock')}</span>
+                    <span style={{ block: 'block', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: '700' }}>{t('home_extended.limited_stock')}</span>
                   </div>
                 </div>
               </div>
             </div>
           ))}
 
-          {/* Indicadores del carousel */}
           <div className="carousel-dots" style={{ position: 'absolute', bottom: '2rem', right: '3rem', display: 'flex', gap: '0.6rem' }}>
             {featuredProducts.map((_, i) => (
               <div
@@ -260,7 +285,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* === Sección: Drops Estacionales === */}
+      {/* Sección: Drops Estacionales */}
       <section style={{ background: 'var(--bg-secondary)', padding: 'clamp(4rem, 8vw, 10rem) 0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
@@ -274,7 +299,6 @@ export default function Home() {
               {t('home_extended.seasonal_desc')}
             </p>
           </div>
-          {/* Grid de productos estacionales (reducido) */}
           <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '2rem' }}>
             {seasonalProducts.length > 0 ? (
               seasonalProducts.map(product => (
@@ -289,7 +313,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* === Sección: Lookbook / Editorial (Colección Destacada) === */}
+      {/* Sección: Lookbook / Editorial (Colección Destacada) */}
       <section style={{ padding: '6rem 0', background: 'var(--bg-primary)' }}>
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'center' }}>
@@ -331,7 +355,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* === Sección: Todos los Productos (Preview) === */}
+      {/* Sección: Preview del Catálogo Completo */}
       <section className="container" style={{ padding: '6rem 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
           <h2 style={{ fontSize: '2.5rem', fontWeight: '900' }}>Explora el Catálogo</h2>
@@ -346,14 +370,14 @@ export default function Home() {
           </div>
         ) : (
           <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '2rem' }}>
-            {products.slice(0, 8).map(product => (
+            {availableProducts.slice(0, 8).map(product => (
               <ProductCard key={product.id} {...product} />
             ))}
           </div>
         )}
       </section>
 
-      {/* === Sección: Newsletter === */}
+      {/* Sección: Newsletter */}
       <section style={{ padding: '100px 0', borderTop: '1px solid var(--border-light)' }}>
         <div className="container" style={{ maxWidth: '800px', textAlign: 'center' }}>
           <h2 style={{ fontSize: '3rem', fontWeight: '900', marginBottom: '1rem' }}>Únete a la Élite</h2>

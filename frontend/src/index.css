@@ -294,10 +294,15 @@ img {
   text-decoration: none;
 }
 
-.navbar-logo img {
+.navbar-logo-img {
   width: 45px;
   height: 45px;
   object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.navbar-logo a:hover .navbar-logo-img {
+  transform: rotate(-5deg) scale(1.1);
 }
 
 .navbar-logo-text {
@@ -305,6 +310,16 @@ img {
   font-weight: 900;
   letter-spacing: -0.02em;
   text-transform: uppercase;
+  color: white;
+  transition: color 0.3s;
+}
+
+.navbar-logo a:hover .navbar-logo-text {
+  color: var(--primary);
+}
+
+.navbar-logo-dot {
+  color: var(--primary);
 }
 
 /* Links de escritorio */
@@ -498,7 +513,7 @@ img {
 .product-card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.3);
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;

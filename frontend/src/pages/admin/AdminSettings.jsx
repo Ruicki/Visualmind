@@ -4,13 +4,31 @@ import { useAuth } from '../../context/AuthContext';
 import { Shield, Check, Loader, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
+/**
+ * @component AdminSettings
+ * @description Panel de configuración global de la plataforma.
+ * Permite ajustar parámetros del sistema, claves de API, 
+ * preferencias de notificación y datos de la tienda.
+ */
 export default function AdminSettings() {
     const { user } = useAuth();
     const { t } = useLanguage();
+    
+    // Configuración global del sitio (expandible)
+    const [settings, setSettings] = useState({
+        storeName: '',
+        contactEmail: '',
+        currency: 'USD'
+    });
+    
+    // Gestión de promoción de administradores
     const [emailToPromote, setEmailToPromote] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
 
+    /**
+     * Promueve un usuario existente al rol de administrador mediante su email.
+     */
     const handlePromote = async (e) => {
         e.preventDefault();
         setLoading(true);

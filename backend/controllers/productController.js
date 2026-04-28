@@ -1,20 +1,48 @@
+/**
+ * @file productController.js
+ * @description Controlador para la lógica de negocio de productos.
+ * Maneja operaciones CRUD, gestión de variantes mediante agregación JSON en SQL,
+ * y persistencia de archivos de imagen.
+ */
+
 import pool from '../src/config/db.js';
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * getAllProducts
+ * @description Obtiene todos los productos publicados.
+ * Implementa búsqueda por texto (ILIKE) y agregación de variantes en una sola consulta.
+ */
+/**
+ * Obtiene todos los productos activos para la tienda pública.
+ * Incluye variantes mediante agregación JSON y nombres de categorías/campañas.
+ */
 export const getAllProducts = async (req, res) => {
     try {
         const { search } = req.query;
 
         let query;
-        let params;
+        let params = [];
+
+        // Query base con agregación JSON para variantes (evita el problema N+1)
+        const baseQuery = `
+            SELECT p.*, 
+                   s.end_date as season_end_date, s.is_active as season_is_active,
+                   COALESCE(
+                       (SELECT json_agg(pv.*) 
+                        FROM product_variants pv 
+                        WHERE pv.product_id = p.id), 
+                       '[]'
+                   ) as variants
+            FROM products p
+            LEFT JOIN seasons s ON p.season_id = s.id
+        `;
 
         if (search && search.trim()) {
             const term = `%${search.trim()}%`;
             query = `
-                SELECT p.*, s.end_date as season_end_date, s.is_active as season_is_active
-                FROM products p
-                LEFT JOIN seasons s ON p.season_id = s.id
+                ${baseQuery}
                 WHERE p.lifecycle_state IN ('Published', 'Legacy')
                   AND (
                     p.title ILIKE $1 OR
@@ -26,13 +54,10 @@ export const getAllProducts = async (req, res) => {
             params = [term];
         } else {
             query = `
-                SELECT p.*, s.end_date as season_end_date, s.is_active as season_is_active
-                FROM products p
-                LEFT JOIN seasons s ON p.season_id = s.id
+                ${baseQuery}
                 WHERE p.lifecycle_state IN ('Published', 'Legacy')
                 ORDER BY p.priority DESC, p.created_at DESC
             `;
-            params = [];
         }
 
         const result = await pool.query(query, params);
@@ -43,12 +68,21 @@ export const getAllProducts = async (req, res) => {
     }
 };
 
-
+/**
+ * getAdminProducts
+ * @description Obtiene la lista completa de productos con detalles administrativos 
+ * (stock total, conteo de variantes y nombres de campañas/temporadas).
+ */
 export const getAdminProducts = async (req, res) => {
     try {
-        // Obtenemos productos con conteo de variantes y relaciones de temporada/colección
         const result = await pool.query(`
             SELECT p.*, 
+                   COALESCE(
+                       (SELECT json_agg(pv.*) 
+                        FROM product_variants pv 
+                        WHERE pv.product_id = p.id), 
+                       '[]'
+                   ) as variants,
                    (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variants_count,
                    (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as variants_stock,
                    c.name as campaign_name,
@@ -67,6 +101,10 @@ export const getAdminProducts = async (req, res) => {
     }
 };
 
+/**
+ * getProductById
+ * @description Obtiene un producto específico y todas sus variantes.
+ */
 export const getProductById = async (req, res) => {
     const { id } = req.params;
     try {
@@ -87,15 +125,26 @@ export const getProductById = async (req, res) => {
     }
 };
 
+/**
+ * createProduct
+ * @description Crea un producto y sus variantes dentro de una transacción ACID.
+ * Gestiona la carga de imágenes y el cálculo automático de stock basado en variantes.
+ */
 export const createProduct = async (req, res) => {
+    if (!req.body) {
+        return res.status(400).json({ error: 'No se recibieron datos en la petición.' });
+    }
+
     const { 
         title, description, price, category, sub_category,
         sku, stock, is_new, discount, featured, new_arrival, 
         parent_category, variants, launch_date, 
         lifecycle_state, priority, campaign_id,
-        season_id, collection_id, layout_preference, admin_notes
+        season_id, collection_id, layout_preference, admin_notes,
+        tags
     } = req.body;
     
+    // Normalización de rutas de imagen
     const image_url = req.files?.['image'] ? `/uploads/products/${req.files['image'][0].filename}` : req.body.image_url;
     const hover_image_url = req.files?.['hover_image'] ? `/uploads/products/${req.files['hover_image'][0].filename}` : req.body.hover_image_url;
 
@@ -103,46 +152,62 @@ export const createProduct = async (req, res) => {
     try {
         await client.query('BEGIN');
         
-        // Validar unicidad de SKU
-        if (sku) {
+        // Verificación de SKU único
+        if (sku && sku.trim() !== '') {
             const skuCheck = await client.query('SELECT id FROM products WHERE sku = $1', [sku]);
             if (skuCheck.rows.length > 0) {
                 await client.query('ROLLBACK');
                 client.release();
-                return res.status(409).json({ error: `El SKU '${sku}' ya está en uso por otro producto.` });
+                return res.status(409).json({ error: `El SKU '${sku}' ya está en uso.` });
             }
         }
         
+        // Normalización de valores para evitar errores de tipo en PostgreSQL
+        const normalizedPrice = parseFloat(price) || 0;
+        const normalizedStock = parseInt(stock) || 0;
+        const normalizedDiscount = parseFloat(discount) || 0;
+        const normalizedPriority = parseInt(priority) || 0;
+        
+        // Convertir strings vacíos a null para columnas UUID o fechas
+        const nCampaignId = campaign_id && campaign_id !== '' ? campaign_id : null;
+        const nSeasonId = season_id && season_id !== '' ? season_id : null;
+        const nCollectionId = collection_id && collection_id !== '' ? collection_id : null;
+        const nLaunchDate = launch_date && launch_date !== '' ? launch_date : null;
+
         const productResult = await client.query(
             `INSERT INTO products 
-            (title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, is_new, discount, featured, new_arrival, parent_category, launch_date, lifecycle_state, priority, campaign_id, season_id, collection_id, layout_preference, admin_notes) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22) 
+            (title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, is_new, discount, featured, new_arrival, parent_category, launch_date, lifecycle_state, priority, campaign_id, season_id, collection_id, layout_preference, admin_notes, tags) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) 
             RETURNING *`,
             [
-                title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, 
-                is_new, discount, featured || false, new_arrival || false, parent_category, 
-                launch_date, lifecycle_state || 'Published', priority || 0, campaign_id || null,
-                season_id || null, collection_id || null, layout_preference || 'standard', admin_notes || ''
+                title, description, normalizedPrice, category, sub_category, image_url, hover_image_url, sku, normalizedStock, 
+                is_new === 'true' || is_new === true, normalizedDiscount, featured === 'true' || featured === true, 
+                new_arrival === 'true' || new_arrival === true, parent_category, 
+                nLaunchDate, lifecycle_state || 'Published', normalizedPriority, nCampaignId,
+                nSeasonId, nCollectionId, layout_preference || 'standard', admin_notes || '',
+                tags || ''
             ]
         );
         
         const product = productResult.rows[0];
         
-        if (variants && Array.isArray(variants) && variants.length > 0) {
+        // Manejo de variantes
+        let processedVariants = variants;
+        if (typeof variants === 'string') {
+            try { processedVariants = JSON.parse(variants); } catch (e) { processedVariants = []; }
+        }
+
+        if (processedVariants && Array.isArray(processedVariants) && processedVariants.length > 0) {
             let totalStock = 0;
-            for (const variant of variants) {
+            for (const variant of processedVariants) {
                 totalStock += parseInt(variant.stock || 0);
                 await client.query(
                     `INSERT INTO product_variants (product_id, size, color, stock, sku) 
                      VALUES ($1, $2, $3, $4, $5)`,
-                    [product.id, variant.size, variant.color, variant.stock, variant.sku]
+                    [product.id, variant.size, variant.color, parseInt(variant.stock) || 0, variant.sku]
                 );
             }
-            // Actualizar stock total del producto basado en variantes
-            await client.query(
-                'UPDATE products SET stock = $1 WHERE id = $2',
-                [totalStock, product.id]
-            );
+            await client.query('UPDATE products SET stock = $1 WHERE id = $2', [totalStock, product.id]);
         }
         
         await client.query('COMMIT');
@@ -150,96 +215,137 @@ export const createProduct = async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error al crear producto:', error);
-        res.status(500).json({ error: 'Error al crear el producto' });
+        res.status(500).json({ error: 'Error al crear el producto: ' + error.message });
     } finally {
         client.release();
     }
 };
 
+/**
+ * updateProduct
+ * @description Actualiza los datos de un producto y sus variantes.
+ */
 export const updateProduct = async (req, res) => {
     const { id } = req.params;
+
+    if (!req.body) {
+        return res.status(400).json({ error: 'No se recibieron datos.' });
+    }
+
     const { 
         title, description, price, category, sub_category,
         sku, stock, is_new, discount, featured, new_arrival, 
         parent_category, variants, launch_date,
         lifecycle_state, priority, campaign_id,
-        season_id, collection_id, layout_preference, admin_notes
+        season_id, collection_id, layout_preference, admin_notes,
+        tags
     } = req.body;
     
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
         
-        // Validar unicidad de SKU (excluyendo el producto actual)
-        if (sku) {
+        // Validación de SKU único
+        if (sku && sku.trim() !== '') {
             const skuCheck = await client.query('SELECT id FROM products WHERE sku = $1 AND id != $2', [sku, id]);
             if (skuCheck.rows.length > 0) {
                 await client.query('ROLLBACK');
                 client.release();
-                return res.status(409).json({ error: `El SKU '${sku}' ya está en uso por otro producto.` });
+                return res.status(409).json({ error: `El SKU '${sku}' ya está en uso.` });
             }
         }
+
+        // Normalización de valores
+        const normalizedPrice = parseFloat(price) || 0;
+        const normalizedStock = parseInt(stock) || 0;
+        const normalizedDiscount = parseFloat(discount) || 0;
+        const normalizedPriority = parseInt(priority) || 0;
         
-        let updateQuery = `
-            UPDATE products 
-            SET title = $1, description = $2, price = $3, category = $4, sub_category = $5, 
-                sku = $6, stock = $7, is_new = $8, discount = $9, featured = $10, 
-                new_arrival = $11, parent_category = $12, launch_date = $13,
-                lifecycle_state = $14, priority = $15, campaign_id = $16,
-                season_id = $17, collection_id = $18, layout_preference = $19, admin_notes = $20
-        `;
-        let values = [
-            title, description, price, category, sub_category, sku, stock, is_new, 
-            discount, featured, new_arrival, parent_category, launch_date,
-            lifecycle_state, priority, campaign_id,
-            season_id, collection_id, layout_preference, admin_notes
+        const nCampaignId = campaign_id && campaign_id !== '' ? campaign_id : null;
+        const nSeasonId = season_id && season_id !== '' ? season_id : null;
+        const nCollectionId = collection_id && collection_id !== '' ? collection_id : null;
+        const nLaunchDate = launch_date && launch_date !== '' ? launch_date : null;
+        
+        // Construcción dinámica de la consulta SQL para actualización
+        let queryFields = [
+            'title = $1', 'description = $2', 'price = $3', 'category = $4', 'sub_category = $5',
+            'sku = $6', 'stock = $7', 'is_new = $8', 'discount = $9', 'featured = $10',
+            'new_arrival = $11', 'parent_category = $12', 'launch_date = $13',
+            'lifecycle_state = $14', 'priority = $15', 'campaign_id = $16',
+            'season_id = $17', 'collection_id = $18', 'layout_preference = $19', 'admin_notes = $20',
+            'tags = $21'
         ];
 
-        let paramCount = 21;
-        
+        const values = [
+            title, description, normalizedPrice, category, sub_category,
+            sku, normalizedStock, is_new === 'true' || is_new === true,
+            normalizedDiscount, featured === 'true' || featured === true,
+            new_arrival === 'true' || new_arrival === true, parent_category, nLaunchDate,
+            lifecycle_state || 'Published', normalizedPriority, nCampaignId,
+            nSeasonId, nCollectionId, layout_preference || 'standard', admin_notes || '',
+            tags || ''
+        ];
+
+        let paramCount = values.length + 1;
+
+        // Manejo de imágenes
         if (req.files?.['image']) {
             const image_url = `/uploads/products/${req.files['image'][0].filename}`;
-            updateQuery += `, image_url = $${paramCount}`;
+            queryFields.push(`image_url = $${paramCount}`);
             values.push(image_url);
             paramCount++;
         } else if (req.body.image_url) {
-            updateQuery += `, image_url = $${paramCount}`;
+            queryFields.push(`image_url = $${paramCount}`);
             values.push(req.body.image_url);
             paramCount++;
         }
 
         if (req.files?.['hover_image']) {
             const hover_image_url = `/uploads/products/${req.files['hover_image'][0].filename}`;
-            updateQuery += `, hover_image_url = $${paramCount}`;
+            queryFields.push(`hover_image_url = $${paramCount}`);
             values.push(hover_image_url);
             paramCount++;
         } else if (req.body.hover_image_url) {
-            updateQuery += `, hover_image_url = $${paramCount}`;
+            queryFields.push(`hover_image_url = $${paramCount}`);
             values.push(req.body.hover_image_url);
             paramCount++;
         }
 
-        updateQuery += ` WHERE id = $${paramCount} RETURNING *`;
+        // Añadir el ID para el WHERE
         values.push(id);
+        const idParamIndex = paramCount;
+
+        const updateQuery = `
+            UPDATE products 
+            SET ${queryFields.join(', ')}
+            WHERE id = $${idParamIndex}
+            RETURNING *
+        `;
 
         const result = await client.query(updateQuery, values);
         
-        if (variants && Array.isArray(variants)) {
+        // Sincronización de Variantes
+        let processedVariants = variants;
+        if (typeof variants === 'string') {
+            try { processedVariants = JSON.parse(variants); } catch (e) { processedVariants = []; }
+        }
+
+        if (processedVariants && Array.isArray(processedVariants) && processedVariants.length > 0) {
             await client.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
             let totalStock = 0;
-            for (const variant of variants) {
+            for (const variant of processedVariants) {
                 totalStock += parseInt(variant.stock || 0);
                 await client.query(
                     `INSERT INTO product_variants (product_id, size, color, stock, sku) 
                      VALUES ($1, $2, $3, $4, $5)`,
-                    [id, variant.size, variant.color, variant.stock, variant.sku]
+                    [id, variant.size, variant.color, parseInt(variant.stock) || 0, variant.sku]
                 );
             }
-            // Actualizar stock total del producto basado en variantes
-            await client.query(
-                'UPDATE products SET stock = $1 WHERE id = $2',
-                [totalStock, id]
-            );
+            await client.query('UPDATE products SET stock = $1 WHERE id = $2', [totalStock, id]);
+        } else if (processedVariants && Array.isArray(processedVariants) && processedVariants.length === 0) {
+            // Si el array de variantes llega vacío, eliminamos las variantes existentes
+            // El stock ya fue actualizado en la consulta principal de products
+            await client.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
         }
 
         await client.query('COMMIT');
@@ -247,12 +353,17 @@ export const updateProduct = async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error al actualizar producto:', error);
-        res.status(500).json({ error: 'Error del servidor' });
+        res.status(500).json({ error: 'Error al actualizar producto: ' + error.message });
     } finally {
         client.release();
     }
 };
 
+
+/**
+ * deleteProduct
+ * @description Elimina un producto de la base de datos y su imagen física del disco.
+ */
 export const deleteProduct = async (req, res) => {
     const { id } = req.params;
     try {
@@ -264,6 +375,7 @@ export const deleteProduct = async (req, res) => {
         const imagePath = product.rows[0].image_url;
         await pool.query('DELETE FROM products WHERE id = $1', [id]);
 
+        // Eliminación física del archivo para optimizar almacenamiento
         if (imagePath && imagePath.startsWith('/uploads/')) {
             const absolutePath = path.join(process.cwd(), imagePath);
             if (fs.existsSync(absolutePath)) fs.unlinkSync(absolutePath);
@@ -276,14 +388,17 @@ export const deleteProduct = async (req, res) => {
     }
 };
 
+/**
+ * getCategories
+ * @description Obtiene el listado de categorías únicas presentes en la BD.
+ */
 export const getCategories = async (req, res) => {
     try {
         const result = await pool.query('SELECT DISTINCT category FROM products WHERE category IS NOT NULL AND category != \'\'');
         let categories = result.rows.map(row => row.category);
         
-        // Fallback si no hay productos
         if (categories.length === 0) {
-            categories = ['action', 'figures', 'posters', 'clothing', 'accessories'];
+            categories = ['clothing', 'accessories', 'featured'];
         }
         res.json(categories);
     } catch (error) {
@@ -292,6 +407,10 @@ export const getCategories = async (req, res) => {
     }
 };
 
+/**
+ * getSubcategories
+ * @description Obtiene el listado de subcategorías únicas presentes en la BD.
+ */
 export const getSubcategories = async (req, res) => {
     try {
         const result = await pool.query('SELECT DISTINCT sub_category FROM products WHERE sub_category IS NOT NULL AND sub_category != \'\'');
@@ -301,3 +420,4 @@ export const getSubcategories = async (req, res) => {
         res.status(500).json({ error: 'Error del servidor' });
     }
 };
+

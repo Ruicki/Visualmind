@@ -1,17 +1,23 @@
+/**
+ * Utilidades de Gestión de Imágenes.
+ * Incluye lógica para compresión de archivos antes de la subida
+ * y normalización de URLs para visualización en el frontend.
+ */
 import imageCompression from 'browser-image-compression';
 
 /**
- * Compresses an image file before upload.
- * @param {File} file - The original image file.
- * @param {Object} options - Custom compression options.
- * @returns {Promise<File>} - The compressed file.
+ * Comprime un archivo de imagen utilizando Web Workers.
+ * Optimiza el tamaño del archivo sin sacrificar demasiada calidad visual.
+ * @param {File} file - El archivo de imagen original de un input.
+ * @param {Object} options - Opciones de compresión personalizadas.
+ * @returns {Promise<File>} - El archivo comprimido listo para subir.
  */
 export const compressImage = async (file, options = {}) => {
   if (!file) return null;
 
   const defaultOptions = {
-    maxSizeMB: 0.8, // Max size 800KB
-    maxWidthOrHeight: 1200, // Max dimension
+    maxSizeMB: 0.8,          // Tamaño máximo deseado (800KB)
+    maxWidthOrHeight: 1200,  // Dimensión máxima para evitar imágenes excesivas
     useWebWorker: true,
     initialQuality: 0.8,
   };
@@ -19,33 +25,40 @@ export const compressImage = async (file, options = {}) => {
   const finalOptions = { ...defaultOptions, ...options };
 
   try {
-    console.log(`Original file size: ${file.size / 1024 / 1024} MB`);
+    console.log(`[ImageUtils] Comprimiendo: ${file.size / 1024 / 1024} MB...`);
     const compressedFile = await imageCompression(file, finalOptions);
-    console.log(`Compressed file size: ${compressedFile.size / 1024 / 1024} MB`);
+    console.log(`[ImageUtils] Resultado: ${compressedFile.size / 1024 / 1024} MB`);
     
-    // Maintain the original name
+    // Mantenemos el nombre original para consistencia en la BD
     return new File([compressedFile], file.name, {
       type: compressedFile.type,
       lastModified: Date.now(),
     });
   } catch (error) {
-    console.error('Error compressing image:', error);
-    return file; // Fallback to original
+    console.error('[ImageUtils] Error en compresión:', error);
+    return file; // Retornamos el original como fail-safe
   }
 };
 
 /**
- * Normalizes product image URLs.
- * @param {string|number} productId - Optional ID.
- * @param {string} imageUrl - The URL or path from DB.
- * @returns {string} - Full URL.
+ * Normaliza la URL de una imagen del producto.
+ * Gestiona rutas locales del servidor y URLs externas de placeholders.
+ * @param {string|number} productId - ID opcional (para futura lógica de caché).
+ * @param {string} imageUrl - La ruta guardada en la base de datos.
+ * @returns {string} - URL completa y válida para el atributo src.
  */
 export const getProductImage = (productId, imageUrl) => {
-  if (!imageUrl) return 'https://via.placeholder.com/800x1000?text=Visualmind';
+  // Placeholder si no hay imagen
+  if (!imageUrl) return 'https://placehold.co/800x1000?text=Visualmind';
+  
+  // Si ya es una URL completa o un DataURL, se retorna tal cual
   if (imageUrl.startsWith('http') || imageUrl.startsWith('data:')) return imageUrl;
   
-  const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-  // Remove leading slash if present
+  // Construcción de la URL del backend
+  // Limpiamos el sufijo /api de la variable de entorno si existe
+  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api$/, '');
+  
+  // Aseguramos que no haya doble diagonal al concatenar
   const cleanPath = imageUrl.startsWith('/') ? imageUrl.substring(1) : imageUrl;
   return `${apiBase}/${cleanPath}`;
 };

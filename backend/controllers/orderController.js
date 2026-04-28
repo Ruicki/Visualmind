@@ -1,5 +1,17 @@
+/**
+ * @file orderController.js
+ * @description Controlador para la gestión de pedidos y transacciones de compra.
+ * Maneja la creación de órdenes, seguimiento de historial y actualización de estados.
+ */
+
 import pool from '../src/config/db.js';
 
+/**
+ * createOrder
+ * @description Registra una nueva orden de compra en el sistema.
+ * Utiliza transacciones SQL para asegurar que la orden y la actualización de stock
+ * (actualmente en testing) sean atómicas.
+ */
 export const createOrder = async (req, res) => {
   const { total, items, shippingDetails } = req.body;
   const userId = req.user.id;
@@ -15,28 +27,16 @@ export const createOrder = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Verificación de stock deshabilitada temporalmente para testing
-    // for (const item of items) {
-    //   const result = await client.query('SELECT stock FROM products WHERE id = $1', [item.product_id]);
-    //   if (!result.rows[0] || result.rows[0].stock < item.quantity) {
-    //     await client.query('ROLLBACK');
-    //     return res.status(400).json({ message: `Stock insuficiente para: ${item.title}` });
-    //   }
-    // }
-
-    // 2. Crear la orden
+    /**
+     * @note Verificación de stock deshabilitada temporalmente para testing.
+     * En producción, se debe iterar sobre 'items' y verificar disponibilidad.
+     */
+    
+    // Inserción de la orden. Se almacena 'items' y 'shipping_details' como JSONB para flexibilidad.
     const newOrder = await client.query(
       'INSERT INTO orders (user_id, total, items, status, shipping_details) VALUES ($1, $2, $3, $4, $5) RETURNING *',
       [userId, total, JSON.stringify(items), 'pending', JSON.stringify(shippingDetails || {})]
     );
-
-    // Decrementar stock deshabilitado temporalmente para testing
-    // for (const item of items) {
-    //   await client.query(
-    //     'UPDATE products SET stock = stock - $1 WHERE id = $2',
-    //     [item.quantity, item.product_id]
-    //   );
-    // }
 
     await client.query('COMMIT');
     res.status(201).json(newOrder.rows[0]);
@@ -49,23 +49,22 @@ export const createOrder = async (req, res) => {
   }
 };
 
+/**
+ * getMyOrders
+ * @description Recupera el historial de pedidos del usuario autenticado.
+ */
 export const getMyOrders = async (req, res) => {
-  console.log('--- GET MY ORDERS ---');
-  console.log('User from req:', req.user);
   const userId = req.user?.id;
 
   if (!userId) {
-    console.error('UserId missing in request!');
     return res.status(401).json({ message: 'No autorizado, falta ID de usuario' });
   }
 
   try {
-    console.log('Querying orders for userId:', userId);
     const orders = await pool.query(
       'SELECT * FROM orders WHERE user_id = $1 ORDER BY created_at DESC',
       [userId]
     );
-    console.log('Orders found:', orders.rows.length);
     res.json(orders.rows);
   } catch (error) {
     console.error('Error al obtener órdenes:', error);
@@ -73,6 +72,10 @@ export const getMyOrders = async (req, res) => {
   }
 };
 
+/**
+ * getAllOrders
+ * @description (Admin Only) Obtiene todas las órdenes del sistema con información del cliente.
+ */
 export const getAllOrders = async (req, res) => {
   try {
     const orders = await pool.query(
@@ -85,6 +88,11 @@ export const getAllOrders = async (req, res) => {
   }
 };
 
+/**
+ * updateOrderStatus
+ * @description (Admin Only) Actualiza el estado de una orden.
+ * Implementa lógica de restauración de stock si el pedido se marca como 'cancelled'.
+ */
 export const updateOrderStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -98,7 +106,7 @@ export const updateOrderStatus = async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // If cancelling, restore stock for each item
+    // Restauración de stock en caso de cancelación
     if (status === 'cancelled') {
       const orderResult = await client.query('SELECT items FROM orders WHERE id = $1', [id]);
       if (orderResult.rowCount === 0) {
@@ -133,3 +141,4 @@ export const updateOrderStatus = async (req, res) => {
     client.release();
   }
 };
+

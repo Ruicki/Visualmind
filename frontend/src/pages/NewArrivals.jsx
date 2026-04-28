@@ -4,7 +4,14 @@ import { Sparkles, Clock, Zap, ArrowRight } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { PRODUCTS } from '../data/products';
 import axiosInstance from '../api/axiosConfig';
+import { isProductVisible } from '../utils/productUtils';
 
+/**
+ * @component NewArrivals
+ * @description Sección de novedades de la tienda.
+ * Filtra y muestra automáticamente los productos marcados como "new"
+ * o con fechas de creación recientes para destacar los últimos lanzamientos.
+ */
 export default function NewArrivals() {
     const { t } = useLanguage();
     const [isVisible, setIsVisible] = useState(false);
@@ -14,16 +21,15 @@ export default function NewArrivals() {
         setIsVisible(true);
         axiosInstance.get('/products').then(res => {
             if (res.data?.length > 0) {
-                const apiIds = new Set(res.data.map(p => p.id));
-                const uniqueStatic = PRODUCTS.filter(p => !apiIds.has(p.id));
-                setAllProducts([...res.data, ...uniqueStatic]);
+                setAllProducts(res.data);
             }
         }).catch(() => {});
     }, []);
 
-    // Filter logic for drops
-    const freshNew = allProducts.filter(p => p.isNew || p.new_arrival).slice(0, 4);
-    const seasonalDrops = allProducts.filter(p => p.category === 'halloween' || p.category === 'fiestas_patrias');
+    // Filter logic for drops (Utilizando utilidad centralizada)
+    const availableProducts = allProducts.filter(isProductVisible);
+
+    const freshNew = availableProducts.filter(p => p.isNew || p.new_arrival || p.priority > 3).slice(0, 12);
 
     return (
         <div style={{ background: '#050505', minHeight: '100vh', paddingTop: '140px', color: 'white' }}>
@@ -59,32 +65,6 @@ export default function NewArrivals() {
                         {freshNew.map(product => (
                             <ProductCard key={product.id} {...product} />
                         ))}
-                    </div>
-                </section>
-
-                {/* Seasonal Drop High Impact */}
-                <section style={{
-                    background: 'radial-gradient(circle at top right, #1a0b2e 0%, #050505 60%)',
-                    margin: '0 -1.5rem 10rem -1.5rem',
-                    padding: '8rem 1.5rem',
-                    borderRadius: '60px',
-                    border: '1px solid rgba(255,255,255,0.05)'
-                }}>
-                    <div className="container">
-                        <div style={{ textAlign: 'center', marginBottom: '6rem' }}>
-                            <span style={{ color: '#ff6b00', fontWeight: '900', letterSpacing: '0.3em', textTransform: 'uppercase', fontSize: '0.9rem' }}>{t('new_arrivals_page.limited_seasonal')}</span>
-                            <h2 style={{ fontSize: '4.5rem', fontWeight: '900', marginTop: '1rem' }}>{t('new_arrivals_page.archive_halloween')}</h2>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '4rem' }}>
-                            {seasonalDrops.slice(0, 4).map(product => (
-                                <div key={product.id} className="drop-card" style={{ transition: 'transform 0.5s' }}>
-                                    <ProductCard {...product} />
-                                    <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(255,107,0,0.05)', border: '1px dashed rgba(255,107,0,0.2)', borderRadius: '16px', textAlign: 'center' }}>
-                                        <span style={{ color: '#ff6b00', fontWeight: '800', fontSize: '0.8rem' }}>{t('new_arrivals_page.expires')}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </div>
                 </section>
 

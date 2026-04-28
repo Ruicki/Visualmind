@@ -1,7 +1,21 @@
+/**
+ * @file LanguageContext.jsx
+ * @description Contexto global para la gestión de internacionalización (i18n).
+ * Proporciona traducciones en múltiples idiomas y permite el cambio dinámico entre ellos.
+ */
+
 import React, { createContext, useContext, useState } from 'react';
 
+/**
+ * Contexto de idioma para acceder a traducciones y funciones de cambio de idioma.
+ */
 const LanguageContext = createContext();
 
+/**
+ * Objeto maestro de traducciones.
+ * Contiene todas las cadenas de texto de la aplicación organizadas por idioma y sección.
+ * @type {Object}
+ */
 export const translations = {
     en: {
         nav: {
@@ -60,9 +74,6 @@ export const translations = {
             cat_caricaturas: 'Cartoons',
             cat_videojuegos: 'Video Games',
             cat_deportes: 'Sports',
-            cat_sanvalentin: 'Valentine\'s',
-            cat_halloween: 'Halloween',
-            cat_fiestas_patrias: 'National Holidays',
             filter_title: 'Filters',
             filter_categories: 'Categories',
             filter_price: 'Price Range',
@@ -387,7 +398,6 @@ export const translations = {
             desc: 'The latest evolution of Visualmind. Limited pieces, infinite style.',
             fresh_in: 'Fresh In',
             items: 'ITEMS',
-            archive_halloween: 'The Archive: Halloween',
             limited_seasonal: 'Limited Seasonal Drop',
             expires: 'EXPIRES IN 14 DAYS',
             coming_soon: 'COMING NEXT MONTH',
@@ -474,9 +484,6 @@ export const translations = {
             cat_caricaturas: 'Caricaturas',
             cat_videojuegos: 'Videojuegos',
             cat_deportes: 'Deportes',
-            cat_sanvalentin: 'San Valentín',
-            cat_halloween: 'Halloween',
-            cat_fiestas_patrias: 'Fiestas Patrias',
             filter_title: 'Filtros',
             filter_categories: 'Categorías',
             filter_price: 'Rango de Precio',
@@ -800,7 +807,6 @@ export const translations = {
             desc: 'La última evolución de Visualmind. Piezas limitadas, estilo infinito.',
             fresh_in: 'Recién Llegado',
             items: 'ARTÍCULOS',
-            archive_halloween: 'El Archivo: Halloween',
             limited_seasonal: 'Lanzamiento Estacional Limitado',
             expires: 'EXPIRA EN 14 DÍAS',
             coming_soon: 'PRÓXIMAMENTE EL PRÓXIMO MES',

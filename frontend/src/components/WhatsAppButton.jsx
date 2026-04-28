@@ -2,9 +2,9 @@ import React from 'react';
 import { MessageCircle } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 
-const WhatsAppButton = ({ phoneNumber = "5491112345678", message = "Hola! Me gustaría obtener más información sobre sus productos." }) => {
+const WhatsAppButton = ({ phoneNumber = "+50763148640", message = "Hola! Me gustaría obtener más información sobre sus productos." }) => {
     const { t } = useLanguage();
-    
+
     const handleClick = () => {
         const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');

@@ -24,6 +24,11 @@
     - [x] Añadir estados: `Draft`, `Published`, `Legacy/Archive`.
     - [x] Implementar sistema de **Prioridad (1-100)** para orden de visualización.
     - [x] Soporte para **Galería Multi-imagen** (hasta 4 por producto).
+- [/] **Corrección y Optimización de Imágenes:**
+    - [ ] Corregir construcción de URLs (quitar `/api` de rutas estáticas).
+    - [ ] Simplificar Admin: Eliminar subida vía URL, permitir solo archivos locales.
+    - [ ] Implementar validación visual pre-guardado para detectar archivos corruptos.
+    - [ ] Migrar placeholders externos a `placehold.co` para estabilidad.
 
 ---
 
@@ -34,8 +39,14 @@
 - [x] **Lógica Legacy/Sale:**
     - [x] Crear sección automatizada en el catálogo para productos "Legacy" con incentivo de descuento.
     - [x] Badge visual de "Oferta" dinámico basado en `original_price`.
-- [ ] **Efectos Premium:**
-    - [ ] Implementar `HoverPreview` (cambio a segunda imagen en el grid del shop).
+- [x] **Efectos Premium:**
+    - [x] Implementar `HoverPreview` (cambio a segunda imagen en el grid del shop).
+    - [x] Navbar: Integrar link de 'Inicio', logo corporativo y texto 'Visualmind' con animaciones.
+- [x] **Variantes Dinámicas y Stock:**
+    - [x] Backend: Retorno automático de variantes vía SQL `JSON_AGG`.
+    - [x] QuickView: Mensajes de disponibilidad por talla/color (Agotado, Solo X, En Stock).
+    - [x] ProductDetails: Selección inteligente de tallas desde la base de datos.
+    - [x] ProductCard: Overlay de "AGOTADO" y bloqueo de compra rápida si no hay stock.
 
 ---
 
@@ -44,8 +55,16 @@
     - [ ] Desglose detallado en Carrito y Checkout (Subtotal, Envío: $0.00, Impuestos: $0.00).
 - [ ] **Badge de Confianza:**
     - [ ] Implementar componente `TrustBadges.jsx` (Pagos Seguros, Envío Garantizado).
-- [ ] **Recibos Digitales:**
-    - [ ] Generación de PDF/Imagen de recibo descargable en `OrderSuccess.jsx`.
+- [x] **Documentación Técnica Integral:**
+    - [x] Documentación técnica integral (JSDoc en español)
+    - [x] Documentar componentes del frontend (Cart, ProductCard, Navbar, etc.)
+    - [x] Documentar páginas públicas (Home, Shop, ProductDetails, etc.)
+    - [x] Documentar módulos administrativos (Dashboard, Products, Orders, etc.)
+    - [x] Documentar utilidades y configuración de API (axiosConfig)
+    - [x] Documentar lógica del backend (Controllers, Services, Config)
+    - [x] Auditoría final de comentarios y coherencia terminológica
+- [x] **Recibos Digitales:**
+    - [x] Generación de PDF de recibo descargable en `OrderSuccess.jsx` mediante jsPDF y html2canvas.
 
 ---
 
@@ -70,4 +89,4 @@
 ---
 
 
-> **Última actualización**: 24 de Abril, 2026.
+> **Última actualización**: 28 de Abril, 2026.

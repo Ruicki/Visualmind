@@ -1,31 +1,36 @@
+/**
+ * @file Footer.jsx
+ * @description Pie de página de la aplicación.
+ * Proporciona enlaces de soporte, navegación secundaria, redes sociales y avisos legales.
+ * Utiliza un diseño de grid flexible y soporte multilingüe.
+ */
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 
 /**
- * Footer del sitio — responsivo con grid flexible.
- * Eliminados imports no usados y estilos inline por hover en CSS global.
+ * Footer
+ * @component
+ * @description Componente responsivo que se adapta a diferentes anchos de pantalla mediante CSS Grid.
+ * Incluye una textura decorativa en SVG y enlaces dinámicos basados en la configuración de idioma.
  */
 export default function Footer() {
   const { t } = useLanguage();
 
-  // Redes sociales con favicons
+  /** 
+   * Configuración de redes sociales.
+   * Se utilizan favicons externos para consistencia visual rápida.
+   */
   const socialLinks = [
-    { name: 'Instagram', favicon: 'https://cdn-icons-png.flaticon.com/512/3955/3955024.png', url: '#' },
-    { name: 'TikTok', favicon: 'https://cdn-icons-png.flaticon.com/512/3046/3046122.png', url: '#' },
-    { name: 'YouTube', favicon: 'https://cdn-icons-png.flaticon.com/512/3670/3670147.png', url: '#' },
-    { name: 'Facebook', favicon: 'https://cdn-icons-png.flaticon.com/512/5968/5968764.png', url: '#' },
+    { name: 'Instagram', favicon: 'https://cdn-icons-png.flaticon.com/512/3955/3955024.png', url: 'https://www.instagram.com/visualmind.pa/' },
+    { name: 'Facebook', favicon: 'https://cdn-icons-png.flaticon.com/512/5968/5968764.png', url: 'https://www.facebook.com/Visualmind.pa' },
   ];
 
-  // Links de la tienda
-  const shopLinks = [
-    { key: 'footer.category_anime', label: t('footer.category_anime'), category: 'Anime' },
-    { key: 'footer.category_gaming', label: t('footer.category_gaming'), category: 'Videojuegos' },
-    { key: 'footer.category_sports', label: t('footer.category_sports'), category: 'Deportes' },
-    { key: 'footer.category_lifestyle', label: t('footer.category_lifestyle'), category: 'LifeStyle' },
-  ];
-
-  // Links de soporte
+  /** 
+   * Enlaces de soporte y políticas.
+   * Las rutas apuntan al componente InfoPage con parámetros dinámicos.
+   */
   const supportLinks = [
     { path: '/info/shipping', label: t('footer.shipping') },
     { path: '/info/returns', label: t('footer.returns') },
@@ -34,7 +39,10 @@ export default function Footer() {
 
   return (
     <footer style={{ background: '#050505', padding: '6rem 0 2rem 0', color: 'white', position: 'relative', overflow: 'hidden' }}>
-      {/* Textura de fondo decorativa */}
+      {/* 
+        Textura de fondo decorativa: 
+        Implementada mediante un patrón SVG en línea para minimizar peticiones HTTP.
+      */}
       <div style={{
         position: 'absolute', inset: 0,
         backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.02\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")',
@@ -42,10 +50,10 @@ export default function Footer() {
       }} />
 
       <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-        {/* Grid principal */}
+        {/* Grid Principal de Contenido */}
         <div className="footer-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '4rem', marginBottom: '4rem' }}>
 
-          {/* Marca */}
+          {/* Bloque de Marca y Descripción */}
           <div style={{ maxWidth: '300px' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: '900', letterSpacing: '-0.05em', marginBottom: '1rem' }}>
               VISUALMIND<span style={{ color: 'var(--primary)' }}>.</span>
@@ -55,19 +63,7 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Tienda */}
-          <div>
-            <h4 style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '1.5rem' }}>{t('footer.shop')}</h4>
-            <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-              {shopLinks.map(item => (
-                <li key={item.key}>
-                  <Link to={`/shop?category=${item.category}`} className="footer-link">{item.label}</Link>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Soporte */}
+          {/* Bloque de Soporte / Enlaces Útiles */}
           <div>
             <h4 style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '1.5rem' }}>{t('footer.support')}</h4>
             <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
@@ -79,7 +75,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Redes sociales */}
+          {/* Bloque de Redes Sociales */}
           <div>
             <h4 style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '1.5rem' }}>{t('footer.follow')}</h4>
             <div style={{ display: 'flex', gap: '1rem' }}>
@@ -92,7 +88,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Barra inferior */}
+        {/* Barra Inferior (Copyright y Políticas) */}
         <div className="footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
           <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
             © {new Date().getFullYear()} Visualmind. {t('footer.rights')}
@@ -106,3 +102,4 @@ export default function Footer() {
     </footer>
   );
 }
+

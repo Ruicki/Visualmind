@@ -9,8 +9,15 @@ import { useLanguage } from '../../context/LanguageContext';
 /**
  * Gestión de Temporadas (Seasons)
  */
+/**
+ * @component AdminSeasons
+ * @description Administración de temporadas (ej: Primavera/Verano 2026).
+ * Organiza los productos por ciclos temporales de moda, facilitando 
+ * el filtrado y la organización del catálogo.
+ */
 export default function AdminSeasons() {
     const { t } = useLanguage();
+    // Estados para la gestión de datos y UI
     const [seasons, setSeasons] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,6 +25,9 @@ export default function AdminSeasons() {
     const [expireResult, setExpireResult] = useState(null);
     const [isExpiring, setIsExpiring] = useState(false);
     
+    /**
+     * Estado del formulario para creación/edición de temporadas.
+     */
     const [formData, setFormData] = useState({
         id: null,
         name: '',
@@ -31,6 +41,9 @@ export default function AdminSeasons() {
         fetchSeasons();
     }, []);
 
+    /**
+     * Obtiene todas las temporadas configuradas desde el backend.
+     */
     const fetchSeasons = async () => {
         try {
             setLoading(true);
@@ -95,6 +108,10 @@ export default function AdminSeasons() {
         }
     };
 
+    /**
+     * Ejecuta un proceso en el servidor que verifica fechas de expiración.
+     * Los productos de temporadas vencidas se marcan como "Legacy" automáticamente.
+     */
     const handleExpire = async () => {
         if (!window.confirm('¿Ejecutar expiración de temporadas? Los productos de temporadas finalizadas pasarán a estado "Legacy"')) return;
         setIsExpiring(true);

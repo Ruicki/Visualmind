@@ -2,6 +2,12 @@ import { useParams, Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { ArrowLeft } from 'lucide-react';
 
+/**
+ * @component InfoPage
+ * @description Página versátil para contenido legal e informativo.
+ * Se utiliza para renderizar Términos de Servicio, Políticas de Privacidad, 
+ * Guías de Tallas y Preguntas Frecuentes.
+ */
 export default function InfoPage() {
     const { page } = useParams();
     const { t } = useLanguage();

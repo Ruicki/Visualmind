@@ -1,5 +1,16 @@
+/**
+ * @file adminController.js
+ * @description Controlador para el dashboard administrativo.
+ * Calcula métricas de ventas, stock, pedidos recientes y rendimiento de productos.
+ */
 import pool from '../src/config/db.js';
 
+/**
+ * getDashboardStats
+ * @description Recopila estadísticas clave para la visualización en el panel de control.
+ * Ejecuta múltiples consultas agregadas para obtener ventas totales, conteo de clientes
+ * y alertas de stock bajo (incluyendo variantes).
+ */
 export const getDashboardStats = async (req, res) => {
     try {
         // 1. Total de Ventas (suma de totales de órdenes)

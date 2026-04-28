@@ -1,6 +1,11 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
 
+/**
+ * @component About
+ * @description Página informativa "Sobre Nosotros".
+ * Presenta la misión, visión y valores de la marca Visualmind con un diseño estético.
+ */
 export default function About() {
     const { t } = useLanguage();
 

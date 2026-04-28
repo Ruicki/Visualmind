@@ -6,11 +6,21 @@ import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/axiosConfig';
 import { getProductImage } from '../../utils/imageUtils';
 
+/**
+ * @component AdminDashboard
+ * @description Centro de control principal para administradores.
+ * Visualiza métricas clave del negocio (ventas, pedidos, usuarios)
+ * mediante tarjetas de resumen y gráficos comparativos.
+ */
 export default function AdminDashboard() {
     const { t } = useLanguage();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    /**
+     * Efecto para cargar los datos estadísticos del dashboard al montar el componente.
+     * Consulta el endpoint '/admin/stats' que devuelve ventas, pedidos, usuarios y alertas.
+     */
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
@@ -35,6 +45,10 @@ export default function AdminDashboard() {
         );
     }
 
+    /**
+     * Definición de las tarjetas de métricas principales.
+     * Cada objeto contiene la etiqueta, valor formateado, cambio porcentual y estilo visual.
+     */
     const stats = [
         { 
             label: t('admin.stats_sales'), 
@@ -59,14 +73,6 @@ export default function AdminDashboard() {
             trend: 'up',
             icon: <Users size={24} />, 
             color: '#8b5cf6'
-        },
-        { 
-            label: t('admin.stats_rate'), 
-            value: '4.8%', 
-            change: '-0.4%', 
-            trend: 'down',
-            icon: <TrendingUp size={24} />, 
-            color: '#f59e0b'
         },
     ];
 

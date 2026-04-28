@@ -3,6 +3,12 @@ import api from '../../api/axiosConfig';
 import { Eye, CheckCircle, Clock, Truck, Loader } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 
+/**
+ * @component AdminOrders
+ * @description Gestor de pedidos y cumplimiento (fulfillment).
+ * Lista todas las transacciones realizadas, permite actualizar estados 
+ * de envío y visualizar detalles específicos de cada orden.
+ */
 export default function AdminOrders() {
     const { t } = useLanguage();
     const [orders, setOrders] = useState([]);
@@ -12,6 +18,10 @@ export default function AdminOrders() {
         fetchOrders();
     }, []);
 
+    /**
+     * @function fetchOrders
+     * @description Obtiene la lista completa de pedidos desde la API.
+     */
     const fetchOrders = async () => {
         try {
             setLoading(true);
@@ -24,6 +34,11 @@ export default function AdminOrders() {
         }
     };
 
+    /**
+     * Actualiza el estado de un pedido en la base de datos.
+     * @param {string} orderId - ID único del pedido.
+     * @param {string} newStatus - Nuevo estado (pending, shipped, delivered).
+     */
     const updateStatus = async (orderId, newStatus) => {
         try {
             await api.put(`/orders/${orderId}/status`, { status: newStatus });
@@ -33,6 +48,9 @@ export default function AdminOrders() {
         }
     };
 
+    /**
+     * Define los estilos visuales (colores e iconos) según el estado del pedido.
+     */
     const getStatusColor = (status) => {
         switch (status) {
             case 'pending': return { bg: 'rgba(255, 193, 7, 0.1)', color: '#ffc107', icon: <Clock size={14} /> };

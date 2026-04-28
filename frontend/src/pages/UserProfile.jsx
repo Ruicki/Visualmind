@@ -5,12 +5,19 @@ import { Package, User, LogOut, Clock, CheckCircle, XCircle, Loader, MapPin, Pen
 import { Link, Navigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 
+/**
+ * @component UserProfile
+ * @description Centro de gestión de cuenta para el usuario final.
+ * Permite visualizar el historial de pedidos, gestionar direcciones de envío
+ * y actualizar la información de perfil.
+ */
 export default function UserProfile() {
     const { user, loading: authLoading, signOut } = useAuth();
     const { t } = useLanguage();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState(null);
+    const [activeTab, setActiveTab] = useState('history'); // Tabs: history, addresses, settings
 
     // Profile form state
     const [fullName, setFullName] = useState('');
@@ -54,6 +61,39 @@ export default function UserProfile() {
 
         fetchData();
     }, [user]);
+
+    /**
+     * Carga los pedidos del usuario autenticado.
+     */
+    useEffect(() => {
+        const fetchOrders = async () => {
+            try {
+                const response = await api.get('/orders/user');
+                setOrders(response.data);
+            } catch (error) {
+                console.error('Error fetching user orders:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (user) fetchOrders();
+    }, [user]);
+
+    /**
+     * Mapeo de estados de pedido a colores semánticos.
+     * @param {string} status - Estado del pedido (pending, paid, shipped, etc.)
+     */
+    const getStatusColor = (status) => {
+        const colors = {
+            pending: '#eab308', // Amarillo
+            paid: '#22c55e',    // Verde
+            shipped: '#3b82f6', // Azul
+            delivered: '#10b981', // Esmeralda
+            cancelled: '#ef4444' // Rojo
+        };
+        return colors[status?.toLowerCase()] || '#6b7280';
+    };
 
     const handleProfileSubmit = async (e) => {
         e.preventDefault();

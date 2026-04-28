@@ -1,25 +1,38 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { PRODUCTS } from '../data/products';
+import axiosInstance from '../api/axiosConfig';
+import { isProductVisible } from '../utils/productUtils';
 import { ArrowLeft, Maximize2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
+/**
+ * @component Lookbook
+ * @description Galería visual inspiracional.
+ * Muestra el contenido estético de las campañas actuales mediante un layout
+ * de grid dinámico y animaciones de Framer Motion.
+ */
 export default function Lookbook() {
     const { t } = useLanguage();
     const [isVisible, setIsVisible] = useState(false);
 
+    const [editorialImages, setEditorialImages] = useState([]);
+
     useEffect(() => {
         setIsVisible(true);
+        axiosInstance.get('/products').then(res => {
+            if (res.data?.length > 0) {
+                // Filter visible products and pick some for the lookbook
+                const visible = res.data.filter(isProductVisible);
+                const items = visible.slice(0, 6).map((p, index) => ({
+                    url: p.image || p.image_url,
+                    title: p.title,
+                    size: index % 3 === 0 ? 'large' : (index % 3 === 1 ? 'small' : 'medium')
+                }));
+                setEditorialImages(items);
+            }
+        }).catch(() => {});
     }, []);
-
-    const editorialImages = [
-        { url: PRODUCTS.find(p => p.id === 'op-luffy')?.image, title: t('lookbook.look1'), size: 'large' },
-        { url: PRODUCTS.find(p => p.id === 'hal-classic')?.colors?.[1]?.image, title: t('lookbook.look2'), size: 'small' },
-        { url: PRODUCTS.find(p => p.id === 'dep-messi')?.image, title: t('lookbook.look3'), size: 'medium' },
-        { url: PRODUCTS.find(p => p.id === 'vg-hollow')?.image, title: t('lookbook.look4'), size: 'large' },
-        { url: PRODUCTS.find(p => p.id === 'jjk-gojo')?.image, title: t('lookbook.look5'), size: 'small' },
-        { url: PRODUCTS.find(p => p.id === 'sv-pucca')?.image, title: t('lookbook.look6'), size: 'medium' }
-    ].filter(item => item.url); // Safety check: only show items with valid image URLs
 
     return (
         <div style={{ background: '#000', minHeight: '100vh', paddingTop: '120px', paddingBottom: '100px', color: 'white' }}>

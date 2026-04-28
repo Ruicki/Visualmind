@@ -4,14 +4,24 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { Mail, Lock, User, ArrowRight, Loader } from 'lucide-react';
 
+/**
+ * @component Login
+ * @description Componente de autenticación unificado (Login / Registro).
+ * Gestiona la entrada de usuarios, validaciones de backend y redireccionamiento
+ * contextual (ej: volver al checkout tras loguearse).
+ */
 export default function Login() {
     const { signIn, signUp } = useAuth();
     const { t } = useLanguage();
     const navigate = useNavigate();
     const location = useLocation();
+
+    // Lógica de redirección: si el usuario venía de una ruta protegida, vuelve ahí post-login.
     const redirectTo = location.state?.from || '/';
     const contextMsg = location.state?.message;
-    const [isLogin, setIsLogin] = useState(true);
+
+    // Estados Locales
+    const [isLogin, setIsLogin] = useState(true); // Toggle entre modo Login y Registro
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -20,6 +30,11 @@ export default function Login() {
         password: ''
     });
 
+    /**
+     * Maneja el envío del formulario de autenticación.
+     * Soporta dinámicamente tanto 'signIn' como 'signUp' según el estado 'isLogin'.
+     * @param {Event} e - Evento de submit.
+     */
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -27,15 +42,21 @@ export default function Login() {
 
         try {
             if (isLogin) {
+                // Proceso de Inicio de Sesión
                 const { error } = await signIn(formData.email, formData.password);
                 if (error) throw error;
                 navigate(redirectTo, { replace: true });
             } else {
+                // Proceso de Registro de nuevo usuario
                 const { error } = await signUp(formData.email, formData.password);
                 if (error) throw error;
                 navigate(redirectTo, { replace: true });
             }
         } catch (err) {
+            /**
+             * Normalización de errores:
+             * Extrae el mensaje de error de la respuesta del servidor o usa uno genérico.
+             */
             const errorMessage = typeof err === 'string' ? err : (err?.message || 'Error desconocido al iniciar sesión');
             setError(errorMessage);
         } finally {

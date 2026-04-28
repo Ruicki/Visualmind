@@ -1,40 +1,87 @@
+/**
+ * @file AdminProducts.jsx
+ * @description Componente de administración para la gestión integral del catálogo de productos.
+ * Proporciona una interfaz avanzada para crear, editar y eliminar productos, gestionar
+ * inventario por variantes, y configurar metadatos de marketing y SEO.
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../../api/axiosConfig';
 import { 
     Plus, Edit, Trash2, Search, Loader, X, Save, 
     Image as ImageIcon, Upload, Link as LinkIcon, 
-    Star, Zap, Calendar, Package, Layers, Info, Settings 
+    Star, Zap, Calendar, Package, Layers, Info, Settings,
+    Check, Tag, Percent, Type
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getProductImage, compressImage } from '../../utils/imageUtils';
 
 /**
- * Panel de administración de productos mejorado con variantes y marketing.
+ * @typedef {Object} ProductVariant
+ * @property {string} size - Talla de la variante (ej: S, M, L)
+ * @property {string} color - Color o estilo de la variante
+ * @property {number} stock - Unidades disponibles
+ * @property {string} sku - Código de inventario único
  */
-// Categorías predefinidas del sistema — siempre disponibles
+
+/**
+ * @typedef {Object} ProductFormData
+ * @property {string|null} id - Identificador único (null para nuevos)
+ * @property {string} title - Nombre comercial del producto
+ * @property {string} description - Descripción detallada para la tienda
+ * @property {string} category - Categoría principal del sistema
+ * @property {string} sub_category - Subcategoría o nicho (ej: Naruto)
+ * @property {string} parent_category - Categoría jerárquica superior
+ * @property {number|string} price - Precio base de venta
+ * @property {number} discount - Porcentaje de descuento (0-100)
+ * @property {string} sku - SKU maestro del producto
+ * @property {number} stock - Inventario total (calculado si hay variantes)
+ * @property {string} tags - Etiquetas separadas por coma para búsqueda
+ * @property {File|null} image_file - Archivo de imagen principal
+ * @property {boolean} featured - Indica si es un producto destacado
+ * @property {boolean} is_new - Indica si se muestra como novedad
+ * @property {boolean} new_arrival - Duplicado semántico para compatibilidad de UI
+ * @property {string} launch_date - Fecha programada de publicación
+ * @property {string} lifecycle_state - Estado (Draft, Published, Legacy, Archived)
+ * @property {ProductVariant[]} variants - Lista de variantes asociadas
+ */
+
+/**
+ * Categorías estáticas del sistema para fallback en caso de error de conexión
+ * o para inicialización del estado.
+ */
 const SYSTEM_CATEGORIES = [
-    { value: 'anime', label: 'Anime' },
-    { value: 'caricaturas', label: 'Caricaturas / Cartoons' },
-    { value: 'videojuegos', label: 'Videojuegos' },
-    { value: 'deportes', label: 'Deportes' },
-    { value: 'san_valentin', label: 'San Valentín' },
-    { value: 'halloween', label: 'Halloween' },
-    { value: 'fiestas_patrias', label: 'Fiestas Patrias' },
-    { value: 'streetwear', label: 'Streetwear' },
-    { value: 'ropa', label: 'Ropa General' },
-    { value: 'accesorios', label: 'Accesorios' },
+    { label: 'Anime', value: 'anime' },
+    { label: 'Arte', value: 'art' },
+    { label: 'Música', value: 'music' },
+    { label: 'Pop Culture', value: 'pop_culture' },
+    { label: 'Tecnología', value: 'tech' },
+    { label: 'Gaming', value: 'gaming' },
+    { label: 'Personalizado', value: 'custom' }
 ];
 
+/**
+ * @component AdminProducts
+ * @description Interfaz de gestión de catálogo de productos.
+ * Permite realizar operaciones CRUD (Crear, Leer, Actualizar, Borrar),
+ * gestionar variantes de inventario, subir imágenes y controlar la 
+ * visibilidad del stock.
+ */
 export default function AdminProducts() {
     const { t } = useLanguage();
+    
+    // Estados de datos
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState('basic'); // 'basic', 'variants', 'marketing', 'advanced'
+    
+    // Entidades relacionadas
     const [availableCampaigns, setAvailableCampaigns] = useState([]);
     const [availableSeasons, setAvailableSeasons] = useState([]);
     const [availableCollections, setAvailableCollections] = useState([]);
+    const [allCategories, setAllCategories] = useState([]); // Categorías dinámicas desde BD
 
     // Modal y formulario
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,14 +89,21 @@ export default function AdminProducts() {
     const [formData, setFormData] = useState({
         id: null,
         title: '',
+        description: '',
         category: 'anime',
         sub_category: '',
+        parent_category: '',
         price: '',
+        discount: 0,
         sku: '',
         stock: 0,
+        tags: '',
         image_url: '',
         image_file: null,
+        hover_image_url: '',
+        hover_image_file: null,
         featured: false,
+        is_new: false,
         new_arrival: false,
         launch_date: '',
         lifecycle_state: 'Published',
@@ -65,8 +119,8 @@ export default function AdminProducts() {
     // Estado del upload de imagen e información dinámica
     const fileInputRef = useRef(null);
     const hoverFileInputRef = useRef(null);
-    const [imageMode, setImageMode] = useState('upload'); // 'upload' o 'url'
-    const [hoverImageMode, setHoverImageMode] = useState('upload'); // 'upload' o 'url'
+    const [imageError, setImageError] = useState(false);
+    const [hoverImageError, setHoverImageError] = useState(false);
     const [categories, setCategories] = useState(SYSTEM_CATEGORIES.map(c => c.value));
     const [subCategories, setSubCategories] = useState([]);
     const [customCategory, setCustomCategory] = useState(false);
@@ -78,20 +132,45 @@ export default function AdminProducts() {
     useEffect(() => {
         fetchProducts();
         fetchDynamicMetadata();
-        fetchCampaigns();
-        fetchSeasonsAndCollections();
     }, []);
 
-    const fetchSeasonsAndCollections = async () => {
+    /**
+     * @function getCategoryDetails
+     * @description Obtiene el objeto completo de categoría basado en el slug almacenado en el producto.
+     */
+    const getCategoryDetails = (slug) => {
+        return allCategories.find(c => c.slug === slug) || { name: slug, icon: '🏷️' };
+    };
+
+    /**
+     * Carga inicial de datos: Productos y Entidades relacionadas (Categorías, Campañas, etc.)
+     */
+    const fetchProducts = async () => {
+        setLoading(true);
         try {
-            const [seasonsRes, collectionsRes] = await Promise.all([
+            const [
+                productsRes, 
+                campaignsRes, 
+                seasonsRes, 
+                collectionsRes,
+                categoriesRes
+            ] = await Promise.all([
+                api.get('/products/admin'),
+                api.get('/campaigns'),
                 api.get('/seasons'),
-                api.get('/collections')
+                api.get('/collections'),
+                api.get('/categories')
             ]);
+            
+            setProducts(productsRes.data || []);
+            setAvailableCampaigns(campaignsRes.data || []);
             setAvailableSeasons(seasonsRes.data || []);
             setAvailableCollections(collectionsRes.data || []);
+            setAllCategories(categoriesRes.data || []);
         } catch (error) {
-            console.error('Error fetching seasons/collections:', error);
+            console.error('Error fetching admin data:', error);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -123,18 +202,11 @@ export default function AdminProducts() {
         }
     };
 
-    const fetchProducts = async () => {
-        try {
-            setLoading(true);
-            const response = await api.get('/products/admin');
-            setProducts(response.data || []);
-        } catch (error) {
-            console.error('Error al obtener productos:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
 
+    /**
+     * Elimina un producto tras confirmar la acción con el usuario.
+     * @param {number|string} id - ID del producto a eliminar.
+     */
     const handleDelete = async (id) => {
         if (!window.confirm(t('admin.confirm_delete') || '¿Estás seguro de eliminar este producto?')) return;
         try {
@@ -145,20 +217,30 @@ export default function AdminProducts() {
         }
     };
 
+    /**
+     * @function handleEdit
+     * @description Prepara el formulario con los datos de un producto existente para su edición.
+     * @param {Object} product - El producto a editar.
+     */
     const handleEdit = (product) => {
         setFormData({
             id: product.id,
             title: product.title,
+            description: product.description || '',
             category: product.category,
             sub_category: product.sub_category || '',
+            parent_category: product.parent_category || '',
             price: product.price,
+            discount: product.discount || 0,
             sku: product.sku || '',
             stock: product.stock || 0,
+            tags: product.tags || '',
             image_url: product.image_url || '',
             image_file: null,
             hover_image_url: product.hover_image_url || '',
             hover_image_file: null,
             featured: product.featured || false,
+            is_new: product.is_new || product.new_arrival || false,
             new_arrival: product.new_arrival || false,
             launch_date: product.launch_date ? new Date(product.launch_date).toISOString().split('T')[0] : '',
             lifecycle_state: product.lifecycle_state || 'Published',
@@ -170,28 +252,37 @@ export default function AdminProducts() {
             admin_notes: product.admin_notes || '',
             variants: product.variants || []
         });
-        setImageMode(product.image_url && !product.image_url.startsWith('/uploads/') ? 'url' : 'upload');
-        setHoverImageMode(product.hover_image_url && !product.hover_image_url.startsWith('/uploads/') ? 'url' : 'upload');
+        setImageError(false);
+        setHoverImageError(false);
         setUploadError(null);
         setSkuError(null);
         setActiveTab('basic');
         setIsModalOpen(true);
     };
 
+    /**
+     * @function handleAddNew
+     * @description Reinicia el formulario para crear un nuevo producto.
+     */
     const handleAddNew = () => {
         setFormData({
             id: null,
             title: '',
+            description: '',
             category: categories[0] || 'anime',
             sub_category: '',
+            parent_category: '',
             price: '',
+            discount: 0,
             sku: '',
             stock: 0,
+            tags: '',
             image_url: '',
             image_file: null,
             hover_image_url: '',
             hover_image_file: null,
             featured: false,
+            is_new: false,
             new_arrival: false,
             launch_date: new Date().toISOString().split('T')[0],
             lifecycle_state: 'Published',
@@ -203,8 +294,8 @@ export default function AdminProducts() {
             admin_notes: '',
             variants: []
         });
-        setImageMode('upload');
-        setHoverImageMode('upload');
+        setImageError(false);
+        setHoverImageError(false);
         setUploadError(null);
         setSkuError(null);
         setActiveTab('basic');
@@ -216,10 +307,18 @@ export default function AdminProducts() {
         setIsSaving(true);
 
         try {
+            // Recalcular stock total si hay variantes antes de guardar
+            let finalStock = formData.stock;
+            if (formData.variants && formData.variants.length > 0) {
+                finalStock = formData.variants.reduce((sum, v) => sum + (parseInt(v.stock) || 0), 0);
+            }
+
             const productFormData = new FormData();
             Object.keys(formData).forEach(key => {
                 if (key === 'variants') {
                     productFormData.append('variants', JSON.stringify(formData.variants));
+                } else if (key === 'stock') {
+                    productFormData.append('stock', finalStock);
                 } else if (key === 'image_file' && formData.image_file) {
                     productFormData.append('image', formData.image_file);
                 } else if (key === 'hover_image_file' && formData.hover_image_file) {
@@ -237,13 +336,9 @@ export default function AdminProducts() {
             }
 
             if (formData.id) {
-                await api.put(`/products/${formData.id}`, productFormData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                await api.put(`/products/${formData.id}`, productFormData);
             } else {
-                await api.post('/products', productFormData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                await api.post('/products', productFormData);
             }
 
             setIsModalOpen(false);
@@ -270,22 +365,26 @@ export default function AdminProducts() {
     };
 
     const updateVariant = (index, field, value) => {
-        const newVariants = [...formData.variants];
-        newVariants[index][field] = value;
+        const newVariants = formData.variants.map((v, i) => 
+            i === index ? { ...v, [field]: value } : v
+        );
         
-        // Sincronizar stock total si se modifica el stock de una variante
-        let totalStock = formData.stock;
-        if (field === 'stock') {
-            totalStock = newVariants.reduce((sum, v) => sum + (parseInt(v.stock) || 0), 0);
-        }
+        // Sincronizar stock total siempre que haya variantes
+        const totalStock = newVariants.reduce((sum, v) => sum + (parseInt(v.stock) || 0), 0);
         
         setFormData({ ...formData, variants: newVariants, stock: totalStock });
     };
 
     const removeVariant = (index) => {
+        const newVariants = formData.variants.filter((_, i) => i !== index);
+        const totalStock = newVariants.length > 0 
+            ? newVariants.reduce((sum, v) => sum + (parseInt(v.stock) || 0), 0)
+            : formData.stock;
+
         setFormData({
             ...formData,
-            variants: formData.variants.filter((_, i) => i !== index)
+            variants: newVariants,
+            stock: totalStock
         });
     };
 
@@ -331,8 +430,10 @@ export default function AdminProducts() {
             reader.onloadend = () => {
                 if (type === 'main') {
                     setFormData(prev => ({ ...prev, image_file: compressedFile, image_url: reader.result }));
+                    setImageError(false);
                 } else {
                     setFormData(prev => ({ ...prev, hover_image_file: compressedFile, hover_image_url: reader.result }));
+                    setHoverImageError(false);
                 }
                 setUploadError(null);
             };
@@ -384,6 +485,7 @@ export default function AdminProducts() {
                                 <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', background: 'rgba(255,255,255,0.01)' }}>
                                     <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Producto</th>
                                     <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Categoría</th>
+                                    <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Subcategoría</th>
                                     <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Stock</th>
                                     <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Precio</th>
                                     <th style={{ padding: '1.2rem', textAlign: 'left', color: 'var(--text-secondary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Ciclo / Info</th>
@@ -405,8 +507,17 @@ export default function AdminProducts() {
                                             </div>
                                         </td>
                                         <td style={{ padding: '1rem 1.2rem' }}>
-                                            <span style={{ padding: '0.3rem 0.6rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem' }}>{product.category}</span>
-                                            <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.2rem' }}>{product.sub_category}</div>
+                                            <span style={{ 
+                                                padding: '0.3rem 0.6rem', border: '1px solid rgba(255,255,255,0.05)',
+                                                borderRadius: '8px', background: 'rgba(255,255,255,0.03)', 
+                                                fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem'
+                                            }}>
+                                                <span>{getCategoryDetails(product.category).icon}</span>
+                                                <span style={{ fontWeight: '600' }}>{getCategoryDetails(product.category).name}</span>
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '1rem 1.2rem' }}>
+                                            <span style={{padding: '0.3rem 0.6rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem' ,textTransform: 'capitalize'}}>{product.sub_category}</span>
                                         </td>
                                         <td style={{ padding: '1rem 1.2rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -418,7 +529,7 @@ export default function AdminProducts() {
                                                 {product.variants?.length > 0 && <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>({product.variants.length} var)</span>}
                                             </div>
                                         </td>
-                                        <td style={{ padding: '1rem 1.2rem', fontWeight: '700', color: 'var(--primary)' }}>${product.price}</td>
+                                        <td style={{ padding: '1rem 1.2rem', fontWeight: '700', color: '#00ff08ff' }}>${product.price}</td>
                                         <td style={{ padding: '1rem 1.2rem' }}>
                                             <span style={{ 
                                                 padding: '0.3rem 0.6rem', 
@@ -515,7 +626,7 @@ export default function AdminProducts() {
                                                 <div className="form-group">
                                                     <label className="label-text">Categoría</label>
                                                     <select
-                                                        value={customCategory ? '__custom__' : (SYSTEM_CATEGORIES.find(c => c.value === formData.category) ? formData.category : '__custom__')}
+                                                        value={customCategory ? '__custom__' : (allCategories.find(c => c.slug === formData.category) ? formData.category : '__custom__')}
                                                         onChange={e => {
                                                             if (e.target.value === '__custom__') {
                                                                 setCustomCategory(true);
@@ -527,16 +638,13 @@ export default function AdminProducts() {
                                                         className="input-field"
                                                         style={{ cursor: 'pointer' }}
                                                     >
-                                                        {SYSTEM_CATEGORIES.map(cat => (
-                                                            <option key={cat.value} value={cat.value}>{cat.label}</option>
-                                                        ))}
-                                                        {/* Categorías extra de la DB que no están en el sistema */}
-                                                        {categories.filter(c => !SYSTEM_CATEGORIES.find(s => s.value === c)).map(c => (
-                                                            <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                                                        <option value="">Seleccionar categoría...</option>
+                                                        {allCategories.map(cat => (
+                                                            <option key={cat.id} value={cat.slug}>{cat.icon} {cat.name}</option>
                                                         ))}
                                                         <option value="__custom__">✏️ Personalizado...</option>
                                                     </select>
-                                                    {(customCategory || (!SYSTEM_CATEGORIES.find(c => c.value === formData.category) && formData.category)) && (
+                                                    {(customCategory || (!allCategories.find(c => c.slug === formData.category) && formData.category)) && (
                                                         <input
                                                             type="text"
                                                             value={formData.category}
@@ -560,9 +668,35 @@ export default function AdminProducts() {
                                                     <input required type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} className="input-field" />
                                                 </div>
                                                 <div className="form-group">
-                                                    <label className="label-text">Stock Total</label>
-                                                    <input type="number" value={formData.stock} onChange={e => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })} className="input-field" />
+                                                    <label className="label-text">Descuento (%)</label>
+                                                    <div style={{ position: 'relative' }}>
+                                                        <input 
+                                                            type="number" 
+                                                            min="0" max="100" 
+                                                            value={formData.discount} 
+                                                            onChange={e => setFormData({ ...formData, discount: parseInt(e.target.value) || 0 })} 
+                                                            className="input-field" 
+                                                        />
+                                                        <Percent size={14} style={{ position: 'absolute', right: '1rem', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                                                    </div>
                                                 </div>
+                                            </div>
+
+                                            <div className="form-group">
+                                                <label className="label-text">Stock {formData.variants?.length > 0 ? '(Calculado de variantes)' : 'General'}</label>
+                                                <input 
+                                                    type="number" 
+                                                    value={formData.stock} 
+                                                    onChange={e => setFormData({ ...formData, stock: parseInt(e.target.value) || 0 })} 
+                                                    className="input-field"
+                                                    disabled={formData.variants?.length > 0}
+                                                    style={formData.variants?.length > 0 ? { opacity: 0.6, cursor: 'not-allowed', background: 'rgba(255,255,255,0.05)' } : {}}
+                                                />
+                                                {formData.variants?.length > 0 && (
+                                                    <p style={{ fontSize: '0.7rem', color: 'var(--primary)', marginTop: '0.5rem' }}>
+                                                        * El stock está siendo gestionado por las variantes en la pestaña "Variantes".
+                                                    </p>
+                                                )}
                                             </div>
 
                                             {/* Imagen Section */}
@@ -577,28 +711,61 @@ export default function AdminProducts() {
                                                         style={{ 
                                                             width: '120px', height: '120px', borderRadius: '16px', 
                                                             border: `2px dashed ${dragOver ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`, 
-                                                            background: dragOver ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                                                            background: dragOver ? 'rgba(var(--primary-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
                                                             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
-                                                            transition: 'all 0.3s'
+                                                            transition: 'all 0.3s',
+                                                            position: 'relative'
                                                         }}
                                                     >
+                                                        <AnimatePresence>
+                                                            {dragOver && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0 }}
+                                                                    animate={{ opacity: 1 }}
+                                                                    exit={{ opacity: 0 }}
+                                                                    style={{
+                                                                        position: 'absolute', inset: 0, 
+                                                                        background: 'rgba(var(--primary-rgb), 0.9)',
+                                                                        display: 'flex', flexDirection: 'column', 
+                                                                        alignItems: 'center', justifyContent: 'center',
+                                                                        color: 'white', zIndex: 2, gap: '0.5rem'
+                                                                    }}
+                                                                >
+                                                                    <Upload size={20} />
+                                                                    <span style={{ fontSize: '0.6rem', fontWeight: '700', textAlign: 'center' }}>SUELTA AQUÍ</span>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+
                                                         {formData.image_url ? (
-                                                            <img src={formData.image_url.startsWith('data:') ? formData.image_url : getProductImage(null, formData.image_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                                            <img 
+                                                                src={formData.image_url.startsWith('data:') ? formData.image_url : getProductImage(null, formData.image_url)} 
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                                alt="" 
+                                                                onError={() => setImageError(true)}
+                                                            />
                                                         ) : (
-                                                            <Upload size={24} style={{ color: dragOver ? 'var(--primary)' : 'rgba(255,255,255,0.2)' }} />
+                                                            <div style={{ textAlign: 'center' }}>
+                                                                <Upload size={24} style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '0.5rem' }} />
+                                                                <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>Arrastra o clic</p>
+                                                            </div>
                                                         )}
                                                         <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={e => handleFileSelect(e, 'main')} accept="image/*" />
                                                     </div>
                                                     <div style={{ flex: 1 }}>
-                                                        <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '0.3rem', marginBottom: '0.8rem' }}>
-                                                            <button type="button" onClick={() => setImageMode('upload')} style={{ flex: 1, padding: '0.4rem', borderRadius: '8px', background: imageMode === 'upload' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: 'white', fontSize: '0.75rem', cursor: 'pointer' }}>Archivo</button>
-                                                            <button type="button" onClick={() => setImageMode('url')} style={{ flex: 1, padding: '0.4rem', borderRadius: '8px', background: imageMode === 'url' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: 'white', fontSize: '0.75rem', cursor: 'pointer' }}>URL</button>
+                                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '0.8rem' }}>
+                                                            {formData.image_file ? (
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                    <Check size={14} style={{ color: '#22c55e' }} />
+                                                                    <span style={{ color: 'white' }}>{formData.image_file.name}</span>
+                                                                </div>
+                                                            ) : (
+                                                                formData.image_url ? 'Imagen actual del producto' : 'Arrastra o haz clic para subir'
+                                                            )}
                                                         </div>
-                                                        {imageMode === 'url' ? (
-                                                            <input type="text" value={formData.image_url} onChange={e => setFormData({ ...formData, image_url: e.target.value })} className="input-field" placeholder="https://..." />
-                                                        ) : (
-                                                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                                {formData.image_file ? formData.image_file.name : 'No hay archivo seleccionado'}
+                                                        {imageError && (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', marginBottom: '0.8rem' }}>
+                                                                <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: '600' }}>⚠️ Esta imagen no carga correctamente</span>
                                                             </div>
                                                         )}
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.8rem' }}>
@@ -635,28 +802,61 @@ export default function AdminProducts() {
                                                         style={{ 
                                                             width: '120px', height: '120px', borderRadius: '16px', 
                                                             border: `2px dashed ${hoverDragOver ? 'var(--primary)' : 'rgba(255,255,255,0.1)'}`, 
-                                                            background: hoverDragOver ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                                                            background: hoverDragOver ? 'rgba(var(--primary-rgb), 0.1)' : 'rgba(255,255,255,0.02)',
                                                             display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', overflow: 'hidden',
-                                                            transition: 'all 0.3s'
+                                                            transition: 'all 0.3s',
+                                                            position: 'relative'
                                                         }}
                                                     >
+                                                        <AnimatePresence>
+                                                            {hoverDragOver && (
+                                                                <motion.div
+                                                                    initial={{ opacity: 0 }}
+                                                                    animate={{ opacity: 1 }}
+                                                                    exit={{ opacity: 0 }}
+                                                                    style={{
+                                                                        position: 'absolute', inset: 0, 
+                                                                        background: 'rgba(var(--primary-rgb), 0.9)',
+                                                                        display: 'flex', flexDirection: 'column', 
+                                                                        alignItems: 'center', justifyContent: 'center',
+                                                                        color: 'white', zIndex: 2, gap: '0.5rem'
+                                                                    }}
+                                                                >
+                                                                    <Upload size={20} />
+                                                                    <span style={{ fontSize: '0.6rem', fontWeight: '700', textAlign: 'center' }}>SUELTA AQUÍ</span>
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+
                                                         {formData.hover_image_url ? (
-                                                            <img src={formData.hover_image_url.startsWith('data:') ? formData.hover_image_url : getProductImage(null, formData.hover_image_url)} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                                                            <img 
+                                                                src={formData.hover_image_url.startsWith('data:') ? formData.hover_image_url : getProductImage(null, formData.hover_image_url)} 
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                                alt="" 
+                                                                onError={() => setHoverImageError(true)}
+                                                            />
                                                         ) : (
-                                                            <Upload size={24} style={{ color: hoverDragOver ? 'var(--primary)' : 'rgba(255,255,255,0.2)' }} />
+                                                            <div style={{ textAlign: 'center' }}>
+                                                                <Upload size={24} style={{ color: 'rgba(255,255,255,0.2)', marginBottom: '0.5rem' }} />
+                                                                <p style={{ fontSize: '0.6rem', color: 'var(--text-secondary)' }}>Arrastra o clic</p>
+                                                            </div>
                                                         )}
                                                         <input ref={hoverFileInputRef} type="file" style={{ display: 'none' }} onChange={e => handleFileSelect(e, 'hover')} accept="image/*" />
                                                     </div>
                                                     <div style={{ flex: 1 }}>
-                                                        <div style={{ display: 'flex', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', padding: '0.3rem', marginBottom: '0.8rem' }}>
-                                                            <button type="button" onClick={() => setHoverImageMode('upload')} style={{ flex: 1, padding: '0.4rem', borderRadius: '8px', background: hoverImageMode === 'upload' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: 'white', fontSize: '0.75rem', cursor: 'pointer' }}>Archivo</button>
-                                                            <button type="button" onClick={() => setHoverImageMode('url')} style={{ flex: 1, padding: '0.4rem', borderRadius: '8px', background: hoverImageMode === 'url' ? 'rgba(255,255,255,0.1)' : 'transparent', border: 'none', color: 'white', fontSize: '0.75rem', cursor: 'pointer' }}>URL</button>
+                                                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '0.8rem', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '0.8rem' }}>
+                                                            {formData.hover_image_file ? (
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                    <Check size={14} style={{ color: '#22c55e' }} />
+                                                                    <span style={{ color: 'white' }}>{formData.hover_image_file.name}</span>
+                                                                </div>
+                                                            ) : (
+                                                                formData.hover_image_url ? 'Imagen actual del producto' : 'Arrastra o haz clic para subir'
+                                                            )}
                                                         </div>
-                                                        {hoverImageMode === 'url' ? (
-                                                            <input type="text" value={formData.hover_image_url} onChange={e => setFormData({ ...formData, hover_image_url: e.target.value })} className="input-field" placeholder="https://..." />
-                                                        ) : (
-                                                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '0.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
-                                                                {formData.hover_image_file ? formData.hover_image_file.name : 'No hay archivo seleccionado'}
+                                                        {hoverImageError && (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)', marginBottom: '0.8rem' }}>
+                                                                <span style={{ color: '#ef4444', fontSize: '0.7rem', fontWeight: '600' }}>⚠️ Esta imagen no carga correctamente</span>
                                                             </div>
                                                         )}
                                                         <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.8rem' }}>
@@ -888,7 +1088,7 @@ export default function AdminProducts() {
             <style>{`
                 .modal-overlay {
                     position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(8px);
-                    z-index: 2000; display: flex; alignItems: center; justifyContent: center; padding: 1.5rem;
+                    z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 1.5rem;
                 }
                 .label-text { font-size: 0.85rem; font-weight: 600; color: #aaa; margin-bottom: 0.5rem; display: block; }
                 .input-field { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.8rem; color: white; transition: all 0.3s; }
@@ -896,11 +1096,11 @@ export default function AdminProducts() {
                 .input-field-small { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 0.5rem; color: white; font-size: 0.8rem; }
                 .custom-select { width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 0.8rem; color: white; cursor: pointer; }
                 .table-row-hover:hover { background: rgba(255,255,255,0.02); }
-                .icon-btn-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; alignItems: center; justifyContent: center; transition: all 0.2s; }
-                .icon-btn-blue:hover { background: #3b82f6; color: white; }
-                .icon-btn-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; alignItems: center; justifyContent: center; transition: all 0.2s; }
-                .icon-btn-red:hover { background: #ef4444; color: white; }
-                .close-btn { background: rgba(255,255,255,0.05); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; alignItems: center; justifyContent: center; }
+                .icon-btn-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s; }
+                .icon-btn-blue:hover { background: #3b82f6; color: white; transform: translateY(-2px); }
+                .icon-btn-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; width: 32px; height: 32px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; transition: all 0.2s; }
+                .icon-btn-red:hover { background: #ef4444; color: white; transform: translateY(-2px); }
+                .close-btn { background: rgba(255,255,255,0.05); border: none; color: white; width: 36px; height: 36px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; }
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
                 .spin { animation: spin 1s linear infinite; }
                 

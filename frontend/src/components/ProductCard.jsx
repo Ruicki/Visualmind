@@ -1,11 +1,31 @@
+/**
+ * @file ProductCard.jsx
+ * @description Componente de tarjeta de producto individual.
+ * Renderiza la vista previa de un producto con soporte para estados de stock,
+ * lógica de legado (descuentos automáticos), y acciones rápidas (carrito/favoritos).
+ */
+
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Heart } from 'lucide-react';
+import { Plus, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { Link } from 'react-router-dom';
 import QuickViewModal from './QuickViewModal';
 import { getProductImage } from '../utils/imageUtils';
 
+/**
+ * ProductCard
+ * @component
+ * @param {Object} props - Propiedades del producto.
+ * @param {number|string} props.id - ID único del producto.
+ * @param {string} props.title - Nombre comercial.
+ * @param {number} props.price - Precio base.
+ * @param {string} [props.image] - URL de imagen estática (legacy).
+ * @param {string} [props.image_url] - URL de imagen dinámica (DB).
+ * @param {string} props.category - Categoría para etiquetas.
+ * @param {Array} [props.colors] - Variantes de color disponibles.
+ * @param {Array} [props.variants] - Variantes de talla y stock.
+ */
 export default function ProductCard(props) {
     // Normalizar: productos estáticos usan 'image', productos de DB usan 'image_url'
     const { id, title, price, image, image_url, category } = props;
@@ -13,7 +33,8 @@ export default function ProductCard(props) {
     const [isHovered, setIsHovered] = useState(false);
     const displayImage = getProductImage(image, image_url);
     
-    // Logic for hover image: use the second color variant's image if it exists, otherwise use a slight zoom or filter
+    // Lógica para la imagen de hover: usa la imagen de la segunda variante de color si existe,
+    // de lo contrario aplica un ligero zoom o filtro sobre la imagen principal.
     const hoverImage = props.hover_image_url 
         ? getProductImage(null, props.hover_image_url)
         : (props.colors && props.colors.length > 1 
@@ -28,18 +49,23 @@ export default function ProductCard(props) {
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        // Trigger animation on mount
+        // Disparar animación al montar el componente
         const timer = setTimeout(() => setIsVisible(true), 100);
         return () => clearTimeout(timer);
     }, []);
 
     const layoutPref = props.layout_preference || 'standard';
 
-    // Dynamic legacy logic
+    // Lógica dinámica para productos "Legacy"
     const isSeasonExpired = props.season_end_date ? new Date(props.season_end_date) < new Date() : false;
     const isLegacy = props.lifecycle_state === 'legacy' || 
                      props.season_is_active === false || 
                      isSeasonExpired;
+
+    // Calcular si el producto está totalmente agotado comparando todas sus variantes
+    const isOutOfStock = props.variants && props.variants.length > 0
+        ? props.variants.every(v => (parseInt(v.stock) || 0) === 0)
+        : (parseInt(props.stock) || 0) === 0;
 
     return (
         <>
@@ -55,9 +81,11 @@ export default function ProductCard(props) {
                     transition: 'var(--transition-base)',
                     position: 'relative',
                     gridColumn: layoutPref === 'hero' ? '1 / -1' : 'auto', 
+                    opacity: isOutOfStock ? 0.8 : 1,
+                    filter: isOutOfStock ? 'grayscale(0.5)' : 'none'
                 }}
             >
-                {/* Image Container */}
+                {/* Contenedor de Imagen */}
                 <div className="product-card-image" style={{
                     width: '100%',
                     background: '#1e293b',
@@ -66,7 +94,7 @@ export default function ProductCard(props) {
                     aspectRatio: '4/5'
                 }}>
                     <Link to={`/product/${id}`}>
-                        {/* Base Image */}
+                        {/* Imagen Base */}
                         <img
                             src={displayImage}
                             alt={title}
@@ -83,7 +111,7 @@ export default function ProductCard(props) {
                                 inset: 0
                             }}
                         />
-                        {/* Hover Image */}
+                        {/* Imagen de Hover */}
                         {hoverImage !== displayImage && (
                             <img
                                 src={hoverImage}
@@ -104,7 +132,30 @@ export default function ProductCard(props) {
                         )}
                     </Link>
 
-                    {/* Wishlist Button */}
+                    {/* Etiqueta de Agotado */}
+                    {isOutOfStock && (
+                        <div style={{
+                            position: 'absolute',
+                            top: '50%',
+                            left: '50%',
+                            transform: 'translate(-50%, -50%) rotate(-15deg)',
+                            background: '#ef4444',
+                            color: 'white',
+                            padding: '0.5rem 1.5rem',
+                            fontWeight: '900',
+                            fontSize: '0.8rem',
+                            letterSpacing: '0.1em',
+                            borderRadius: '4px',
+                            boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+                            zIndex: 15,
+                            pointerEvents: 'none',
+                            border: '2px solid white'
+                        }}>
+                            AGOTADO
+                        </div>
+                    )}
+
+                    {/* Botón de Lista de Deseos (Wishlist) */}
                     <button
                         onClick={(e) => {
                             e.preventDefault();
@@ -132,34 +183,16 @@ export default function ProductCard(props) {
                         <Heart size={20} fill={isInWishlist(id) ? '#ff4d4d' : 'none'} />
                     </button>
 
-                    {/* Hover Overlay */}
-                    <div className="overlay-actions" style={{
-                        position: 'absolute',
-                        inset: 0,
-                        background: 'rgba(0,0,0,0.3)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '1rem',
-                        opacity: 0,
-                        transition: 'opacity 0.3s ease',
-                        cursor: 'pointer'
-                    }}
-                        onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
-                        onMouseLeave={(e) => e.currentTarget.style.opacity = '0'}
-                        onClick={() => setIsQuickViewOpen(true)}
-                    >
-                        <div style={{ background: 'white', color: 'black', borderRadius: '50%', width: '50px', height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none' }}>
-                            <Eye size={22} />
-                        </div>
-                    </div>
+
 
                     <button
-                        className="flex-center"
+                        className={`flex-center ${isOutOfStock ? 'disabled' : ''}`}
+                        disabled={isOutOfStock}
                         onClick={(e) => {
                             e.stopPropagation();
+                            if (isOutOfStock) return;
                             const defaultColor = props.colors?.[0] || null;
-                            const defaultSize = props.sizes?.[0] || 'M';
+                            const defaultSize = props.variants?.[0]?.size || props.sizes?.[0] || 'M';
                             const displayImg = defaultColor?.image || getProductImage(props.image, props.image_url);
                             addToCart({
                                 ...props,
@@ -175,20 +208,20 @@ export default function ProductCard(props) {
                             right: '1rem',
                             width: '40px',
                             height: '40px',
-                            background: 'white',
+                            background: isOutOfStock ? '#334155' : 'white',
                             borderRadius: '50%',
-                            color: 'black',
+                            color: isOutOfStock ? 'rgba(255,255,255,0.4)' : 'black',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                             zIndex: 10,
                             border: 'none',
-                            cursor: 'pointer'
+                            cursor: isOutOfStock ? 'not-allowed' : 'pointer'
                         }}
                     >
                         <Plus size={20} />
                     </button>
                 </div>
 
-                {/* Content */}
+                {/* Contenido de la Tarjeta */}
                 <div style={{ padding: '1.5rem' }}>
                     <div style={{
                         display: 'flex',
@@ -206,7 +239,7 @@ export default function ProductCard(props) {
                             {category}
                         </div>
                         
-                        {/* Status Badges */}
+                        {/* Etiquetas de Estado (Legacy, New, Draft) */}
                         {isLegacy && (
                             <span style={{ background: '#f59e0b', color: 'black', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: '900' }}>LEGACY</span>
                         )}
@@ -222,6 +255,7 @@ export default function ProductCard(props) {
                         <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem', fontWeight: '600', color: 'white' }}>{title}</h3>
                     </Link>
 
+                    {/* Precios y Descuentos */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                         <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'white' }}>
                             ${isLegacy ? (price * 0.5).toFixed(2) : price}

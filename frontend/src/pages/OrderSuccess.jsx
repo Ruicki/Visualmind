@@ -7,8 +7,10 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 /**
- * Página de éxito tras completar un pedido.
- * Incluye generación de recibo digital en PDF.
+ * @component OrderSuccess
+ * @description Página de confirmación post-compra.
+ * Visualiza el resumen del pedido realizado y permite la descarga del recibo 
+ * en formato PDF utilizando jsPDF y html2canvas.
  */
 export default function OrderSuccess() {
   const location = useLocation();

@@ -9,31 +9,45 @@ import {
 import { useLanguage } from '../../context/LanguageContext';
 import { getProductImage, compressImage } from '../../utils/imageUtils';
 
+/**
+ * @component AdminCampaigns
+ * @description Gestión de campañas de marketing estacionales.
+ * Permite definir qué campaña está activa, asignar colecciones destacadas
+ * y controlar el contenido visual que se muestra en el home.
+ */
 export default function AdminCampaigns() {
     const { t } = useLanguage();
-    const [campaigns, setCampaigns] = useState([]);
-    const [loading, setLoading] = useState(true);
+    // --- Estados de Datos ---
+    const [campaigns, setCampaigns] = useState([]); // Lista de todas las campañas
+    const [loading, setLoading] = useState(true); // Estado de carga inicial
+    
+    // --- Estado del Modal y Guardado ---
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    
+    // --- Datos del Formulario ---
     const [formData, setFormData] = useState({
         id: null,
-        name: '',
-        slug: '',
-        description: '',
-        banner_url: '',
-        accent_color: '#ff4d4d',
-        template_type: 'grid',
+        name: '', // Nombre comercial
+        slug: '', // URL amigable
+        description: '', // Texto descriptivo
+        banner_url: '', // URL de la imagen del banner
+        accent_color: '#ff4d4d', // Color temático de la campaña
+        template_type: 'grid', // Estilo de renderizado (grid, editorial, masonry)
         start_date: '',
         end_date: '',
-        is_active: true,
-        countdown_enabled: false,
-        image_file: null
+        is_active: true, // Si se muestra actualmente en el sitio
+        countdown_enabled: false, // Si se activa el reloj de cuenta regresiva
+        image_file: null // Archivo para carga directa
     });
 
     useEffect(() => {
         fetchCampaigns();
     }, []);
 
+    /**
+     * Obtiene todas las campañas configuradas desde el backend.
+     */
     const fetchCampaigns = async () => {
         try {
             setLoading(true);
@@ -96,13 +110,9 @@ export default function AdminCampaigns() {
             });
 
             if (formData.id) {
-                await api.put(`/campaigns/${formData.id}`, campaignFormData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                await api.put(`/campaigns/${formData.id}`, campaignFormData);
             } else {
-                await api.post('/campaigns', campaignFormData, {
-                    headers: { 'Content-Type': 'multipart/form-data' }
-                });
+                await api.post('/campaigns', campaignFormData);
             }
             setIsModalOpen(false);
             fetchCampaigns();

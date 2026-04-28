@@ -1,15 +1,31 @@
+/**
+ * @file db.js
+ * @description Configuración de la conexión a la base de datos PostgreSQL.
+ * Implementa un pool de conexiones con soporte para múltiples entornos y lógica de reintento.
+ */
+
 import pkg from 'pg';
 const { Pool } = pkg;
 import dotenv from 'dotenv';
 
-dotenv.config({ override: false }); // No sobreescribir variables ya definidas en el entorno (Railway)
+/**
+ * Carga de variables de entorno con precaución para no sobreescribir
+ * configuraciones del sistema anfitrión (ej. Railway).
+ */
+dotenv.config({ override: false });
 
-// Configuración de la conexión a PostgreSQL
-// Soporta tanto una URL completa (estándar en la nube) como parámetros individuales (local)
+/**
+ * Configuración dinámica del Pool.
+ * - En producción (Nube): Se prefiere `DATABASE_URL` con SSL habilitado.
+ * - En desarrollo (Local): Se utilizan parámetros individuales.
+ */
 const poolConfig = process.env.DATABASE_URL 
   ? { 
       connectionString: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false }
+      ssl: { 
+        // Requerido para la mayoría de proveedores Cloud (AWS, Railway, Supabase)
+        rejectUnauthorized: false 
+      }
     }
   : {
       user: process.env.DB_USER,
@@ -21,7 +37,13 @@ const poolConfig = process.env.DATABASE_URL
 
 const pool = new Pool(poolConfig);
 
-// Probar la conexión al iniciar (con retry para Railway donde la DB puede tardar)
+/**
+ * connectWithRetry
+ * @description Intenta establecer la conexión inicial con la base de datos.
+ * En entornos de contenedores, la base de datos puede tardar más en estar lista que el servidor Express.
+ * @param {number} retries Número de intentos restantes.
+ * @param {number} delay Tiempo de espera entre reintentos (ms).
+ */
 const connectWithRetry = (retries = 5, delay = 3000) => {
   pool.connect((err, client, release) => {
     if (err) {
@@ -29,15 +51,17 @@ const connectWithRetry = (retries = 5, delay = 3000) => {
         console.warn(`⚠️  Error conectando a PostgreSQL, reintentando en ${delay/1000}s... (${retries} intentos restantes)`);
         setTimeout(() => connectWithRetry(retries - 1, delay), delay);
       } else {
-        console.error('❌ No se pudo conectar a PostgreSQL después de varios intentos:', err.message);
+        console.error('❌ Error fatal: No se pudo conectar a PostgreSQL tras varios intentos:', err.message);
       }
       return;
     }
     console.log('✅ Conexión a PostgreSQL establecida exitosamente');
-    release();
+    release(); // Liberar el cliente al pool
   });
 };
 
+// Iniciar proceso de conexión
 connectWithRetry();
 
 export default pool;
+

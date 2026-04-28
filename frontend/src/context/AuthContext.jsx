@@ -1,41 +1,56 @@
+/**
+ * Contexto de Autenticación.
+ * Centraliza la lógica de inicio de sesión, registro, cierre de sesión
+ * y validación de tokens JWT para proteger las rutas del frontend.
+ */
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 
 const AuthContext = createContext();
 
+/**
+ * Hook personalizado para acceder al contexto de autenticación.
+ */
 export const useAuth = () => {
     return useContext(AuthContext);
 };
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [user, setUser] = useState(null); // Datos del usuario actual
+    const [loading, setLoading] = useState(true); // Estado de carga inicial de la sesión
 
-    /** Verifica si un JWT (formato header.payload.sig) no ha expirado */
+    /** 
+     * Verifica si un JWT (formato header.payload.sig) no ha expirado.
+     * Decodifica el payload sin verificar la firma (la firma se valida en el backend).
+     * @param {string} token 
+     * @returns {boolean} True si el token es válido y no ha expirado.
+     */
     const isTokenValid = (token) => {
         try {
             const payloadB64 = token.split('.')[1];
-            // base64url → base64 estándar
+            // Conversión de base64url a base64 estándar para atob()
             const padded = payloadB64.replace(/-/g, '+').replace(/_/g, '/');
             const payload = JSON.parse(atob(padded));
-            // exp es en segundos, Date.now() en ms
+            // 'exp' está en segundos, Date.now() en milisegundos
             return payload.exp > Math.floor(Date.now() / 1000);
         } catch {
             return false;
         }
     };
 
+    /**
+     * Efecto de inicialización: Recupera la sesión persistida en localStorage al cargar la app.
+     */
     useEffect(() => {
         const checkAuth = () => {
-            console.log('[AuthContext] Initializing checkAuth...');
+            console.log('[AuthContext] Verificando sesión persistida...');
             const token = localStorage.getItem('token');
             const storedUser = localStorage.getItem('user');
 
             if (token && storedUser) {
-                console.log('[AuthContext] Found token and storedUser in localStorage');
-                // Validar expiración antes de confiar en el token
+                // Validar expiración antes de restaurar el estado del usuario
                 if (!isTokenValid(token)) {
-                    console.warn('[AuthContext] Token expirado o inválido — cerrando sesión.');
+                    console.warn('[AuthContext] Token expirado — Limpiando sesión.');
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                     setLoading(false);
@@ -43,28 +58,30 @@ export const AuthProvider = ({ children }) => {
                 }
                 try {
                     const parsedUser = JSON.parse(storedUser);
-                    console.log('[AuthContext] Parsed user from storage:', parsedUser);
                     setUser(parsedUser);
                 } catch (err) {
-                    console.error('[AuthContext] Error parsing stored user:', err);
+                    console.error('[AuthContext] Error al parsear usuario guardado:', err);
                     localStorage.removeItem('token');
                     localStorage.removeItem('user');
                 }
-            } else {
-                console.log('[AuthContext] No session found in localStorage');
             }
             setLoading(false);
-            console.log('[AuthContext] checkAuth complete, loading set to false');
         };
 
         checkAuth();
     }, []);
 
+    /**
+     * Registra un nuevo usuario en la plataforma.
+     * @param {string} email 
+     * @param {string} password 
+     */
     const signUp = async (email, password) => {
         try {
             const response = await api.post('/auth/register', { email, password });
             const { token, user } = response.data;
             
+            // Persistencia en almacenamiento local
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user));
             setUser(user);
@@ -74,6 +91,11 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    /**
+     * Inicia sesión con credenciales existentes.
+     * @param {string} email 
+     * @param {string} password 
+     */
     const signIn = async (email, password) => {
         try {
             const response = await api.post('/auth/login', { email, password });
@@ -88,6 +110,9 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    /**
+     * Elimina el estado de la sesión y limpia el almacenamiento local.
+     */
     const signOut = async () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');

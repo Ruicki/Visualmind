@@ -8,15 +8,21 @@ import api from '../api/axiosConfig';
 import { getProductImage } from '../utils/imageUtils';
 
 /**
- * Formulario de checkout simplificado (sin Stripe).
+ * @component CheckoutForm
+ * @description Sub-componente que gestiona la captura de datos de envío y la lógica de pago.
+ * Procesa la creación de órdenes en el servidor y maneja los estados de carga y error.
+ * Actualmente simula la integración con pasarelas de pago.
  */
 const CheckoutForm = () => {
   const { cartItems, clearCart, getCartTotal } = useCart();
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
+  
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  
+  // Estado para la información de envío
   const [shippingInfo, setShippingInfo] = useState({
     name: '',
     email: user?.email || '',
@@ -25,10 +31,18 @@ const CheckoutForm = () => {
     zip: ''
   });
 
+  /**
+   * Maneja los cambios en los campos de entrada del formulario de envío.
+   */
   const handleShippingChange = (e) => {
     setShippingInfo({ ...shippingInfo, [e.target.name]: e.target.value });
   };
 
+  /**
+   * Procesa la orden de compra.
+   * Valida la sesión del usuario, envía los datos al endpoint de órdenes y
+   * gestiona la redirección tras el éxito o error.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -41,7 +55,7 @@ const CheckoutForm = () => {
     setError(null);
 
     try {
-      // Crear orden en Backend (sin Stripe por ahora)
+      // 1. Enviar orden al Backend (Sincronización de stock y persistencia ACID)
       const orderResponse = await api.post('/orders', {
         items: cartItems.map(item => ({
           product_id: item.id,
@@ -55,8 +69,10 @@ const CheckoutForm = () => {
         shippingDetails: shippingInfo
       });
 
-      // Limpiar carrito y redirigir
+      // 2. Limpiar estado local del carrito tras éxito
       clearCart();
+      
+      // 3. Navegar a página de éxito con metadatos de la orden para el resumen final
       navigate('/order-success', { 
         state: { 
           order: {
@@ -77,10 +93,9 @@ const CheckoutForm = () => {
     }
   };
 
-
   return (
     <form onSubmit={handleSubmit}>
-      {/* Sección de envío */}
+      {/* Sección de Envío: Captura de datos del destinatario */}
       <div style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '1.3rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
           {t('checkout.shipping')}
@@ -111,7 +126,7 @@ const CheckoutForm = () => {
         </div>
       </div>
 
-      {/* Sección de pago */}
+      {/* Sección de Pago: Placeholder para pasarela de pagos segura */}
       <div style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '1.3rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
           {t('checkout.payment')}
@@ -120,7 +135,7 @@ const CheckoutForm = () => {
           <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
             <Lock size={14} /> {t('common.secure_payment') || 'Pago seguro'}
           </div>
-          {/* Simulación de tarjeta de crédito */}
+          
           <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
               {t('checkout.payment_info') || 'Información de pago (simulado)'}
@@ -152,7 +167,6 @@ const CheckoutForm = () => {
         </div>
       </div>
 
-      {/* Botón de enviar */}
       <button
         type="submit"
         disabled={loading}
@@ -176,7 +190,11 @@ const CheckoutForm = () => {
 };
 
 /**
- * Página de Checkout — responsiva con grid adaptable.
+ * @component Checkout
+ * @description Contenedor principal de la página de checkout.
+ * Implementa un Guard de autenticación para asegurar que solo usuarios logueados accedan.
+ * 
+ * @returns {JSX.Element|null} La vista de checkout o redirección si no hay sesión.
  */
 export default function Checkout() {
   const { cartItems, getCartTotal } = useCart();
@@ -184,18 +202,18 @@ export default function Checkout() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
-  // Guard: redirigir si no está autenticado
+  /**
+   * Middleware de navegación: Redirige al login si se intenta acceder sin sesión activa,
+   * preservando el destino original mediante el estado de la ruta.
+   */
   useEffect(() => {
     if (!loading && !user) {
       navigate('/login', { state: { from: '/checkout', message: 'Inicia sesión para completar tu compra.' }, replace: true });
     }
   }, [user, loading, navigate]);
 
-  console.log('[Checkout] Render state:', { loading, userEmail: user?.email, cartItemsCount: cartItems.length });
-
-  // Mostrar nada mientras se verifica la sesión
+  // Evitar parpadeo de contenido mientras se verifica la sesión
   if (loading || !user) {
-    console.log('[Checkout] Returning null because loading is', loading, 'or user is null');
     return null;
   }
 
@@ -204,11 +222,14 @@ export default function Checkout() {
       <h1 style={{ fontSize: 'clamp(1.8rem, 3vw, 2.5rem)', marginBottom: '2.5rem' }}>{t('checkout.title')}</h1>
 
       <div className="checkout-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '3rem' }}>
+        {/* Lado Izquierdo: Formulario */}
         <CheckoutForm />
 
-        {/* Resumen del pedido */}
+        {/* Lado Derecho: Resumen de Compra (Sticky side) */}
         <div style={{ background: 'var(--bg-secondary)', padding: '2rem', borderRadius: '20px', height: 'fit-content', border: '1px solid var(--border-light)' }}>
           <h2 style={{ fontSize: '1.3rem', marginBottom: '1.5rem' }}>{t('checkout.summary')}</h2>
+          
+          {/* Desglose de Items */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
             {cartItems.map(item => (
               <div key={item.variantUniqueId || item.id} style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
@@ -233,6 +254,7 @@ export default function Checkout() {
             ))}
           </div>
 
+          {/* Cálculo de Totales (Subtotal, Envío, Impuestos) */}
           <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               <span>{t('cart.subtotal')}</span>

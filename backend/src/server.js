@@ -1,3 +1,10 @@
+/**
+ * @file server.js
+ * @description Punto de entrada principal del servidor Express.
+ * Gestiona la configuración de seguridad, middlewares globales, ruteo de la API,
+ * y la inicialización automática de la base de datos PostgreSQL.
+ */
+
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
@@ -13,14 +20,21 @@ import addressRoutes from '../routes/addressRoutes.js';
 import campaignRoutes from '../routes/campaignRoutes.js';
 import seasonRoutes from '../routes/seasonRoutes.js';
 import collectionRoutes from '../routes/collectionRoutes.js';
+import categoryRoutes from '../routes/categoryRoutes.js';
 import { expireSeasons } from '../services/seasonService.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+/**
+ * Carga de variables de entorno.
+ * Se utiliza `override: false` para respetar las variables definidas en plataformas PaaS (ej. Railway).
+ */
+dotenv.config({ override: false });
 
-dotenv.config({ override: false }); // No sobreescribir variables ya definidas en el entorno (Railway)
-
-// Validación de variables de entorno críticas
+/**
+ * Validación de configuración crítica.
+ * Asegura que las credenciales de BD y el secreto JWT estén presentes antes de operar plenamente.
+ */
 const missingVars = [];
 if (!process.env.DATABASE_URL) {
   const localVars = ['DB_USER', 'DB_PASSWORD', 'DB_NAME'];
@@ -30,34 +44,38 @@ if (!process.env.JWT_SECRET) missingVars.push('JWT_SECRET');
 
 if (missingVars.length > 0) {
   console.error(`❌ Variables de entorno faltantes: ${missingVars.join(', ')}`);
-  console.error('El servidor puede no funcionar correctamente.');
-  // No hacemos process.exit(1) para que Railway no crashee en el health check
+  console.error('Advertencia: El servidor puede presentar fallos en operaciones críticas.');
 }
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Rate limiters
+/**
+ * Configuraciones de Rate Limiting (Seguridad).
+ * Protege endpoints sensibles contra ataques de fuerza bruta.
+ */
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
+  windowMs: 15 * 60 * 1000, // 15 minutos
   max: 10,
   message: { message: 'Demasiados intentos. Intenta de nuevo en 15 minutos.' },
   skip: () => process.env.NODE_ENV !== 'production'
 });
 
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 60 minutes
+  windowMs: 60 * 60 * 1000, // 60 minutos
   max: 5,
   message: { message: 'Demasiados registros desde esta IP.' },
   skip: () => process.env.NODE_ENV !== 'production'
 });
 
-// Middleware
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,https://visualmind-one-vercel.app,https://visualmind-g3vpabx9e-ruickis-projects.vercel.app').split(',');
+/**
+ * Middleware de CORS.
+ * Configurado para permitir orígenes específicos en producción y flexibilidad en desarrollo.
+ */
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,https://visualmind-one-vercel.app').split(',');
 
 app.use(cors({
   origin: (origin, callback) => {
-    // En desarrollo permitimos todo para evitar bloqueos por localhost vs 127.0.0.1 o puertos dinámicos
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
@@ -68,10 +86,17 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-app.use(express.json()); // Permite recibir JSON en el body
-app.use('/uploads', express.static('uploads')); // Servir archivos estáticos
 
-// Rutas
+// Parsing de cuerpos de petición
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+/** Servir archivos estáticos (Imágenes de productos subidas) */
+app.use('/uploads', express.static('uploads'));
+
+/**
+ * Montaje de Rutas de la API.
+ */
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/register', registerLimiter);
 app.use('/api/auth', authRoutes);
@@ -82,10 +107,13 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/seasons', seasonRoutes);
 app.use('/api/collections', collectionRoutes);
+app.use('/api/categories', categoryRoutes);
 
-
-
-// Endpoint temporal para crear/resetear admin
+/**
+ * Endpoint: Inicialización Forzada de Admin.
+ * @route GET /api/init-admin
+ * @description Crea o actualiza el usuario administrador por defecto. Útil en despliegues iniciales.
+ */
 app.get('/api/init-admin', async (req, res) => {
   try {
     const adminEmail = 'visualmind@admin.com';
@@ -96,14 +124,18 @@ app.get('/api/init-admin', async (req, res) => {
       VALUES ($1, $2, $3, $4)
       ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role
     `, [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']);
-    res.json({ message: 'Admin creado/actualizado', email: adminEmail, password: adminPassword });
+    res.json({ message: 'Admin creado/actualizado', email: adminEmail });
   } catch (error) {
     console.error('[InitAdmin] Error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// Endpoint de prueba básico
+/**
+ * Endpoint: Health Check.
+ * @route GET /api/health
+ * @description Verifica el estado del servidor y la conectividad con la base de datos.
+ */
 app.get('/api/health', async (req, res) => {
   try {
     const result = await pool.query('SELECT NOW()');
@@ -118,39 +150,51 @@ app.get('/api/health', async (req, res) => {
     res.status(500).json({ 
       status: 'error', 
       message: 'Error de conexión a la BD', 
-      error: error.message,
-      has_db_url: !!process.env.DATABASE_URL,
-      has_jwt: !!process.env.JWT_SECRET
+      error: error.message
     });
   }
 });
 
+/**
+ * Manejador Global de Errores.
+ * Centraliza la captura de excepciones para evitar fugas de información en producción.
+ */
+app.use((err, req, res, next) => {
+  console.error('ERROR GLOBAL:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Error interno del servidor',
+    stack: process.env.NODE_ENV === 'production' ? null : err.stack
+  });
+});
 
-
-// Iniciar servidor
+/**
+ * Inicialización del Servidor.
+ */
 app.listen(PORT, async () => {
   console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
   
-  // Inicializar base de datos si es necesario
+  // 1. Inicializar Esquema de Base de Datos
   try {
     await initializeDatabase();
   } catch (err) {
     console.warn('[Startup] Error al inicializar DB:', err.message);
   }
   
-  // Ejecutar servicio de expiración de temporadas al arrancar
+  // 2. Tarea Programada Inicial: Expirar temporadas obsoletas
   try {
     await expireSeasons();
   } catch (err) {
-    // No crítico: si falla no bloqueamos el servidor
     console.warn('[Startup] No se pudo ejecutar el servicio de temporadas:', err.message);
   }
 });
 
-// Función para inicializar la base de datos automáticamente
+/**
+ * initializeDatabase
+ * @description Verifica la existencia de tablas fundamentales.
+ * Si no existen, ejecuta el script `schema.sql` y crea el administrador inicial.
+ */
 async function initializeDatabase() {
   try {
-    // Verificar si la tabla users existe
     const tableCheck = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -162,13 +206,12 @@ async function initializeDatabase() {
     if (!tableCheck.rows[0].exists) {
       console.log('[InitDB] Tablas no encontradas, ejecutando schema.sql...');
       
-      // Ejecutar schema.sql
       const schemaPath = path.join(process.cwd(), 'schema.sql');
       const schema = fs.readFileSync(schemaPath, 'utf8');
       await pool.query(schema);
       console.log('[InitDB] Schema ejecutado correctamente');
       
-      // Crear usuario admin si no existe
+      // Creación del primer Administrador
       const adminEmail = 'visualmind@admin.com';
       const adminPassword = process.env.ADMIN_PASSWORD || 'Visualmind@14';
       
@@ -179,11 +222,12 @@ async function initializeDatabase() {
           'INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4)',
           [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']
         );
-        console.log(`[InitDB] Admin creado: ${adminEmail}`);
+        console.log(`[InitDB] Admin por defecto creado: ${adminEmail}`);
       }
     }
   } catch (error) {
-    console.error('[InitDB] Error:', error.message);
+    console.error('[InitDB] Error crítico durante la inicialización:', error.message);
     throw error;
   }
 }
+

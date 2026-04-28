@@ -4,10 +4,20 @@ import { useLanguage } from '../context/LanguageContext';
 import ProductCard from '../components/ProductCard';
 import { Heart, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { isProductVisible } from '../utils/productUtils';
 
+/**
+ * @component Wishlist
+ * @description Vista de lista de deseos (Favoritos).
+ * Permite al usuario visualizar y gestionar los productos guardados.
+ * Utiliza el WishlistContext para la persistencia de datos.
+ */
 export default function Wishlist() {
     const { wishlistItems } = useWishlist();
     const { t } = useLanguage();
+    
+    // Filtrar items que ya no deberían ser visibles
+    const visibleItems = wishlistItems.filter(isProductVisible);
 
     if (wishlistItems.length === 0) {
         return (
@@ -31,7 +41,7 @@ export default function Wishlist() {
             <header style={{ marginBottom: '4rem' }}>
                 <h1 style={{ fontSize: '3.5rem', fontWeight: '800', marginBottom: '1rem' }}>{t('wishlist_page.title')}</h1>
                 <p style={{ color: 'var(--text-secondary)' }}>
-                    {t('wishlist_page.count_text').replace('{{count}}', wishlistItems.length)}
+                    {t('wishlist_page.count_text').replace('{{count}}', visibleItems.length)}
                 </p>
             </header>
 
@@ -40,7 +50,7 @@ export default function Wishlist() {
                 gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                 gap: '2.5rem'
             }}>
-                {wishlistItems.map(product => (
+                {visibleItems.map(product => (
                     <ProductCard key={product.id} {...product} />
                 ))}
             </div>

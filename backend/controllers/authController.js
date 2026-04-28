@@ -1,7 +1,18 @@
+/**
+ * @file authController.js
+ * @description Controlador para la gestión de autenticación y usuarios.
+ * Implementa flujos de login, registro, gestión de perfil y seguridad mediante JWT.
+ */
+
 import pool from '../src/config/db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+/**
+ * login
+ * @description Autentica a un usuario verificando sus credenciales.
+ * Genera un token JWT de 24 horas si la validación es exitosa.
+ */
 export const login = async (req, res) => {
   const { email, password } = req.body;
 
@@ -19,6 +30,7 @@ export const login = async (req, res) => {
       return res.status(401).json({ message: 'Credenciales inválidas' });
     }
 
+    // Firma del token con payload mínimo (seguridad)
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
@@ -35,6 +47,11 @@ export const login = async (req, res) => {
   }
 };
 
+/**
+ * register
+ * @description Crea una nueva cuenta de usuario.
+ * Aplica hashing a la contraseña antes de la persistencia.
+ */
 export const register = async (req, res) => {
   const { email, password, role = 'customer' } = req.body;
 
@@ -44,6 +61,7 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: 'El usuario ya existe' });
     }
 
+    // Hashing con salt (factor de trabajo 10)
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -65,6 +83,11 @@ export const register = async (req, res) => {
   }
 };
 
+/**
+ * getMe
+ * @description Recupera la información del usuario autenticado actual.
+ * El ID se extrae del middleware de protección previa.
+ */
 export const getMe = async (req, res) => {
   try {
     const userResult = await pool.query(
@@ -83,6 +106,11 @@ export const getMe = async (req, res) => {
   }
 };
 
+/**
+ * updateMe
+ * @description Actualiza los datos personales del usuario.
+ * Valida que el nuevo email (si se cambia) no esté en uso.
+ */
 export const updateMe = async (req, res) => {
   const { full_name, email } = req.body;
   const userId = req.user.id;
@@ -104,6 +132,11 @@ export const updateMe = async (req, res) => {
   }
 };
 
+/**
+ * promoteUser
+ * @description (Admin Only) Eleva los privilegios de un usuario a 'admin'.
+ * Se identifica por email.
+ */
 export const promoteUser = async (req, res) => {
   const { email } = req.body;
   try {

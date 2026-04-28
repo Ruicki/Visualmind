@@ -1,35 +1,55 @@
+/**
+ * @file Navbar.jsx
+ * @description Componente de navegación principal.
+ * Gestiona la visibilidad del menú mobile, el estado del scroll para efectos visuales,
+ * y centraliza el acceso a funcionalidades clave (Carrito, Deseos, Perfil, Idioma).
+ */
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Search, User, Globe, Menu, X } from 'lucide-react';
+import { ShoppingBag, Search, User, Globe, Menu, X, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import SearchModal from './SearchModal';
 import ThemeToggle from './ThemeToggle';
 
 /**
- * Navbar principal con menú hamburguesa para móvil.
- * Se adapta a 3 breakpoints: desktop, tablet, mobile.
+ * Navbar
+ * @component
+ * @description Navbar adaptativo con 3 estados visuales:
+ * 1. Transparente (al inicio de la página).
+ * 2. Con fondo/blur (al hacer scroll > 50px).
+ * 3. Mobile (menú hamburguesa y overlay lateral).
  */
 export default function Navbar() {
+  // Integración con Contextos de Estado
   const { setIsCartOpen, getCartCount } = useCart();
+  const { wishlistItems } = useWishlist();
   const { language, toggleLanguage, t } = useLanguage();
   const { user } = useAuth();
 
-  // Estado para la versión scrolleada y el menú mobile
+  // Estados Locales de UI
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  
+  /** Ref para el contenedor del nav (usado para detectar clics fuera en mobile) */
   const navRef = useRef(null);
 
-  // Detectar scroll para cambiar estilo del navbar
+  /**
+   * Efecto: Monitoreo del scroll para cambiar el estilo del navbar (glassmorphism).
+   */
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Cerrar menú mobile al hacer clic fuera
+  /**
+   * Efecto: Cierra el menú mobile si se hace clic fuera del área del navbar.
+   */
   useEffect(() => {
     if (!mobileMenuOpen) return;
     const handleClickOutside = (e) => {
@@ -41,17 +61,19 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [mobileMenuOpen]);
 
-  // Links de navegación
+  /**
+   * Configuración de enlaces principales traducidos.
+   */
   const navLinks = [
+    { path: '/', label: t('nav.home') },
     { path: '/shop', label: t('nav.shop') },
     { path: '/collections', label: t('nav.collections') },
     { path: '/new-arrivals', label: t('nav.new_arrivals') },
-    { path: '/lookbook', label: t('nav.lookbook') || 'Lookbook' },
     { path: '/about', label: t('nav.about') },
   ];
 
   return (
-    <>
+    <>  
       <nav
         ref={navRef}
         className="navbar"
@@ -65,14 +87,25 @@ export default function Navbar() {
         }}
       >
         <div className="container navbar-inner">
-          {/* Logo */}
+          {/* Sección Logo: Incluye fallback para nombres de archivo con/sin mayúsculas */}
           <div className="navbar-logo">
             <Link to="/">
-              <span className="navbar-logo-text" style={{fontSize: '1.5rem', fontWeight: 'bold'}}>V</span>
-            </Link>
+              <img 
+                src="/Logo.png" 
+                alt="Visualmind" 
+                className="navbar-logo-img"
+                onError={(e) => {
+                  if (e.target.src.includes('/Logo.png')) {
+                    e.target.src = '/logo.png';
+                  }
+                }}
+              />
+              <span className="navbar-logo-text">
+                Visualmind</span>
+              </Link>
           </div>
 
-          {/* Links de escritorio (se ocultan en tablet/mobile via CSS) */}
+          {/* Enlaces de Navegación (Desktop) */}
           <div className="navbar-links">
             {navLinks.map(link => (
               <Link
@@ -85,9 +118,9 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* Acciones: búsqueda, idioma, tema, usuario, carrito, hamburguesa */}
+          {/* Barra de Acciones (Iconos y Toggles) */}
           <div className="navbar-actions">
-            {/* Búsqueda */}
+            {/* Buscador */}
             <button
               className="navbar-icon-btn"
               onClick={() => setSearchOpen(true)}
@@ -96,10 +129,10 @@ export default function Navbar() {
               <Search size={20} />
             </button>
 
-            {/* Toggle de tema */}
+            {/* Selector de Tema (Oscuro/Claro) */}
             <ThemeToggle />
 
-            {/* Cambio de idioma */}
+            {/* Selector de Idioma (ES/EN) */}
             <button
               className="navbar-lang-btn"
               onClick={toggleLanguage}
@@ -109,7 +142,7 @@ export default function Navbar() {
               <span className="lang-label">{language.toUpperCase()}</span>
             </button>
 
-            {/* Perfil / Login */}
+            {/* Usuario / Autenticación */}
             <Link
               to={user ? '/profile' : '/login'}
               className="navbar-icon-btn"
@@ -118,7 +151,20 @@ export default function Navbar() {
               <User size={20} />
             </Link>
 
-            {/* Carrito */}
+            {/* Favoritos con indicador numérico */}
+            <Link
+              to="/wishlist"
+              className="navbar-icon-btn"
+              aria-label={t('nav.wishlist') || 'Lista de deseos'}
+              style={{ position: 'relative' }}
+            >
+              <Heart size={20} />
+              {wishlistItems.length > 0 && (
+                <span className="cart-badge">{wishlistItems.length}</span>
+              )}
+            </Link>
+
+            {/* Carrito con indicador dinámico (Badge) */}
             <button
               className="navbar-icon-btn"
               onClick={() => setIsCartOpen(true)}
@@ -136,7 +182,7 @@ export default function Navbar() {
               )}
             </button>
 
-            {/* Botón Hamburguesa (visible solo en tablet/mobile via CSS) */}
+            {/* Trigger de Menú Hamburguesa (Solo Mobile/Tablet) */}
             <button
               className="navbar-hamburger"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -148,7 +194,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Menú mobile (se controla con clase .open) */}
+      {/* Menú Mobile Desplegable */}
       <div className={`navbar-mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
         {navLinks.map(link => (
           <Link
@@ -162,8 +208,9 @@ export default function Navbar() {
         ))}
       </div>
 
-      {/* Modal de búsqueda */}
+      {/* Modal de Búsqueda Global */}
       <SearchModal isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
     </>
   );
 }
+

@@ -1,6 +1,14 @@
 import pool from '../src/config/db.js';
 
-// Obtener todas las temporadas
+/**
+ * @function getAllSeasons
+ * @description Recupera el listado completo de temporadas (ej: Primavera 2024, Invierno 2023).
+ * Se utiliza principalmente en el panel de administración y para filtros de productos.
+ * 
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON con el listado de temporadas ordenado por fecha.
+ */
 export const getAllSeasons = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM seasons ORDER BY start_date DESC');
@@ -11,7 +19,15 @@ export const getAllSeasons = async (req, res) => {
   }
 };
 
-// Obtener temporada activa
+/**
+ * @function getActiveSeason
+ * @description Identifica la temporada marcada como activa en el sistema.
+ * Esto influye en qué productos se consideran "Nueva Colección" frente a "Legacy".
+ * 
+ * @param {Object} req - Express request object.
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON con la temporada activa o null.
+ */
 export const getActiveSeason = async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM seasons WHERE is_active = true LIMIT 1');
@@ -22,7 +38,14 @@ export const getActiveSeason = async (req, res) => {
   }
 };
 
-// Crear temporada
+/**
+ * @function createSeason
+ * @description Registra una nueva temporada en el sistema.
+ * 
+ * @param {Object} req - Express request object (req.body con datos de la temporada).
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON con la temporada creada.
+ */
 export const createSeason = async (req, res) => {
   const { name, slug, description, start_date, end_date, is_active } = req.body;
   try {
@@ -37,7 +60,14 @@ export const createSeason = async (req, res) => {
   }
 };
 
-// Actualizar temporada
+/**
+ * @function updateSeason
+ * @description Actualiza los metadatos o el estado de una temporada existente.
+ * 
+ * @param {Object} req - Express request object (req.params.id).
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} JSON con la temporada actualizada.
+ */
 export const updateSeason = async (req, res) => {
   const { id } = req.params;
   const { name, slug, description, start_date, end_date, is_active } = req.body;
@@ -53,7 +83,15 @@ export const updateSeason = async (req, res) => {
   }
 };
 
-// Eliminar temporada
+/**
+ * @function deleteSeason
+ * @description Elimina una temporada.
+ * CAUTION: Eliminar una temporada puede dejar productos huérfanos o afectar a la lógica de "Legacy".
+ * 
+ * @param {Object} req - Express request object (req.params.id).
+ * @param {Object} res - Express response object.
+ * @returns {Promise<void>} Mensaje de éxito.
+ */
 export const deleteSeason = async (req, res) => {
   const { id } = req.params;
   try {

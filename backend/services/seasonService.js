@@ -1,3 +1,7 @@
+/**
+ * @file seasonService.js
+ * @description Servicio de gestión del ciclo de vida de temporadas y automatización de estados.
+ */
 import pool from '../src/config/db.js';
 
 /**
