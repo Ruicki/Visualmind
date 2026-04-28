@@ -195,6 +195,7 @@ app.listen(PORT, async () => {
  */
 async function initializeDatabase() {
   try {
+    // 1. Verificar si la tabla 'users' existe
     const tableCheck = await pool.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -205,26 +206,27 @@ async function initializeDatabase() {
     
     if (!tableCheck.rows[0].exists) {
       console.log('[InitDB] Tablas no encontradas, ejecutando schema.sql...');
-      
       const schemaPath = path.join(process.cwd(), 'schema.sql');
       const schema = fs.readFileSync(schemaPath, 'utf8');
       await pool.query(schema);
       console.log('[InitDB] Schema ejecutado correctamente');
-      
-      // Creación del primer Administrador
-      const adminEmail = 'visualmind@admin.com';
-      const adminPassword = process.env.ADMIN_PASSWORD || 'Visualmind@14';
-      
-      const adminCheck = await pool.query('SELECT id FROM users WHERE email = $1', [adminEmail]);
-      if (adminCheck.rows.length === 0) {
-        const hashedPassword = await bcrypt.hash(adminPassword, 10);
-        await pool.query(
-          'INSERT INTO users (email, password_hash, full_name, role) VALUES ($1, $2, $3, $4)',
-          [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']
-        );
-        console.log(`[InitDB] Admin por defecto creado: ${adminEmail}`);
-      }
     }
+
+    // 2. Asegurar siempre el Administrador por defecto
+    const adminEmail = 'visualmind@admin.com';
+    const adminPassword = 'Visualmind@14'; // Contraseña maestra garantizada
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
+    await pool.query(`
+      INSERT INTO users (email, password_hash, full_name, role) 
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (email) DO UPDATE 
+      SET password_hash = EXCLUDED.password_hash, 
+          role = 'admin'
+    `, [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']);
+    
+    console.log(`[InitDB] ✅ Usuario Admin asegurado: ${adminEmail}`);
+
   } catch (error) {
     console.error('[InitDB] Error crítico durante la inicialización:', error.message);
     throw error;

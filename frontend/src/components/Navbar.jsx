@@ -142,14 +142,40 @@ export default function Navbar() {
               <span className="lang-label">{language.toUpperCase()}</span>
             </button>
 
-            {/* Usuario / Autenticación */}
-            <Link
-              to={user ? '/profile' : '/login'}
-              className="navbar-icon-btn"
-              aria-label={user ? 'Perfil' : 'Iniciar sesión'}
-            >
-              <User size={20} />
-            </Link>
+            {/* Usuario / Autenticación / Admin */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              {user && user.role === 'admin' && (
+                <Link
+                  to="/admin"
+                  className="navbar-icon-btn"
+                  title="Panel Admin"
+                  style={{ 
+                    background: 'rgba(59, 130, 246, 0.1)', 
+                    color: '#3b82f6',
+                    padding: '0.4rem 0.8rem',
+                    borderRadius: '8px',
+                    fontSize: '0.75rem',
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    marginRight: '0.5rem'
+                  }}
+                >
+                  Admin
+                </Link>
+              )}
+              <Link
+                to={user ? '/profile' : '/login'}
+                className="navbar-icon-btn"
+                aria-label={user ? 'Perfil' : 'Iniciar sesión'}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <User size={20} />
+              </Link>
+            </div>
 
             {/* Favoritos con indicador numérico */}
             <Link

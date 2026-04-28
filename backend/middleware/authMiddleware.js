@@ -48,3 +48,7 @@ export const checkRole = (role) => {
     }
   };
 };
+
+// Aliases para compatibilidad con el resto de la aplicación
+export const verifyToken = protect;
+export const isAdmin = checkRole('admin');
