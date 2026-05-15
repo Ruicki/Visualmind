@@ -18,10 +18,11 @@ import orderRoutes from '../routes/orderRoutes.js';
 import adminRoutes from '../routes/adminRoutes.js';
 import addressRoutes from '../routes/addressRoutes.js';
 import campaignRoutes from '../routes/campaignRoutes.js';
-import seasonRoutes from '../routes/seasonRoutes.js';
 import collectionRoutes from '../routes/collectionRoutes.js';
 import categoryRoutes from '../routes/categoryRoutes.js';
-import { expireSeasons } from '../services/seasonService.js';
+import featuredProductsRoutes from '../routes/featuredProductsRoutes.js';
+import newsletterRoutes from '../routes/newsletterRoutes.js';
+import { expireEvents } from '../services/eventService.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -68,6 +69,14 @@ const registerLimiter = rateLimit({
   skip: () => process.env.NODE_ENV !== 'production'
 });
 
+// Middleware de Registro de Peticiones (Debug)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log(`[${new Date().toLocaleTimeString()}] ${req.method} ${req.url}`);
+    next();
+  });
+}
+
 /**
  * Middleware de CORS.
  * Configurado para permitir orígenes específicos en producción y flexibilidad en desarrollo.
@@ -76,9 +85,10 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,ht
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (process.env.NODE_ENV !== 'production') return callback(null, true);
-    if (!origin) return callback(null, true);
+    // En desarrollo permitimos todo para facilitar pruebas
+    if (process.env.NODE_ENV !== 'production' || !origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    
     console.warn(`[CORS] Petición rechazada desde origen: ${origin}`);
     callback(new Error('Not allowed by CORS'));
   },
@@ -91,8 +101,12 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/** Servir archivos estáticos (Imágenes de productos subidas) */
-app.use('/uploads', express.static('uploads'));
+/**
+ * Servidor de Archivos Estáticos (Uploads).
+ * Expone la carpeta de subidas para que las imágenes sean accesibles vía URL.
+ */
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 
 /**
  * Montaje de Rutas de la API.
@@ -105,9 +119,10 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/campaigns', campaignRoutes);
-app.use('/api/seasons', seasonRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/featured-products', featuredProductsRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 
 /**
  * Endpoint: Inicialización Forzada de Admin.
@@ -180,11 +195,11 @@ app.listen(PORT, async () => {
     console.warn('[Startup] Error al inicializar DB:', err.message);
   }
   
-  // 2. Tarea Programada Inicial: Expirar temporadas obsoletas
+  // 2. Tarea Programada Inicial: Expirar eventos obsoletos
   try {
-    await expireSeasons();
+    await expireEvents();
   } catch (err) {
-    console.warn('[Startup] No se pudo ejecutar el servicio de temporadas:', err.message);
+    console.warn('[Startup] No se pudo ejecutar el servicio de eventos:', err.message);
   }
 });
 

@@ -2,13 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { ArrowRight, ChevronDown } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
-import { PRODUCTS } from '../data/products';
+
 import axiosInstance from '../api/axiosConfig';
 import { isProductVisible } from '../utils/productUtils';
 
 import { getProductImage } from '../utils/imageUtils';
-
-const getCollections = (t) => [];
 
 /**
  * @component Collections

@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { LayoutDashboard, Package, ShoppingCart, LogOut, Settings, Sparkles, Calendar, Layers, Tag } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, LogOut, Settings, Sparkles } from 'lucide-react';
 
 /**
  * @component AdminLayout
@@ -41,11 +41,8 @@ export default function AdminLayout() {
      */
     const navItems = [
         { path: '/admin', icon: <LayoutDashboard size={20} />, label: t('admin.dashboard') || 'Dashboard' },
-        { path: '/admin/products', icon: <Package size={20} />, label: t('admin.products') || 'Productos' },
-        { path: '/admin/categories', icon: <Tag size={20} />, label: 'Categorías' },
-        { path: '/admin/seasons', icon: <Calendar size={20} />, label: 'Temporadas' },
-        { path: '/admin/collections', icon: <Layers size={20} />, label: 'Colecciones' },
-        { path: '/admin/campaigns', icon: <Sparkles size={20} />, label: t('admin.campaigns') || 'Campañas' },
+        { path: '/admin/products', icon: <Package size={20} />, label: 'Catálogo' },
+        { path: '/admin/events', icon: <Sparkles size={20} />, label: 'Eventos' },
         { path: '/admin/orders', icon: <ShoppingCart size={20} />, label: t('admin.orders') || 'Pedidos' },
         { path: '/admin/settings', icon: <Settings size={20} />, label: t('admin.settings') || 'Ajustes' },
     ];

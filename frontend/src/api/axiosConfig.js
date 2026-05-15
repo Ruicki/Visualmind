@@ -14,8 +14,8 @@ import axios from 'axios';
  * @property {number} timeout - Tiempo máximo de espera de 5 segundos para evitar cuelgues.
  */
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
-    timeout: 5000,
+    baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:5000/api'),
+    timeout: 10000, // Aumentado a 10s para conexiones lentas
 });
 
 /**

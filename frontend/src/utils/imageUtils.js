@@ -55,10 +55,14 @@ export const getProductImage = (productId, imageUrl) => {
   if (imageUrl.startsWith('http') || imageUrl.startsWith('data:')) return imageUrl;
   
   // Construcción de la URL del backend
-  // Limpiamos el sufijo /api de la variable de entorno si existe
-  const apiBase = (import.meta.env.VITE_API_URL || 'http://localhost:5000').replace(/\/api$/, '');
+  // En desarrollo sin VITE_API_URL, usamos rutas relativas para activar el Proxy de Vite
+  const apiBase = import.meta.env.VITE_API_URL 
+    ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') 
+    : (import.meta.env.DEV ? '' : 'http://localhost:5000');
   
   // Aseguramos que no haya doble diagonal al concatenar
   const cleanPath = imageUrl.startsWith('/') ? imageUrl.substring(1) : imageUrl;
-  return `${apiBase}/${cleanPath}`;
+  
+  // Si apiBase está vacío (modo proxy), solo devolvemos /path
+  return apiBase ? `${apiBase}/${cleanPath}` : `/${cleanPath}`;
 };

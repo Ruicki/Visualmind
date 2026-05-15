@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { PRODUCTS } from '../data/products';
+
 import axiosInstance from '../api/axiosConfig';
 import { isProductVisible } from '../utils/productUtils';
 import { ArrowLeft, Maximize2 } from 'lucide-react';

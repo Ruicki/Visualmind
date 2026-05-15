@@ -12,10 +12,13 @@ import {
     Plus, Edit, Trash2, Search, Loader, X, Save, 
     Image as ImageIcon, Upload, Link as LinkIcon, 
     Star, Zap, Calendar, Package, Layers, Info, Settings,
-    Check, Tag, Percent, Type
+    Check, Tag, Percent, Type, Grid3X3
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getProductImage, compressImage } from '../../utils/imageUtils';
+import AdminCategories from './AdminCategories';
+import AdminCollections from './AdminCollections';
+import AdminFeaturedProducts from './AdminFeaturedProducts';
 
 /**
  * @typedef {Object} ProductVariant
@@ -79,7 +82,6 @@ export default function AdminProducts() {
     
     // Entidades relacionadas
     const [availableCampaigns, setAvailableCampaigns] = useState([]);
-    const [availableSeasons, setAvailableSeasons] = useState([]);
     const [availableCollections, setAvailableCollections] = useState([]);
     const [allCategories, setAllCategories] = useState([]); // Categorías dinámicas desde BD
 
@@ -103,13 +105,13 @@ export default function AdminProducts() {
         hover_image_url: '',
         hover_image_file: null,
         featured: false,
+        show_on_home: false,
         is_new: false,
         new_arrival: false,
         launch_date: '',
         lifecycle_state: 'Published',
         priority: 0,
         campaign_id: '',
-        season_id: '',
         collection_id: '',
         layout_preference: 'standard',
         admin_notes: '',
@@ -128,6 +130,7 @@ export default function AdminProducts() {
     const [skuError, setSkuError] = useState(null);
     const [dragOver, setDragOver] = useState(false);
     const [hoverDragOver, setHoverDragOver] = useState(false);
+    const [currentSection, setCurrentSection] = useState('products');
 
     useEffect(() => {
         fetchProducts();
@@ -151,20 +154,17 @@ export default function AdminProducts() {
             const [
                 productsRes, 
                 campaignsRes, 
-                seasonsRes, 
                 collectionsRes,
                 categoriesRes
             ] = await Promise.all([
                 api.get('/products/admin'),
                 api.get('/campaigns'),
-                api.get('/seasons'),
                 api.get('/collections'),
                 api.get('/categories')
             ]);
             
             setProducts(productsRes.data || []);
             setAvailableCampaigns(campaignsRes.data || []);
-            setAvailableSeasons(seasonsRes.data || []);
             setAvailableCollections(collectionsRes.data || []);
             setAllCategories(categoriesRes.data || []);
         } catch (error) {
@@ -240,13 +240,13 @@ export default function AdminProducts() {
             hover_image_url: product.hover_image_url || '',
             hover_image_file: null,
             featured: product.featured || false,
+            show_on_home: product.show_on_home || false,
             is_new: product.is_new || product.new_arrival || false,
             new_arrival: product.new_arrival || false,
             launch_date: product.launch_date ? new Date(product.launch_date).toISOString().split('T')[0] : '',
             lifecycle_state: product.lifecycle_state || 'Published',
             priority: product.priority || 0,
             campaign_id: product.campaign_id || '',
-            season_id: product.season_id || '',
             collection_id: product.collection_id || '',
             layout_preference: product.layout_preference || 'standard',
             admin_notes: product.admin_notes || '',
@@ -281,14 +281,14 @@ export default function AdminProducts() {
             image_file: null,
             hover_image_url: '',
             hover_image_file: null,
-            featured: false,
-            is_new: false,
-            new_arrival: false,
-            launch_date: new Date().toISOString().split('T')[0],
+        featured: false,
+        show_on_home: false,
+        is_new: false,
+        new_arrival: false,
+        launch_date: new Date().toISOString().split('T')[0],
             lifecycle_state: 'Published',
             priority: 0,
             campaign_id: '',
-            season_id: '',
             collection_id: '',
             layout_preference: 'standard',
             admin_notes: '',
@@ -444,8 +444,38 @@ export default function AdminProducts() {
         }
     };
 
+    const sectionTabs = [
+        { id: 'products', label: 'Productos', icon: Package },
+        { id: 'categories', label: 'Categorías', icon: Tag },
+        { id: 'collections', label: 'Colecciones', icon: Layers },
+        { id: 'featured', label: 'Destacados', icon: Star },
+    ];
+
     return (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="admin-container">
+            {/* Tabs de sección */}
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '2rem', background: 'rgba(255,255,255,0.03)', padding: '0.4rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)', width: 'fit-content' }}>
+                {sectionTabs.map(tab => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setCurrentSection(tab.id)}
+                        style={{
+                            padding: '0.7rem 1.5rem', border: 'none', borderRadius: '12px',
+                            background: currentSection === tab.id ? 'var(--primary)' : 'transparent',
+                            color: currentSection === tab.id ? 'black' : 'var(--text-secondary)',
+                            fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            transition: 'all 0.3s'
+                        }}
+                    >
+                        <tab.icon size={18} />
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            {currentSection === 'products' && (
+            <>
             {/* Cabecera */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
@@ -541,9 +571,9 @@ export default function AdminProducts() {
                                             }}>
                                                 {product.lifecycle_state || 'Published'}
                                             </span>
-                                            {product.season_id && (
+                                            {product.campaign_id && (
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                    <Calendar size={12} /> Temporada Asignada
+                                                    <Zap size={12} /> Evento Asignado
                                                 </div>
                                             )}
                                         </td>
@@ -955,6 +985,25 @@ export default function AdminProducts() {
                                                     <h5 style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Nueva Llegada</h5>
                                                     <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Etiqueta especial en la tienda para productos recientes.</p>
                                                 </div>
+
+                                                <div 
+                                                    onClick={() => setFormData({ ...formData, show_on_home: !formData.show_on_home })}
+                                                    style={{ 
+                                                        padding: '1.5rem', borderRadius: '20px', cursor: 'pointer',
+                                                        background: formData.show_on_home ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.02)',
+                                                        border: `1px solid ${formData.show_on_home ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255,255,255,0.05)'}`,
+                                                        transition: 'all 0.3s'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                        <Package size={24} color={formData.show_on_home ? '#22c55e' : '#666'} />
+                                                        <div style={{ width: '40px', height: '20px', borderRadius: '20px', background: formData.show_on_home ? '#22c55e' : '#333', position: 'relative' }}>
+                                                            <div style={{ position: 'absolute', top: '2px', left: formData.show_on_home ? '22px' : '2px', width: '16px', height: '16px', background: 'white', borderRadius: '50%', transition: 'all 0.3s' }} />
+                                                        </div>
+                                                    </div>
+                                                    <h5 style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Mostrar en Home</h5>
+                                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Aparecerá en la sección "Explora el Catálogo" de la página principal.</p>
+                                                </div>
                                             </div>
 
                                             <div className="form-group">
@@ -991,43 +1040,34 @@ export default function AdminProducts() {
                                             </div>
 
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
-                                                <div className="form-group">
-                                                    <label className="label-text">Temporada</label>
-                                                    <select 
-                                                        value={formData.season_id} 
-                                                        onChange={e => setFormData({ ...formData, season_id: e.target.value })} 
-                                                        className="custom-select"
-                                                    >
-                                                        <option value="">Sin Temporada</option>
-                                                        {availableSeasons.map(s => <option key={s.id} value={s.id}>{s.name} {s.is_active ? '(Activa)' : ''}</option>)}
-                                                    </select>
-                                                </div>
-                                                <div className="form-group">
-                                                    <label className="label-text">Colección</label>
-                                                    <select 
-                                                        value={formData.collection_id} 
-                                                        onChange={e => setFormData({ ...formData, collection_id: e.target.value })} 
-                                                        className="custom-select"
-                                                    >
-                                                        <option value="">Sin Colección</option>
-                                                        {availableCollections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                                    </select>
-                                                </div>
+                                                 <div className="form-group">
+                                                     <label className="label-text">Colección</label>
+                                                     <select 
+                                                         value={formData.collection_id} 
+                                                         onChange={e => setFormData({ ...formData, collection_id: e.target.value })} 
+                                                         className="custom-select"
+                                                     >
+                                                         <option value="">Sin Colección</option>
+                                                         {availableCollections.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                                     </select>
+                                                 </div>
                                             </div>
 
-                                            <div className="form-group">
-                                                <label className="label-text">Asociar a Campaña</label>
-                                                <select 
-                                                    value={formData.campaign_id} 
-                                                    onChange={e => setFormData({ ...formData, campaign_id: e.target.value })} 
-                                                    className="custom-select"
-                                                >
-                                                    <option value="">Sin Campaña Específica</option>
-                                                    {availableCampaigns.map(camp => (
-                                                        <option key={camp.id} value={camp.id}>{camp.name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
+                                             <div className="form-group">
+                                                 <label className="label-text">Evento (Campaña / Temporada)</label>
+                                                 <select 
+                                                     value={formData.campaign_id} 
+                                                     onChange={e => setFormData({ ...formData, campaign_id: e.target.value })} 
+                                                     className="custom-select"
+                                                 >
+                                                     <option value="">Sin Evento Específico</option>
+                                                     {availableCampaigns.map(camp => (
+                                                         <option key={camp.id} value={camp.id}>
+                                                             {camp.type === 'season' ? '🍂 ' : '🔥 '} {camp.name} {camp.is_active ? '(Activo)' : ''}
+                                                         </option>
+                                                     ))}
+                                                 </select>
+                                             </div>
                                         </motion.div>
                                     )}
 
@@ -1122,6 +1162,12 @@ export default function AdminProducts() {
                 .ratio-16-9 { width: 60px; height: 34px; }
                 .ratio-1-1 { width: 40px; height: 40px; }
             `}</style>
+            </>
+        )}
+
+        {currentSection === 'categories' && <AdminCategories />}
+        {currentSection === 'collections' && <AdminCollections />}
+        {currentSection === 'featured' && <AdminFeaturedProducts />}
         </motion.div>
     );
 }

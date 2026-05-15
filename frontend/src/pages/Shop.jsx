@@ -13,7 +13,7 @@ import { isProductVisible } from '../utils/productUtils';
  * @description Página del catálogo principal de productos.
  * Implementa un motor de filtrado avanzado por:
  * - Categoría, Precio, Talla, Color.
- * - Temporada y Campaña.
+ * - Eventos y Campañas.
  * Incluye visualización de estados de stock y persistencia de filtros.
  */
 export default function Shop() {
@@ -24,6 +24,7 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [categories, setCategories] = useState([]);
   const [activeCampaignData, setActiveCampaignData] = useState(null);
+  const [activeCollectionData, setActiveCollectionData] = useState(null);
 
   // --- Estados de Filtrado ---
   const [category, setCategory] = useState("all");
@@ -47,20 +48,34 @@ export default function Shop() {
     if (campaignSlug) {
       fetchCampaignDetails(campaignSlug);
     }
+    const collectionSlug = searchParams.get('collection');
+    if (collectionSlug) {
+      fetchCollectionDetails(collectionSlug);
+    }
   }, [searchParams]);
 
-  /**
-   * Obtiene los detalles de una campaña específica para personalizar la cabecera de la tienda.
-   * @param {string} slug - Identificador único de la campaña.
-   */
-  const fetchCampaignDetails = async (slug) => {
-    try {
-      const response = await axiosInstance.get(`/campaigns/${slug}`);
-      setActiveCampaignData(response.data);
-    } catch (err) {
-      console.warn("Error fetching campaign details:", err);
-    }
-  };
+    /**
+     * Obtiene los detalles de una campaña específica para personalizar la cabecera de la tienda.
+     * @param {string} slug - Identificador único de la campaña.
+     */
+    const fetchCampaignDetails = async (slug) => {
+        try {
+            const response = await axiosInstance.get('/campaigns');
+            const found = response.data?.find(c => c.slug === slug);
+            if (found) setActiveCampaignData(found);
+        } catch (err) {
+            console.warn("Error fetching campaign details:", err);
+        }
+    };
+
+    const fetchCollectionDetails = async (slug) => {
+        try {
+            const response = await axiosInstance.get(`/collections/${slug}/products`);
+            setActiveCollectionData({ slug, products: response.data });
+        } catch (err) {
+            console.warn("Error fetching collection products:", err);
+        }
+    };
 
   /**
    * Recupera la lista de categorías dinámicas del backend.
@@ -168,6 +183,11 @@ export default function Shop() {
     const campaignSlug = searchParams.get('campaign');
     if (campaignSlug && activeCampaignData) {
       if (product.campaign_id !== activeCampaignData.id) return false;
+    }
+    // 8. Filtro por colección (URL param)
+    const collectionSlug = searchParams.get('collection');
+    if (collectionSlug && activeCollectionData?.products) {
+      if (!activeCollectionData.products.some(p => p.id === product.id)) return false;
     }
 
     return true;

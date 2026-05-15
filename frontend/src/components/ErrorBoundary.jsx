@@ -1,36 +1,39 @@
 import React from 'react';
 
-class ErrorBoundary extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { hasError: false, error: null, errorInfo: null };
-    }
+export default class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
 
-    static getDerivedStateFromError(error) {
-        return { hasError: true };
-    }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
 
-    componentDidCatch(error, errorInfo) {
-        this.setState({ error, errorInfo });
-        console.error("Uncaught error:", error, errorInfo);
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', minHeight: '50vh', gap: '1rem',
+          padding: '2rem', textAlign: 'center', background: 'var(--bg-primary)'
+        }}>
+          <h2 style={{ fontSize: '2rem', fontWeight: '900' }}>
+            Algo salió mal
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', maxWidth: '400px' }}>
+            Ocurrió un error inesperado. Intenta recargar la página.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-primary"
+            style={{ padding: '0.8rem 2rem', borderRadius: '16px', cursor: 'pointer' }}
+          >
+            Recargar página
+          </button>
+        </div>
+      );
     }
-
-    render() {
-        if (this.state.hasError) {
-            return (
-                <div style={{ padding: '2rem', color: 'white', background: '#020617', minHeight: '100vh', fontFamily: 'sans-serif' }}>
-                    <h1>Something went wrong.</h1>
-                    <details style={{ whiteSpace: 'pre-wrap', marginTop: '1rem', color: '#ef4444' }}>
-                        {this.state.error && this.state.error.toString()}
-                        <br />
-                        {this.state.errorInfo && this.state.errorInfo.componentStack}
-                    </details>
-                </div>
-            );
-        }
-
-        return this.props.children;
-    }
+    return this.props.children;
+  }
 }
-
-export default ErrorBoundary;

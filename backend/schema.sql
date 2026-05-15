@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS products (
   featured        BOOLEAN DEFAULT false,
   new_arrival     BOOLEAN DEFAULT false,
   launch_date     DATE,
+  tags            VARCHAR(500),
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -115,6 +116,9 @@ CREATE TABLE IF NOT EXISTS campaigns (
   end_date          TIMESTAMPTZ,
   is_active         BOOLEAN DEFAULT false,
   countdown_enabled BOOLEAN DEFAULT false,
+  type              VARCHAR(50) DEFAULT 'campaign',
+  button_text       VARCHAR(100),
+  button_link       VARCHAR(255),
   updated_at        TIMESTAMPTZ,
   created_at        TIMESTAMPTZ DEFAULT NOW()
 );
@@ -132,6 +136,16 @@ CREATE TABLE IF NOT EXISTS seasons (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Categorías dinámicas para los productos
+CREATE TABLE IF NOT EXISTS categories (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        VARCHAR(255) NOT NULL,
+  slug        VARCHAR(255) UNIQUE NOT NULL,
+  icon        VARCHAR(50),
+  description TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Colecciones de productos (agrupaciones editoriales)
 CREATE TABLE IF NOT EXISTS collections (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -144,9 +158,18 @@ CREATE TABLE IF NOT EXISTS collections (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Slots de productos destacados para el carousel de la home
+CREATE TABLE IF NOT EXISTS featured_product_slots (
+  id           SERIAL PRIMARY KEY,
+  slot_order   INTEGER NOT NULL UNIQUE,
+  product_id   UUID REFERENCES products(id) ON DELETE SET NULL,
+  rotation     VARCHAR(20) DEFAULT 'weekly',
+  updated_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Columnas adicionales en products para lifecycle, campañas y temporadas
 -- (Se agregan con IF NOT EXISTS para no fallar si ya existen)
-DO $$
+DO $
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='lifecycle_state') THEN
     ALTER TABLE products ADD COLUMN lifecycle_state VARCHAR(50) DEFAULT 'Published';
@@ -175,4 +198,32 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='shipping_details') THEN
     ALTER TABLE orders ADD COLUMN shipping_details JSONB;
   END IF;
-END $$;
+  -- Columna campaign_id en featured_product_slots para slots por campaña
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='featured_product_slots' AND column_name='campaign_id') THEN
+    ALTER TABLE featured_product_slots ADD COLUMN campaign_id UUID REFERENCES campaigns(id) ON DELETE CASCADE;
+    ALTER TABLE featured_product_slots DROP CONSTRAINT featured_product_slots_slot_order_key;
+    ALTER TABLE featured_product_slots ADD UNIQUE (campaign_id, slot_order);
+  END IF;
+  -- Columnas adicionales en campaigns añadidas en fases posteriores
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' AND column_name='type') THEN
+    ALTER TABLE campaigns ADD COLUMN type VARCHAR(50) DEFAULT 'campaign';
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' AND column_name='button_text') THEN
+    ALTER TABLE campaigns ADD COLUMN button_text VARCHAR(100);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' AND column_name='button_link') THEN
+    ALTER TABLE campaigns ADD COLUMN button_link VARCHAR(255);
+  END IF;
+  -- Columnas añadidas en home-hero-products-redesign
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='campaigns' AND column_name='secondary_images') THEN
+    ALTER TABLE campaigns ADD COLUMN secondary_images JSONB DEFAULT '[]';
+  END IF;
+  -- Columna description_long en collections para la sección editorial del home
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='collections' AND column_name='description_long') THEN
+    ALTER TABLE collections ADD COLUMN description_long TEXT;
+  END IF;
+  -- Columna show_on_home en products para seleccionar los que aparecen en la home
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='show_on_home') THEN
+    ALTER TABLE products ADD COLUMN show_on_home BOOLEAN DEFAULT false;
+  END IF;
+END $;

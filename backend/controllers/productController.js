@@ -28,7 +28,7 @@ export const getAllProducts = async (req, res) => {
         // Query base con agregación JSON para variantes (evita el problema N+1)
         const baseQuery = `
             SELECT p.*, 
-                   s.end_date as season_end_date, s.is_active as season_is_active,
+                   c.end_date as campaign_end_date, c.is_active as campaign_is_active,
                    COALESCE(
                        (SELECT json_agg(pv.*) 
                         FROM product_variants pv 
@@ -36,7 +36,7 @@ export const getAllProducts = async (req, res) => {
                        '[]'
                    ) as variants
             FROM products p
-            LEFT JOIN seasons s ON p.season_id = s.id
+            LEFT JOIN campaigns c ON p.campaign_id = c.id
         `;
 
         if (search && search.trim()) {
@@ -86,11 +86,9 @@ export const getAdminProducts = async (req, res) => {
                    (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variants_count,
                    (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as variants_stock,
                    c.name as campaign_name,
-                   s.name as season_name,
                    col.name as collection_name
             FROM products p 
             LEFT JOIN campaigns c ON p.campaign_id = c.id
-            LEFT JOIN seasons s ON p.season_id = s.id
             LEFT JOIN collections col ON p.collection_id = col.id
             ORDER BY p.created_at DESC
         `);
@@ -140,8 +138,8 @@ export const createProduct = async (req, res) => {
         sku, stock, is_new, discount, featured, new_arrival, 
         parent_category, variants, launch_date, 
         lifecycle_state, priority, campaign_id,
-        season_id, collection_id, layout_preference, admin_notes,
-        tags
+        collection_id, layout_preference, admin_notes,
+        tags, show_on_home
     } = req.body;
     
     // Normalización de rutas de imagen
@@ -170,13 +168,12 @@ export const createProduct = async (req, res) => {
         
         // Convertir strings vacíos a null para columnas UUID o fechas
         const nCampaignId = campaign_id && campaign_id !== '' ? campaign_id : null;
-        const nSeasonId = season_id && season_id !== '' ? season_id : null;
         const nCollectionId = collection_id && collection_id !== '' ? collection_id : null;
         const nLaunchDate = launch_date && launch_date !== '' ? launch_date : null;
 
         const productResult = await client.query(
             `INSERT INTO products 
-            (title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, is_new, discount, featured, new_arrival, parent_category, launch_date, lifecycle_state, priority, campaign_id, season_id, collection_id, layout_preference, admin_notes, tags) 
+            (title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, is_new, discount, featured, new_arrival, parent_category, launch_date, lifecycle_state, priority, campaign_id, collection_id, layout_preference, admin_notes, tags, show_on_home) 
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) 
             RETURNING *`,
             [
@@ -184,8 +181,9 @@ export const createProduct = async (req, res) => {
                 is_new === 'true' || is_new === true, normalizedDiscount, featured === 'true' || featured === true, 
                 new_arrival === 'true' || new_arrival === true, parent_category, 
                 nLaunchDate, lifecycle_state || 'Published', normalizedPriority, nCampaignId,
-                nSeasonId, nCollectionId, layout_preference || 'standard', admin_notes || '',
-                tags || ''
+                nCollectionId, layout_preference || 'standard', admin_notes || '',
+                tags || '',
+                show_on_home === 'true' || show_on_home === true
             ]
         );
         
@@ -237,8 +235,8 @@ export const updateProduct = async (req, res) => {
         sku, stock, is_new, discount, featured, new_arrival, 
         parent_category, variants, launch_date,
         lifecycle_state, priority, campaign_id,
-        season_id, collection_id, layout_preference, admin_notes,
-        tags
+        collection_id, layout_preference, admin_notes,
+        tags, show_on_home
     } = req.body;
     
     const client = await pool.connect();
@@ -262,7 +260,6 @@ export const updateProduct = async (req, res) => {
         const normalizedPriority = parseInt(priority) || 0;
         
         const nCampaignId = campaign_id && campaign_id !== '' ? campaign_id : null;
-        const nSeasonId = season_id && season_id !== '' ? season_id : null;
         const nCollectionId = collection_id && collection_id !== '' ? collection_id : null;
         const nLaunchDate = launch_date && launch_date !== '' ? launch_date : null;
         
@@ -272,8 +269,8 @@ export const updateProduct = async (req, res) => {
             'sku = $6', 'stock = $7', 'is_new = $8', 'discount = $9', 'featured = $10',
             'new_arrival = $11', 'parent_category = $12', 'launch_date = $13',
             'lifecycle_state = $14', 'priority = $15', 'campaign_id = $16',
-            'season_id = $17', 'collection_id = $18', 'layout_preference = $19', 'admin_notes = $20',
-            'tags = $21'
+            'collection_id = $17', 'layout_preference = $18', 'admin_notes = $19',
+            'tags = $20', 'show_on_home = $21'
         ];
 
         const values = [
@@ -282,8 +279,9 @@ export const updateProduct = async (req, res) => {
             normalizedDiscount, featured === 'true' || featured === true,
             new_arrival === 'true' || new_arrival === true, parent_category, nLaunchDate,
             lifecycle_state || 'Published', normalizedPriority, nCampaignId,
-            nSeasonId, nCollectionId, layout_preference || 'standard', admin_notes || '',
-            tags || ''
+            nCollectionId, layout_preference || 'standard', admin_notes || '',
+            tags || '',
+            show_on_home === 'true' || show_on_home === true
         ];
 
         let paramCount = values.length + 1;

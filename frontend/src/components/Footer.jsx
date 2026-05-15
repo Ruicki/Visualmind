@@ -55,9 +55,7 @@ export default function Footer() {
 
           {/* Bloque de Marca y Descripción */}
           <div style={{ maxWidth: '300px' }}>
-            <h2 style={{ fontSize: '2rem', fontWeight: '900', letterSpacing: '-0.05em', marginBottom: '1rem' }}>
-              VISUALMIND<span style={{ color: 'var(--primary)' }}>.</span>
-            </h2>
+            <h2 style={{ fontSize: '2rem', fontWeight: '900', letterSpacing: '-0.05em', marginBottom: '1rem' }}>VISUALMIND </h2>
             <p style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
               {t('footer.description')}
             </p>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
-import { Package, User, LogOut, Clock, CheckCircle, XCircle, Loader, MapPin, Pencil, Trash2, Plus } from 'lucide-react';
+import { Package, User, LogOut, Clock, CheckCircle, XCircle, Loader, MapPin, Pencil, Trash2, Plus, ArrowRight } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -38,20 +38,16 @@ export default function UserProfile() {
 
         const fetchData = async () => {
             try {
-                // Fetch Profile from local backend
-                const profileRes = await api.get('/auth/me');
+                const [profileRes, ordersRes, addrRes] = await Promise.all([
+                    api.get('/auth/me'),
+                    api.get('/orders/my'),
+                    api.get('/addresses'),
+                ]);
                 setProfile(profileRes.data);
                 setFullName(profileRes.data.full_name || '');
                 setEmail(profileRes.data.email || '');
-
-                // Fetch Orders from local backend
-                const ordersRes = await api.get('/orders/my');
                 setOrders(ordersRes.data || []);
-
-                // Fetch Addresses
-                const addrRes = await api.get('/addresses');
                 setAddresses(addrRes.data || []);
-
             } catch (err) {
                 console.error("Error al obtener datos del perfil:", err);
             } finally {
@@ -60,24 +56,6 @@ export default function UserProfile() {
         };
 
         fetchData();
-    }, [user]);
-
-    /**
-     * Carga los pedidos del usuario autenticado.
-     */
-    useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const response = await api.get('/orders/user');
-                setOrders(response.data);
-            } catch (error) {
-                console.error('Error fetching user orders:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        if (user) fetchOrders();
     }, [user]);
 
     /**
@@ -187,7 +165,7 @@ export default function UserProfile() {
                             <p style={{ color: 'var(--text-secondary)' }}>{user.email}</p>
                             {profile?.role === 'admin' && (
                                 <Link to="/admin" style={{ color: '#10b981', fontWeight: 'bold', fontSize: '0.9rem', marginTop: '0.5rem', display: 'block', textDecoration: 'none' }}>
-                                    {t('profile.admin_access') || "Panel de Admin"} →
+                                    {t('profile.admin_access') || "Panel de Admin"} <ArrowRight size={14} style={{ display: 'inline' }} />
                                 </Link>
                             )}
                         </div>

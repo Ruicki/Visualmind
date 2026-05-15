@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DollarSign, ShoppingBag, Users, TrendingUp, Loader, ArrowUpRight, ArrowDownRight, AlertTriangle } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
@@ -14,6 +15,7 @@ import { getProductImage } from '../../utils/imageUtils';
  */
 export default function AdminDashboard() {
     const { t } = useLanguage();
+    const navigate = useNavigate();
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -212,7 +214,7 @@ export default function AdminDashboard() {
                 <div style={{ background: 'var(--bg-secondary)', borderRadius: '24px', padding: '2rem', border: '1px solid var(--border-light)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '700' }}>{t('admin.recent_orders') || 'Pedidos Recientes'}</h3>
-                        <button className="premium-btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem' }}>{t('admin.view_all') || 'Ver Todos'}</button>
+                        <button onClick={() => navigate('/admin/orders')} className="premium-btn-secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.8rem', cursor: 'pointer' }}>{t('admin.view_all') || 'Ver Todos'}</button>
                     </div>
                     <div style={{ overflowX: 'auto' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>

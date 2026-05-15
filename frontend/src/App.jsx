@@ -31,9 +31,10 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminCampaigns from './pages/admin/AdminCampaigns';
-import AdminSeasons from './pages/admin/AdminSeasons';
+import AdminEvents from './pages/admin/AdminEvents';
 import AdminCollections from './pages/admin/AdminCollections';
 import AdminCategories from './pages/admin/AdminCategories';
+import AdminFeaturedProducts from './pages/admin/AdminFeaturedProducts';
 
 // Contextos de Estado Global
 import { CartProvider } from './context/CartContext';
@@ -43,6 +44,7 @@ import { ThemeProvider } from './context/ThemeContext';
 
 // Componentes de Interfaz Global
 import AdminRoute from './components/AdminRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 import Cart from './components/Cart';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -142,6 +144,7 @@ function InnerApp() {
           
           {!esRutaAdmin && <WhatsAppButton />}
 
+          <ErrorBoundary>
           <Routes>
             {/* Rutas Públicas */}
             <Route path="/" element={<Home />} />
@@ -168,12 +171,14 @@ function InnerApp() {
               <Route path="products" element={<AdminProducts />} />
               <Route path="orders" element={<AdminOrders />} />
               <Route path="settings" element={<AdminSettings />} />
+              <Route path="events" element={<AdminEvents />} />
               <Route path="campaigns" element={<AdminCampaigns />} />
-              <Route path="seasons" element={<AdminSeasons />} />
               <Route path="collections" element={<AdminCollections />} />
               <Route path="categories" element={<AdminCategories />} />
+              <Route path="featured-products" element={<AdminFeaturedProducts />} />
             </Route>
           </Routes>
+          </ErrorBoundary>
 
           {/* Componente de Carrito Lateral (Drawer) */}
           <Cart />

@@ -13,6 +13,7 @@ export default function AdminOrders() {
     const { t } = useLanguage();
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedOrder, setSelectedOrder] = useState(null);
 
     useEffect(() => {
         fetchOrders();
@@ -68,6 +69,9 @@ export default function AdminOrders() {
             default: return status;
         }
     }
+
+    const viewDetails = (order) => setSelectedOrder(order);
+    const closeDetails = () => setSelectedOrder(null);
 
     return (
         <div>
@@ -127,7 +131,7 @@ export default function AdminOrders() {
                                             </select>
                                         </td>
                                         <td style={{ padding: '1rem 1.2rem', textAlign: 'right' }}>
-                                            <button style={{ background: 'none', border: '1px solid var(--border-light)', color: 'white', width: '35px', height: '35px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <button onClick={() => viewDetails(order)} style={{ background: 'none', border: '1px solid var(--border-light)', color: 'white', width: '35px', height: '35px', borderRadius: '8px', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Eye size={16} />
                                             </button>
                                         </td>
@@ -138,6 +142,51 @@ export default function AdminOrders() {
                     </table>
                 )}
             </div>
+
+            {selectedOrder && (
+                <div style={{
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    zIndex: 1000, padding: '2rem'
+                }} onClick={closeDetails}>
+                    <div style={{
+                        background: 'var(--bg-secondary)', borderRadius: '24px',
+                        padding: '2.5rem', maxWidth: '500px', width: '100%',
+                        border: '1px solid var(--border-light)'
+                    }} onClick={(e) => e.stopPropagation()}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                            <h3 style={{ fontSize: '1.4rem', fontWeight: '800' }}>
+                                Pedido #{selectedOrder.id.slice(0, 8)}
+                            </h3>
+                            <button onClick={closeDetails} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.5rem' }}>✕</button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div><strong>Cliente:</strong> {selectedOrder.user_email}</div>
+                            <div><strong>Fecha:</strong> {new Date(selectedOrder.created_at).toLocaleDateString()}</div>
+                            <div><strong>Items:</strong> {
+                                Array.isArray(selectedOrder.items)
+                                    ? selectedOrder.items.length
+                                    : (typeof selectedOrder.items === 'string' ? JSON.parse(selectedOrder.items).length : 0)
+                            } artículos</div>
+                            <div><strong>Total:</strong> ${selectedOrder.total}</div>
+                            <div>
+                                <strong>Estado:</strong>{' '}
+                                <span style={{
+                                    display: 'inline-block', padding: '0.2rem 0.8rem', borderRadius: '100px',
+                                    fontSize: '0.85rem', fontWeight: '600',
+                                    background: selectedOrder.status === 'pending' ? 'rgba(255,193,7,0.1)' :
+                                        selectedOrder.status === 'shipped' ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.1)',
+                                    color: selectedOrder.status === 'pending' ? '#ffc107' :
+                                        selectedOrder.status === 'shipped' ? '#3b82f6' : '#10b981'
+                                }}>
+                                    {selectedOrder.status === 'pending' ? 'Pendiente' :
+                                        selectedOrder.status === 'shipped' ? 'Enviado' : 'Entregado'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

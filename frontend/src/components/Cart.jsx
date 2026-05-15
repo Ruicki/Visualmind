@@ -97,7 +97,7 @@ export default function Cart() {
                                                 )}
                                                 {item.selectedSize && (
                                                     <div style={{ color: 'var(--text-secondary)' }}>
-                                                        {t('Talla seleccionada')}: <span style={{ color: 'white', fontWeight: '600' }}>{item.selectedSize}</span>
+                                                        Talla seleccionada: <span style={{ color: 'white', fontWeight: '600' }}>{item.selectedSize}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -128,12 +128,7 @@ export default function Cart() {
                                     <span>${getCartTotal().toFixed(2)}</span>
                                 </div>
 
-                                {/* Impuestos calculados (7%) 
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--text-secondary)' }}>{t('cart.taxes')} (7%)</span>
-                                    <span>${(getCartTotal() * 0.07).toFixed(2)}</span>
-                                </div>
-                                */}
+
 
                                 {/* Total Final acumulado */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>

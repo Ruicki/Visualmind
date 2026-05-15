@@ -7,6 +7,14 @@ import {
     ChevronRight, Save, Info
 } from 'lucide-react';
 
+const AVAILABLE_ICONS = [
+    '👕', '👖', '👗', '🧥', '👟', '🧢', '🎒', '🕶️', '💍', '⌚', 
+    '🎌', '🎨', '🎵', '🍿', '💻', '🎮', '✨', '🛹', '📻', '⚽', 
+    '⚪', '📷', '🌿', '🐾', '🌸', '👻', '🤖', '✍️', '🌌', '🐉', 
+    '🕹️', '💪', '🍕', '✈️', '🏎️', '😂', '💞', '🔥', '💎', '👑',
+    '⚡', '🌈', '💀', '👽', '🖤', '💯', '🚀', '🔮', '🧸', '🩸'
+];
+
 /**
  * @component AdminCategories
  * @description Administración dinámica de categorías de productos.
@@ -289,12 +297,38 @@ export default function AdminCategories() {
 
                                 <div className="input-group">
                                     <label>Icono (Emoji)</label>
-                                    <input 
-                                        type="text" 
-                                        value={formData.icon}
-                                        onChange={(e) => setFormData({...formData, icon: e.target.value})}
-                                        style={{ fontSize: '1.5rem', textAlign: 'center', width: '80px' }}
-                                    />
+                                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                        <input 
+                                            type="text" 
+                                            value={formData.icon}
+                                            onChange={(e) => setFormData({...formData, icon: e.target.value})}
+                                            style={{ fontSize: '2rem', textAlign: 'center', width: '80px', height: '80px' }}
+                                        />
+                                        <div style={{ 
+                                            display: 'flex', flexWrap: 'wrap', gap: '0.5rem', 
+                                            background: 'rgba(255,255,255,0.03)', padding: '0.8rem', 
+                                            borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)',
+                                            maxHeight: '120px', overflowY: 'auto', flex: 1
+                                        }}>
+                                            {AVAILABLE_ICONS.map(icon => (
+                                                <button 
+                                                    key={icon} 
+                                                    type="button"
+                                                    onClick={() => setFormData({...formData, icon})}
+                                                    style={{
+                                                        background: formData.icon === icon ? 'var(--primary)' : 'transparent',
+                                                        border: 'none',
+                                                        fontSize: '1.5rem', cursor: 'pointer', padding: '0.3rem', borderRadius: '8px',
+                                                        transition: 'all 0.2s', filter: formData.icon === icon ? 'none' : 'grayscale(0.5)'
+                                                    }}
+                                                    onMouseEnter={e => e.currentTarget.style.filter = 'none'}
+                                                    onMouseLeave={e => e.currentTarget.style.filter = formData.icon === icon ? 'none' : 'grayscale(0.5)'}
+                                                >
+                                                    {icon}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div className="input-group">

@@ -30,6 +30,7 @@ export default function AdminCollections() {
         name: '', // Nombre de la colección (ej: "Cyberpunk")
         slug: '', // URL amigable generada automáticamente
         description: '', // Texto informativo
+        description_long: '', // Texto editorial para el home
         image_url: '', // URL de la imagen de portada
         is_active: true, // Visibilidad en el frontend
         image_file: null // Archivo binario para carga
@@ -218,8 +219,13 @@ export default function AdminCollections() {
                                     </div>
 
                                     <div className="form-group">
-                                        <label className="label-text">Descripción</label>
-                                        <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} />
+                                        <label className="label-text">Descripción Corta</label>
+                                        <textarea value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} className="input-field" style={{ minHeight: '80px', resize: 'vertical' }} placeholder="Breve descripción para la tarjeta de colección." />
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label className="label-text">Descripción Editorial (Home)</label>
+                                        <textarea value={formData.description_long} onChange={e => setFormData({ ...formData, description_long: e.target.value })} className="input-field" style={{ minHeight: '120px', resize: 'vertical' }} placeholder="Texto largo para la sección editorial del home. Ej: 'Cada diseño es una fusión de cultura pop...'" />
                                     </div>
 
                                     <div className="form-group">
