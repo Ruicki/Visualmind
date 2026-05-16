@@ -21,6 +21,7 @@ import campaignRoutes from '../routes/campaignRoutes.js';
 import collectionRoutes from '../routes/collectionRoutes.js';
 import categoryRoutes from '../routes/categoryRoutes.js';
 import featuredProductsRoutes from '../routes/featuredProductsRoutes.js';
+import subcategoryRoutes from '../routes/subcategoryRoutes.js';
 import newsletterRoutes from '../routes/newsletterRoutes.js';
 import { expireEvents } from '../services/eventService.js';
 import bcrypt from 'bcryptjs';
@@ -98,8 +99,8 @@ app.use(cors({
 }));
 
 // Parsing de cuerpos de petición
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 /**
  * Servidor de Archivos Estáticos (Uploads).
@@ -122,6 +123,7 @@ app.use('/api/campaigns', campaignRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductsRoutes);
+app.use('/api/subcategories', subcategoryRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 
 /**

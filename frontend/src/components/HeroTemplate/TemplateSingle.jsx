@@ -51,7 +51,7 @@ export default function TemplateSingle({ campaign, timeLeft, isActive }) {
     const ctaLink = campaign.button_link || `/shop?campaign=${campaign.slug}`;
 
     return (
-        <div style={{
+        <div className="hero-template-single" style={{
             position: 'relative',
             width: '100%',
             minHeight: '70vh',

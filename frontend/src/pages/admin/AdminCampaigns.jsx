@@ -275,7 +275,7 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
             {/* Modal */}
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="modal-overlay" onClick={() => setIsModalOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                    <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
                         <motion.div onClick={e => e.stopPropagation()} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ background: '#111', width: '100%', maxWidth: '1000px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', maxHeight: '90vh' }}>
                             {/* Form */}
                             <div style={{ flex: 1.2, padding: '2.5rem', overflowY: 'auto' }}>
@@ -319,8 +319,8 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
                                                 <option value="cinematic">Cinematic — Póster de película</option>
                                                 <option value="magazine">Magazine — Portada de revista</option>
                                                 <option value="ticker">Ticker — Banda animada</option>
-                                                <option value="collage-3">Collage 3 — 1 grande + 2 pequeñas</option>
-                                                <option value="collage-4">Collage 4 — 1 grande + 3 pequeñas</option>
+                                                <option value="collage3">Collage 3 — 1 grande + 2 pequeñas</option>
+                                                <option value="collage4">Collage 4 — 1 grande + 3 pequeñas</option>
                                             </select>
                                         </div>
                                         <div className="form-group">
@@ -346,12 +346,12 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
                                         <label className="label-text">Banner</label>
                                         <input type="file" onChange={handleFileChange} accept="image/*" />
                                     </div>
-                                    {(formData.template_type === 'collage-3' || formData.template_type === 'collage-4') && (
+                                    {(formData.template_type === 'collage3' || formData.template_type === 'collage4') && (
                                         <div className="form-group">
                                             <label className="label-text">
-                                                Imágenes secundarias ({formData.template_type === 'collage-3' ? '2 requeridas' : '3 requeridas'})
+                                                Imágenes secundarias ({formData.template_type === 'collage3' ? '2 requeridas' : '3 requeridas'})
                                             </label>
-                                            {Array.from({ length: formData.template_type === 'collage-3' ? 2 : 3 }, (_, i) => (
+                                            {Array.from({ length: formData.template_type === 'collage3' ? 2 : 3 }, (_, i) => (
                                                 <div key={i} style={{ marginBottom: '0.5rem' }}>
                                                     <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Imagen {i + 2}</label>
                                                     <input type="file" accept="image/*" onChange={(e) => handleSecondaryImageChange(e, i)} />

@@ -50,10 +50,11 @@ export default function AdminFeaturedProducts({ campaignId = null }) {
 
             const built = emptySlots(totalSlots);
             data.forEach((item) => {
-                const idx = (item.slot_order ?? 1) - 1;
+                if (item.slot_order == null) return;
+                const idx = item.slot_order - 1;
                 if (idx >= 0 && idx < totalSlots && item.id) {
                     built[idx] = {
-                        slot_order: item.slot_order ?? idx + 1,
+                        slot_order: item.slot_order,
                         product_id: item.id,
                         product: {
                             id: item.id,
@@ -184,6 +185,15 @@ export default function AdminFeaturedProducts({ campaignId = null }) {
                     {isSaving ? <Loader className="spin" size={18} /> : <Save size={18} />}
                     Guardar Configuración
                 </button>
+            </div>
+
+            {/* ── Guía de Tamaños para imágenes del carrusel ── */}
+            <div style={{ background: 'rgba(250, 204, 21, 0.08)', border: '1px solid rgba(250, 204, 21, 0.2)', borderRadius: '12px', padding: '1rem 1.2rem', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '1.2rem' }}>📐</span>
+              <div style={{ flex: 1, minWidth: '200px' }}>
+                <p style={{ fontWeight: '700', fontSize: '0.85rem', color: '#facc15', marginBottom: '0.15rem' }}>Guía de Tamaños — Carrusel de Destacados</p>
+                <p style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>Proporción recomendada: <strong>16:9</strong> · Resolución mínima: <strong>1920×1080</strong> · Formato: <strong>JPG/WebP</strong></p>
+              </div>
             </div>
 
             {/* ── Feedback de guardado ── */}

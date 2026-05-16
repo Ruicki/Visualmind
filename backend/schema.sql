@@ -114,6 +114,8 @@ CREATE TABLE IF NOT EXISTS campaigns (
   template_type     VARCHAR(50) DEFAULT 'grid',
   start_date        TIMESTAMPTZ,
   end_date          TIMESTAMPTZ,
+  prelaunch_date    TIMESTAMPTZ,
+  pre_order_enabled BOOLEAN DEFAULT false,
   is_active         BOOLEAN DEFAULT false,
   countdown_enabled BOOLEAN DEFAULT false,
   type              VARCHAR(50) DEFAULT 'campaign',
@@ -148,14 +150,17 @@ CREATE TABLE IF NOT EXISTS categories (
 
 -- Colecciones de productos (agrupaciones editoriales)
 CREATE TABLE IF NOT EXISTS collections (
-  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name        VARCHAR(255) NOT NULL,
-  slug        VARCHAR(255) UNIQUE,
-  description TEXT,
-  image_url   VARCHAR(500),
-  is_active   BOOLEAN DEFAULT true,
-  updated_at  TIMESTAMPTZ,
-  created_at  TIMESTAMPTZ DEFAULT NOW()
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name             VARCHAR(255) NOT NULL,
+  slug             VARCHAR(255) UNIQUE,
+  description      TEXT,
+  image_url        VARCHAR(500),
+  is_active        BOOLEAN DEFAULT true,
+  campaign_id      UUID REFERENCES campaigns(id) ON DELETE SET NULL,
+  template_type    VARCHAR(50) DEFAULT 'editorial',
+  created_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  updated_at       TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  description_long TEXT
 );
 
 -- Slots de productos destacados para el carousel de la home
@@ -226,4 +231,20 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='show_on_home') THEN
     ALTER TABLE products ADD COLUMN show_on_home BOOLEAN DEFAULT false;
   END IF;
+  -- Columna subcategory_id en products para vincular a subcategorías
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='subcategory_id') THEN
+    ALTER TABLE products ADD COLUMN subcategory_id UUID REFERENCES subcategories(id) ON DELETE SET NULL;
+  END IF;
 END $;
+
+-- Subcategorías (agrupación dentro de categorías, ej: Anime → One Piece)
+CREATE TABLE IF NOT EXISTS subcategories (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        VARCHAR(255) NOT NULL,
+  slug        VARCHAR(255) NOT NULL,
+  category_id INTEGER REFERENCES categories(id) ON DELETE CASCADE,
+  UNIQUE (slug, category_id),
+  image_url   VARCHAR(500),
+  description TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);

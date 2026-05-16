@@ -12,13 +12,14 @@ import {
     Plus, Edit, Trash2, Search, Loader, X, Save, 
     Image as ImageIcon, Upload, Link as LinkIcon, 
     Star, Zap, Calendar, Package, Layers, Info, Settings,
-    Check, Tag, Percent, Type, Grid3X3
+    Check, Tag, Percent, Type, Grid3X3, DoorOpen
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getProductImage, compressImage } from '../../utils/imageUtils';
 import AdminCategories from './AdminCategories';
 import AdminCollections from './AdminCollections';
 import AdminFeaturedProducts from './AdminFeaturedProducts';
+import AdminSubcategoriesSection from './AdminSubcategoriesSection';
 
 /**
  * @typedef {Object} ProductVariant
@@ -94,6 +95,7 @@ export default function AdminProducts() {
         description: '',
         category: 'anime',
         sub_category: '',
+        subcategory_id: '',
         parent_category: '',
         price: '',
         discount: 0,
@@ -131,11 +133,31 @@ export default function AdminProducts() {
     const [dragOver, setDragOver] = useState(false);
     const [hoverDragOver, setHoverDragOver] = useState(false);
     const [currentSection, setCurrentSection] = useState('products');
+    const [selectedSubcategory, setSelectedSubcategory] = useState(null);
+    const [selectedSubcategoryName, setSelectedSubcategoryName] = useState('');
+    const [subcategoryList, setSubcategoryList] = useState([]);
 
     useEffect(() => {
         fetchProducts();
         fetchDynamicMetadata();
     }, []);
+
+    // Cargar subcategorías para el dropdown del formulario cuando cambia la categoría
+    useEffect(() => {
+        const catSlug = formData.category;
+        if (!catSlug) {
+            setSubcategoryList([]);
+            return;
+        }
+        const cat = allCategories.find(c => c.slug === catSlug);
+        if (!cat) {
+            setSubcategoryList([]);
+            return;
+        }
+        api.get(`/subcategories?category_id=${cat.id}`)
+            .then(res => setSubcategoryList(res.data || []))
+            .catch(() => setSubcategoryList([]));
+    }, [formData.category, allCategories]);
 
     /**
      * @function getCategoryDetails
@@ -229,6 +251,7 @@ export default function AdminProducts() {
             description: product.description || '',
             category: product.category,
             sub_category: product.sub_category || '',
+            subcategory_id: product.subcategory_id || '',
             parent_category: product.parent_category || '',
             price: product.price,
             discount: product.discount || 0,
@@ -270,6 +293,7 @@ export default function AdminProducts() {
             title: '',
             description: '',
             category: categories[0] || 'anime',
+            subcategory_id: '',
             sub_category: '',
             parent_category: '',
             price: '',
@@ -476,33 +500,63 @@ export default function AdminProducts() {
 
             {currentSection === 'products' && (
             <>
-            {/* Cabecera */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <h2 style={{ fontSize: '2rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                        {t('admin.products') || 'Gestión de Productos'}
-                    </h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Administra tu catálogo, variantes y stock local.</p>
+            {!selectedSubcategory ? (
+                <>
+                {/* Cabecera */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <div>
+                        <h2 style={{ fontSize: '2rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                            {t('admin.products') || 'Gestión de Productos'}
+                        </h2>
+                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Administra tu catálogo, variantes y stock local.</p>
+                    </div>
+                    <button onClick={handleAddNew} className="btn-primary" style={{ padding: '0.8rem 1.5rem', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <Plus size={20} /> {t('admin.add_product') || 'Nuevo Producto'}
+                    </button>
                 </div>
-                <button onClick={handleAddNew} className="btn-primary" style={{ padding: '0.8rem 1.5rem', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                    <Plus size={20} /> {t('admin.add_product') || 'Nuevo Producto'}
-                </button>
-            </div>
 
-            {/* Barra de búsqueda */}
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '16px', marginBottom: '2rem', display: 'flex', gap: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <div style={{ flex: 1, position: 'relative' }}>
-                    <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                    <input
-                        type="text"
-                        placeholder={t('admin.search_products') || 'Buscar productos...'}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="input-field"
-                        style={{ paddingLeft: '3rem', background: 'transparent' }}
-                    />
+                {/* Barra de búsqueda */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '16px', marginBottom: '2rem', display: 'flex', gap: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                        <input
+                            type="text"
+                            placeholder={t('admin.search_products') || 'Buscar productos...'}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="input-field"
+                            style={{ paddingLeft: '3rem', background: 'transparent' }}
+                        />
+                    </div>
                 </div>
-            </div>
+
+                {/* Subcategorías */}
+                <AdminSubcategoriesSection
+                    allCategories={allCategories}
+                    onEnterSubcategory={(id, name) => { setSelectedSubcategory(id); setSelectedSubcategoryName(name || ''); }}
+                />
+                </>
+            ) : (
+                <>
+                {/* Vista dentro de subcategoría */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <button
+                            onClick={() => { setSelectedSubcategory(null); setSelectedSubcategoryName(''); setSearchTerm(''); }}
+                            style={{ padding: '0.6rem 1.2rem', borderRadius: '10px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#10b981', color: '#000', border: 'none', cursor: 'pointer', fontWeight: '700' }}
+                        >
+                            <DoorOpen size={16} /> Volver
+                        </button>
+                        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff' }}>
+                            {selectedSubcategoryName}
+                        </h2>
+                    </div>
+                    <button onClick={handleAddNew} className="btn-primary" style={{ padding: '0.8rem 1.5rem', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <Plus size={20} /> Nuevo Producto
+                    </button>
+                </div>
+                </>
+            )}
 
             {/* Tabla */}
             <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
@@ -523,7 +577,10 @@ export default function AdminProducts() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {products.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
+                                {products
+                                    .filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()))
+                                    .filter(p => !selectedSubcategory || p.subcategory_id === selectedSubcategory)
+                                    .map(product => (
                                     <tr key={product.id} className="table-row-hover" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                         <td style={{ padding: '1rem 1.2rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -547,7 +604,9 @@ export default function AdminProducts() {
                                             </span>
                                         </td>
                                         <td style={{ padding: '1rem 1.2rem' }}>
-                                            <span style={{padding: '0.3rem 0.6rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem' ,textTransform: 'capitalize'}}>{product.sub_category}</span>
+                                            <span style={{padding: '0.3rem 0.6rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem', textTransform: 'capitalize'}}>
+                                                {product.subcategory_name || product.sub_category || '—'}
+                                            </span>
                                         </td>
                                         <td style={{ padding: '1rem 1.2rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -687,8 +746,20 @@ export default function AdminProducts() {
                                                 </div>
                                                 <div className="form-group">
                                                     <label className="label-text">Subcategoría</label>
-                                                    <input list="sub-cats" value={formData.sub_category} onChange={e => setFormData({ ...formData, sub_category: e.target.value })} className="input-field" placeholder="Ej: Naruto" />
-                                                    <datalist id="sub-cats">{subCategories.map(s => <option key={s} value={s} />)}</datalist>
+                                                    <select
+                                                        value={formData.subcategory_id}
+                                                        onChange={e => {
+                                                            const selectedId = e.target.value;
+                                                            setFormData({ ...formData, subcategory_id: selectedId });
+                                                        }}
+                                                        className="input-field"
+                                                        style={{ cursor: 'pointer' }}
+                                                    >
+                                                        <option value="">Sin subcategoría</option>
+                                                        {subcategoryList.map(s => (
+                                                            <option key={s.id} value={s.id}>{s.name}</option>
+                                                        ))}
+                                                    </select>
                                                 </div>
                                             </div>
 

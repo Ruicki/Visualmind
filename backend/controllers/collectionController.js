@@ -34,22 +34,22 @@ export const createCollection = async (req, res) => {
     return res.status(400).json({ error: 'No se recibieron datos en la petición.' });
   }
 
-  const { name, slug, description, description_long } = req.body;
+  const { name, slug, description, description_long, template_type, campaign_id } = req.body;
 
   if (!name) {
     return res.status(400).json({ error: 'El nombre de la colección es obligatorio.' });
   }
 
-  // Normalización de tipos para el booleano is_active (FormData envía strings)
   const is_active = req.body.is_active === 'true' || req.body.is_active === true;
+  const nCampaignId = (!campaign_id || campaign_id === '' || campaign_id === 'null') ? null : campaign_id;
+  const nTemplateType = template_type && template_type !== '' ? template_type : 'editorial';
 
-  // Gestión de ruta de imagen: prioriza archivo subido sobre URL manual
   const image_url = req.files?.['image'] ? `/uploads/collections/${req.files['image'][0].filename}` : req.body.image_url;
 
   try {
     const result = await pool.query(
-      'INSERT INTO collections (name, slug, description, description_long, image_url, is_active) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [name, slug, description, description_long, image_url, is_active]
+      'INSERT INTO collections (name, slug, description, description_long, image_url, is_active, template_type, campaign_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [name, slug, description, description_long, image_url, is_active, nTemplateType, nCampaignId]
     );
     res.status(201).json(result.rows[0]);
   } catch (error) {
@@ -74,14 +74,16 @@ export const updateCollection = async (req, res) => {
     return res.status(400).json({ error: 'No se recibieron datos para actualizar.' });
   }
 
-  const { name, slug, description, description_long } = req.body;
+  const { name, slug, description, description_long, template_type, campaign_id } = req.body;
   const is_active = req.body.is_active === 'true' || req.body.is_active === true;
   const image_url = req.files?.['image'] ? `/uploads/collections/${req.files['image'][0].filename}` : req.body.image_url;
+  const nCampaignId = (!campaign_id || campaign_id === '' || campaign_id === 'null') ? null : campaign_id;
+  const nTemplateType = template_type && template_type !== '' ? template_type : 'editorial';
 
   try {
     const result = await pool.query(
-      'UPDATE collections SET name = $1, slug = $2, description = $3, description_long = $4, image_url = $5, is_active = $6, updated_at = NOW() WHERE id = $7 RETURNING *',
-      [name, slug, description, description_long, image_url, is_active, id]
+      'UPDATE collections SET name = $1, slug = $2, description = $3, description_long = $4, image_url = $5, is_active = $6, template_type = $7, campaign_id = $8, updated_at = NOW() WHERE id = $9 RETURNING *',
+      [name, slug, description, description_long, image_url, is_active, nTemplateType, nCampaignId, id]
     );
     res.json(result.rows[0]);
   } catch (error) {
@@ -119,6 +121,20 @@ export const getCollectionBySlug = async (req, res) => {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error al obtener colección:', error);
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
+export const getCollectionsByCampaign = async (req, res) => {
+  const { campaignId } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT * FROM collections WHERE campaign_id = $1 ORDER BY created_at DESC',
+      [campaignId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener colecciones por campaña:', error);
     res.status(500).json({ error: 'Error del servidor' });
   }
 };

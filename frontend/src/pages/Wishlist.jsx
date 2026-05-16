@@ -1,22 +1,32 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useWishlist } from '../context/WishlistContext';
+import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import ProductCard from '../components/ProductCard';
-import { Heart, ShoppingBag } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Heart, ShoppingBag, LogIn } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 import { isProductVisible } from '../utils/productUtils';
 
 /**
  * @component Wishlist
  * @description Vista de lista de deseos (Favoritos).
- * Permite al usuario visualizar y gestionar los productos guardados.
- * Utiliza el WishlistContext para la persistencia de datos.
+ * Requiere autenticación. Si el usuario no está logueado, redirige a /login?redirect=wishlist.
  */
 export default function Wishlist() {
     const { wishlistItems } = useWishlist();
+    const { user, loading: authLoading } = useAuth();
     const { t } = useLanguage();
-    
-    // Filtrar items que ya no deberían ser visibles
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (!authLoading && !user) {
+            navigate('/login?redirect=wishlist', { replace: true });
+        }
+    }, [authLoading, user, navigate]);
+
+    if (authLoading) return null;
+    if (!user) return null;
+
     const visibleItems = wishlistItems.filter(isProductVisible);
 
     if (wishlistItems.length === 0) {

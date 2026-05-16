@@ -129,21 +129,25 @@ export default function Navbar() {
               <Search size={20} />
             </button>
 
-            {/* Selector de Tema (Oscuro/Claro) */}
-            <ThemeToggle />
+            {/* Selector de Tema (Oscuro/Claro) — se oculta en mobile */}
+            <div className="navbar-hide-mobile">
+              <ThemeToggle />
+            </div>
 
-            {/* Selector de Idioma (ES/EN) */}
-            <button
-              className="navbar-lang-btn"
-              onClick={toggleLanguage}
-              aria-label="Cambiar idioma"
-            >
-              <Globe size={14} />
-              <span className="lang-label">{language.toUpperCase()}</span>
-            </button>
+            {/* Selector de Idioma (ES/EN) — se oculta en mobile */}
+            <div className="navbar-hide-mobile">
+              <button
+                className="navbar-lang-btn"
+                onClick={toggleLanguage}
+                aria-label="Cambiar idioma"
+              >
+                <Globe size={14} />
+                <span className="lang-label">{language.toUpperCase()}</span>
+              </button>
+            </div>
 
-            {/* Usuario / Autenticación / Admin */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Usuario / Autenticación / Admin — se oculta en mobile */}
+            <div className="navbar-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               {user && user.role === 'admin' && (
                 <Link
                   to="/admin"
@@ -177,18 +181,20 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Favoritos con indicador numérico */}
-            <Link
-              to="/wishlist"
-              className="navbar-icon-btn"
-              aria-label={t('nav.wishlist') || 'Lista de deseos'}
-              style={{ position: 'relative' }}
-            >
-              <Heart size={20} />
-              {wishlistItems.length > 0 && (
-                <span className="cart-badge">{wishlistItems.length}</span>
-              )}
-            </Link>
+            {/* Favoritos — se oculta en mobile */}
+            <div className="navbar-hide-mobile">
+              <Link
+                to="/wishlist"
+                className="navbar-icon-btn"
+                aria-label={t('nav.wishlist') || 'Lista de deseos'}
+                style={{ position: 'relative' }}
+              >
+                <Heart size={20} />
+                {wishlistItems.length > 0 && (
+                  <span className="cart-badge">{wishlistItems.length}</span>
+                )}
+              </Link>
+            </div>
 
             {/* Carrito con indicador dinámico (Badge) */}
             <button
@@ -232,6 +238,42 @@ export default function Navbar() {
             {link.label}
           </Link>
         ))}
+        <div className="navbar-mobile-divider" />
+        <div className="navbar-mobile-extra">
+          <button
+            className="navbar-mobile-extra-btn"
+            onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }}
+          >
+            <Search size={18} />
+            Buscar
+          </button>
+          <Link
+            to="/wishlist"
+            className="navbar-mobile-extra-btn"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <Heart size={18} />
+            Favoritos
+            {wishlistItems.length > 0 && (
+              <span className="navbar-mobile-badge">{wishlistItems.length}</span>
+            )}
+          </Link>
+          <Link
+            to={user ? '/profile' : '/login'}
+            className="navbar-mobile-extra-btn"
+            onClick={() => setMobileMenuOpen(false)}
+          >
+            <User size={18} />
+            {user ? 'Perfil' : 'Iniciar sesión'}
+          </Link>
+          <div className="navbar-mobile-row">
+            <button className="navbar-mobile-extra-btn" onClick={toggleLanguage}>
+              <Globe size={18} />
+              {language.toUpperCase()}
+            </button>
+            <ThemeToggle />
+          </div>
+        </div>
       </div>
 
       {/* Modal de Búsqueda Global */}

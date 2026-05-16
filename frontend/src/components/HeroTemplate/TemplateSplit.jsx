@@ -48,7 +48,7 @@ export default function TemplateSplit({ campaign, timeLeft, isActive }) {
     const typeLabel = campaign.type === 'season' ? 'Season' : 'Campaign';
 
     return (
-        <div style={{
+        <div className="hero-template-split" style={{
             display: 'flex',
             flexDirection: 'row',
             minHeight: '70vh',

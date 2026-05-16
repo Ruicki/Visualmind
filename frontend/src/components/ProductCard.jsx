@@ -91,7 +91,6 @@ export default function ProductCard(props) {
                     background: '#1e293b',
                     position: 'relative',
                     overflow: 'hidden',
-                    aspectRatio: '4/5'
                 }}>
                     <Link to={`/product/${id}`}>
                         {/* Imagen Base */}

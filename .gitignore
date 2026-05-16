@@ -130,6 +130,7 @@ dist
 .pnp.*
 
 scratch/
+backend/uploads/
 *.cjs
 backend/check_users.js
 backend/create_admin_final.js

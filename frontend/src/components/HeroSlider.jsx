@@ -47,7 +47,7 @@ export default function HeroSlider({ events = [] }) {
         if (!events.length) return;
 
         const currentEvent = events[currentIndex];
-        const targetDate = currentEvent.phase === 'upcoming' ? currentEvent.start_date : currentEvent.end_date;
+        const targetDate = currentEvent.phase === 'upcoming' || currentEvent.phase === 'prelaunch' ? currentEvent.start_date : currentEvent.end_date;
         if (!targetDate) {
             setTimeLeft(null);
             return;
@@ -71,24 +71,24 @@ export default function HeroSlider({ events = [] }) {
 
     if (!events.length) {
         return (
-            <header style={{
-                minHeight: '60vh',
+            <header className="hero-empty" style={{
+                minHeight: 'calc(60vh - var(--navbar-height, 80px))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 background: 'var(--bg-primary)',
-                paddingTop: '40px',
+                padding: '1rem',
             }}>
-                <div style={{ textAlign: 'center' }}>
+                <div className="hero-empty-content" style={{ textAlign: 'center', padding: 'clamp(1rem, 3vw, 2rem)' }}>
                     <h1 style={{
-                        fontSize: 'clamp(3rem, 8vw, 6rem)',
+                        fontSize: 'clamp(2rem, 8vw, 6rem)',
                         fontWeight: '900',
                         textTransform: 'uppercase',
                         color: '#fff',
                     }}>
                         VISUALMIND
                     </h1>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: '1rem' }}>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: 'clamp(0.5rem, 1vw, 1rem)', fontSize: 'clamp(0.85rem, 2vw, 1.2rem)' }}>
                         Moda que define tu universo
                     </p>
                 </div>
@@ -97,7 +97,7 @@ export default function HeroSlider({ events = [] }) {
     }
 
     return (
-        <div style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
+        <div className="hero-slider" style={{ position: 'relative', width: '100%', overflow: 'hidden' }}>
             <AnimatePresence mode="wait">
                 <motion.div
                     key={currentIndex}
@@ -121,6 +121,7 @@ export default function HeroSlider({ events = [] }) {
                     <button
                         onClick={prev}
                         aria-label="Slide anterior"
+                        className="hero-slider-arrow"
                         style={{
                             position: 'absolute',
                             top: '50%',
@@ -148,6 +149,7 @@ export default function HeroSlider({ events = [] }) {
                     <button
                         onClick={next}
                         aria-label="Slide siguiente"
+                        className="hero-slider-arrow"
                         style={{
                             position: 'absolute',
                             top: '50%',
