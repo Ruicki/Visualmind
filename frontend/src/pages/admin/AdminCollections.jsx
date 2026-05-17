@@ -89,8 +89,10 @@ export default function AdminCollections() {
     const handleEdit = (collection) => {
         setFormData({
             ...collection,
-            image_file: null
+            image_file: null,
+            accent_color: collection.accent_color || '' // Convertir null a string vacío
         });
+        console.log('[DEBUG] Editing collection with accent_color:', collection.accent_color);
         setIsModalOpen(true);
     };
 
@@ -114,16 +116,28 @@ export default function AdminCollections() {
                     collectionFormData.append('image', formData.image_file);
                 } else if (key === 'campaign_id' && !formData.campaign_id) {
                     collectionFormData.append('campaign_id', '');
+                } else if (key === 'accent_color') {
+                    // Solo agregar accent_color si tiene un valor válido
+                    if (formData.accent_color && formData.accent_color !== 'null' && formData.accent_color !== 'undefined') {
+                        collectionFormData.append('accent_color', formData.accent_color);
+                    }
                 } else if (key !== 'image_file') {
                     collectionFormData.append(key, formData[key]);
                 }
             });
+            
+            console.log('[DEBUG] Saving accent_color:', formData.accent_color);
             console.log('[DEBUG] FormData accent_color:', collectionFormData.get('accent_color'));
 
+            // Enviar accent_color en query parameter para ambos casos (PUT y POST)
+            const accentColorParam = formData.accent_color && formData.accent_color !== 'null' && formData.accent_color !== 'undefined' 
+                ? `?accent_color=${encodeURIComponent(formData.accent_color)}` 
+                : '';
+
             if (formData.id) {
-                await api.put(`/collections/${formData.id}?accent_color=${encodeURIComponent(formData.accent_color || '')}`, collectionFormData);
+                await api.put(`/collections/${formData.id}${accentColorParam}`, collectionFormData);
             } else {
-                await api.post('/collections', collectionFormData);
+                await api.post(`/collections${accentColorParam}`, collectionFormData);
             }
             setIsModalOpen(false);
             fetchCollections();
