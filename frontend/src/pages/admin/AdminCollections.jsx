@@ -18,6 +18,7 @@ export default function AdminCollections() {
     const { t } = useLanguage();
     // --- Estados de Datos ---
     const [collections, setCollections] = useState([]); // Lista de colecciones registradas
+    const [campaigns, setCampaigns] = useState([]); // Campañas disponibles para vincular
     const [loading, setLoading] = useState(true); // Estado de carga inicial
     
     // --- Control de UI y Guardado ---
@@ -27,18 +28,31 @@ export default function AdminCollections() {
     // --- Datos del Formulario ---
     const [formData, setFormData] = useState({
         id: null,
-        name: '', // Nombre de la colección (ej: "Cyberpunk")
-        slug: '', // URL amigable generada automáticamente
-        description: '', // Texto informativo
-        description_long: '', // Texto editorial para el home
-        image_url: '', // URL de la imagen de portada
-        is_active: true, // Visibilidad en el frontend
-        image_file: null // Archivo binario para carga
+        name: '',
+        slug: '',
+        description: '',
+        description_long: '',
+        image_url: '',
+        is_active: true,
+        template_type: 'editorial',
+        campaign_id: '',
+        image_file: null,
+        accent_color: ''
     });
 
     useEffect(() => {
         fetchCollections();
+        fetchCampaigns();
     }, []);
+
+    const fetchCampaigns = async () => {
+        try {
+            const response = await api.get('/campaigns');
+            setCampaigns(response.data || []);
+        } catch (error) {
+            console.error('Error fetching campaigns:', error);
+        }
+    };
 
     /**
      * Recupera la lista de colecciones desde el servidor.
@@ -61,9 +75,13 @@ export default function AdminCollections() {
             name: '',
             slug: '',
             description: '',
+            description_long: '',
             image_url: '',
             is_active: true,
-            image_file: null
+            template_type: 'editorial',
+            campaign_id: '',
+            image_file: null,
+            accent_color: ''
         });
         setIsModalOpen(true);
     };
@@ -94,13 +112,16 @@ export default function AdminCollections() {
             Object.keys(formData).forEach(key => {
                 if (key === 'image_file' && formData.image_file) {
                     collectionFormData.append('image', formData.image_file);
+                } else if (key === 'campaign_id' && !formData.campaign_id) {
+                    collectionFormData.append('campaign_id', '');
                 } else if (key !== 'image_file') {
                     collectionFormData.append(key, formData[key]);
                 }
             });
+            console.log('[DEBUG] FormData accent_color:', collectionFormData.get('accent_color'));
 
             if (formData.id) {
-                await api.put(`/collections/${formData.id}`, collectionFormData);
+                await api.put(`/collections/${formData.id}?accent_color=${encodeURIComponent(formData.accent_color || '')}`, collectionFormData);
             } else {
                 await api.post('/collections', collectionFormData);
             }
@@ -181,7 +202,10 @@ export default function AdminCollections() {
 
                             <div style={{ padding: '1.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800' }}>{collection.name}</h3>
+                                    <h3 style={{ fontSize: '1.2rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        {collection.accent_color && <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: collection.accent_color, display: 'inline-block' }} />}
+                                        {collection.name}
+                                    </h3>
                                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                                         <button onClick={() => handleEdit(collection)} style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: 'white', padding: '0.4rem', borderRadius: '8px', cursor: 'pointer' }}><Edit size={16} /></button>
                                         <button onClick={() => handleDelete(collection.id)} style={{ background: 'rgba(239, 68, 68, 0.1)', border: 'none', color: '#ef4444', padding: '0.4rem', borderRadius: '8px', cursor: 'pointer' }}><Trash2 size={16} /></button>
@@ -246,12 +270,46 @@ export default function AdminCollections() {
                                             <span style={{ fontSize: '0.9rem' }}>Colección Activa y Visible</span>
                                         </label>
                                     </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', padding: '1rem', background: 'rgba(250,204,21,0.05)', borderRadius: '12px', border: '1px solid rgba(250,204,21,0.12)' }}>
+                                        <div className="form-group">
+                                            <label className="label-text">Tipo de Template <span style={{ color: '#facc15', fontSize: '0.7rem' }}>(home)</span></label>
+                                            <select value={formData.template_type} onChange={e => setFormData({ ...formData, template_type: e.target.value })} className="input-field">
+                                                <option value="editorial">Editorial (texto + imagen)</option>
+                                                <option value="grid">Grid (cuadrícula)</option>
+                                                <option value="hero">Hero (portada completa)</option>
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="label-text">Vincular a Campaña <span style={{ color: '#facc15', fontSize: '0.7rem' }}>(opcional)</span></label>
+                                            <select value={formData.campaign_id || ''} onChange={e => setFormData({ ...formData, campaign_id: e.target.value || '' })} className="input-field">
+                                                <option value="">— Sin campaña —</option>
+                                                {campaigns.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                                            <label className="label-text">Color de Acento <span style={{ color: '#facc15', fontSize: '0.7rem' }}>(gradientes home)</span></label>
+                                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                                {['#a855f7', '#6366f1', '#3b82f6', '#06b6d4', '#10b981', '#facc15', '#f97316', '#ef4444', '#ec4899'].map(color => (
+                                                    <button key={color} type="button" onClick={() => setFormData({ ...formData, accent_color: color })}
+                                                        style={{ width: '32px', height: '32px', borderRadius: '50%', background: color, border: formData.accent_color === color ? '3px solid white' : '3px solid transparent', cursor: 'pointer', outline: formData.accent_color === color ? '2px solid #facc15' : 'none' }} />
+                                                ))}
+                                                <input type="color" value={formData.accent_color || '#a855f7'} onChange={e => setFormData({ ...formData, accent_color: e.target.value })}
+                                                    style={{ width: '32px', height: '32px', borderRadius: '50%', border: 'none', cursor: 'pointer', background: 'none', padding: 0 }} />
+                                                {formData.accent_color && (
+                                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontFamily: 'monospace' }}>{formData.accent_color}</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </form>
                             </div>
 
                             <div style={{ padding: '1.5rem 2rem', borderTop: '1px solid rgba(255,255,255,0.05)', background: 'rgba(0,0,0,0.1)', display: 'flex', gap: '1rem' }}>
                                 <button onClick={() => setIsModalOpen(false)} className="btn-secondary" style={{ flex: 1, padding: '0.8rem', borderRadius: '12px' }}>Cancelar</button>
-                                <button form="collection-form" type="submit" disabled={isSaving} className="btn-primary" style={{ flex: 2, padding: '0.8rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem' }}>
+                                <button form="collection-form" type="submit" disabled={isSaving} className="btn-primary" style={{ flex: 2, padding: '0.8rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', background: formData.accent_color || 'var(--primary)' }}>
                                     {isSaving ? <Loader className="spin" size={20} /> : <Save size={20} />}
                                     {isSaving ? 'Guardando...' : 'Guardar Colección'}
                                 </button>

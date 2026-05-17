@@ -11,7 +11,7 @@ import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import SEO from '../components/SEO';
 import axiosInstance from '../api/axiosConfig';
-import { ChevronRight, ChevronLeft, ArrowRight, Clock, Zap } from 'lucide-react';
+import { AlignCenter, ArrowRight, ChevronLeft, ChevronRight, Clock, Radius, Zap } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { isProductVisible } from '../utils/productUtils';
 
@@ -34,14 +34,20 @@ const FALLBACK_IMG = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c7
 
 export default function Home() {
   const { t } = useLanguage();
-  const [currentSlide, setCurrentSlide] = useState(0);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeEvents, setActiveEvents] = useState([]);
   const [featuredCollection, setFeaturedCollection] = useState(null);
-  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [campaignFeaturedProducts, setCampaignFeaturedProducts] = useState({});
+  const [currentSlide, setCurrentSlide] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState('idle');
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   /**
    * Efecto de Carga de Datos Inicial
@@ -52,11 +58,10 @@ export default function Home() {
     const fetchHomeData = async () => {
       try {
         setLoading(true);
-        const [productsRes, campaignRes, collectionsRes, featuredRes] = await Promise.all([
+        const [productsRes, campaignRes, collectionsRes] = await Promise.all([
           axiosInstance.get('/products'),
           axiosInstance.get('/campaigns/active-all').catch(() => ({ data: [] })),
-          axiosInstance.get('/collections').catch(() => ({ data: [] })),
-          axiosInstance.get('/featured-products').catch(() => ({ data: [] }))
+          axiosInstance.get('/collections').catch(() => ({ data: [] }))
         ]);
         
         if (productsRes.data && productsRes.data.length > 0) {
@@ -66,33 +71,29 @@ export default function Home() {
         if (collectionsRes.data && collectionsRes.data.length > 0) {
           const activeCollections = collectionsRes.data.filter(c => c.is_active);
           if (activeCollections.length > 0) {
+            console.log('[DEBUG] Featured collection loaded:', activeCollections[0]);
+            console.log('[DEBUG] accent_color:', activeCollections[0].accent_color);
             setFeaturedCollection(activeCollections[0]);
           }
         }
 
+        // Campañas activas, prelaunch y upcoming
         if (campaignRes.data && Array.isArray(campaignRes.data) && campaignRes.data.length > 0) {
           setActiveEvents(campaignRes.data);
-          // Si hay campañas activas, intentar obtener sus slots destacados
-          const campaignEvent = campaignRes.data.find(e => e.type === 'campaign');
-          if (campaignEvent) {
-            try {
-              const campaignSlots = await axiosInstance.get(`/featured-products?campaign_id=${campaignEvent.id}`);
-              if (campaignSlots.data && campaignSlots.data.length > 0) {
-                setFeaturedProducts(campaignSlots.data);
-              } else {
-                setFeaturedProducts(featuredRes.data || []);
-              }
-            } catch {
-              setFeaturedProducts(featuredRes.data || []);
-            }
-          } else {
-            setFeaturedProducts(featuredRes.data || []);
+
+          // Cada campaña activa tiene SUS PROPIOS slots destacados
+          const activeCampaigns = campaignRes.data.filter(e => e.phase === 'active');
+          if (activeCampaigns.length > 0) {
+            const campaignSlotsPromises = activeCampaigns.map(c =>
+              axiosInstance.get(`/featured-products?campaign_id=${c.id}`)
+                .then(res => ({ campaignId: c.id, products: res.data }))
+                .catch(() => ({ campaignId: c.id, products: [] }))
+            );
+            const results = await Promise.all(campaignSlotsPromises);
+            const campaignProductsMap = {};
+            results.forEach(r => { campaignProductsMap[r.campaignId] = r.products; });
+            setCampaignFeaturedProducts(campaignProductsMap);
           }
-        } else if (campaignRes.data && !Array.isArray(campaignRes.data)) {
-          setActiveEvents([campaignRes.data]);
-          setFeaturedProducts(featuredRes.data || []);
-        } else {
-          setFeaturedProducts(featuredRes.data || []);
         }
       } catch (err) {
         console.warn("Error fetching home data:", err);
@@ -112,13 +113,6 @@ export default function Home() {
     return marked.length > 0 ? marked : availableProducts.slice(0, 8);
   }, [availableProducts]);
 
-  // Carousel: Productos destacados desde el endpoint, con fallback a priority > 5
-  const carouselProducts = featuredProducts.length > 0
-    ? featuredProducts
-    : (availableProducts.filter(p => p.priority > 5).slice(0, 5).length > 0
-        ? availableProducts.filter(p => p.priority > 5).slice(0, 5)
-        : availableProducts.slice(0, 5));
-
   const activeCampaigns = React.useMemo(() => {
     return activeEvents.filter(e => e.phase === 'active');
   }, [activeEvents]);
@@ -126,6 +120,27 @@ export default function Home() {
   const prelaunchCampaigns = React.useMemo(() => {
     return activeEvents.filter(e => e.phase === 'prelaunch' || e.phase === 'upcoming');
   }, [activeEvents]);
+
+  // Productos de la colección destacada (para template hero)
+  const collectionProducts = React.useMemo(() => {
+    if (!featuredCollection) return [];
+    return availableProducts.filter(p => p.collection_id === featuredCollection.id).slice(0, 2);
+  }, [availableProducts, featuredCollection]);
+
+  // Productos destacados por prioridad (para el grid de lanzamientos)
+  const featuredProducts = React.useMemo(() => {
+    const byPriority = availableProducts.filter(p => (p.priority || 0) > 5).slice(0, 8);
+    return byPriority.length > 0 ? byPriority : availableProducts.slice(0, 8);
+  }, [availableProducts]);
+
+  // Auto-slide para carrusel de destacados
+  useEffect(() => {
+    if (featuredProducts.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentSlide(prev => (prev + 1) % featuredProducts.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [featuredProducts.length]);
 
   const handleNewsletterSubmit = async (e) => {
     e.preventDefault();
@@ -140,26 +155,6 @@ export default function Home() {
     }
   };
 
-  /**
-   * Auto-slide del carousel de destacados
-   */
-  useEffect(() => {
-    if (carouselProducts.length === 0) return;
-    const timer = setInterval(() => {
-      setCurrentSlide(prev => (prev + 1) % carouselProducts.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [carouselProducts.length]);
-
-  const nextSlide = () => {
-    if (carouselProducts.length === 0) return;
-    setCurrentSlide(prev => (prev + 1) % carouselProducts.length);
-  };
-  const prevSlide = () => {
-    if (carouselProducts.length === 0) return;
-    setCurrentSlide(prev => (prev - 1 + carouselProducts.length) % carouselProducts.length);
-  };
-
   return (
     <div style={{ background: 'var(--bg-primary)' }}>
       <SEO 
@@ -169,170 +164,180 @@ export default function Home() {
 
       <Hero events={activeCampaigns} />
 
-      {/* Sección: Carousel de Productos Destacados */}
-      <section className="container home-carousel" style={{ padding: 'clamp(1.5rem, 4vw, 4rem) 0 clamp(3rem, 6vw, 6rem) 0' }}>
-        <div className="carousel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'clamp(1.5rem, 3vw, 3rem)' }}>
-          <div>
-            <span style={{ display: 'block', color: 'var(--primary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: 'clamp(0.7rem, 1.5vw, 0.85rem)', marginBottom: 'clamp(0.3rem, 0.5vw, 0.5rem)' }}>
-              {t('home_extended.featured_drops')}
-            </span>
-            <h2 style={{ fontSize: 'clamp(1.4rem, 5vw, 3.5rem)', fontWeight: '900' }}>
-                  {t('home_extended.featured_title') || 'Lo Nuevo'}
-            </h2>
-          </div>
-          <div style={{ display: 'flex', gap: '0.8rem' }}>
-            <button onClick={prevSlide} aria-label="Slide anterior" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'white', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
-              <ChevronLeft size={22} />
-            </button>
-            <button onClick={nextSlide} aria-label="Siguiente slide" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'white', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
-              <ChevronRight size={22} />
-            </button>
-          </div>
-        </div>
-
-        <div className="carousel-wrapper" style={{ position: 'relative', height: '500px', overflow: 'hidden', borderRadius: '32px' }}>
-          {carouselProducts.length === 0 && !loading ? (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-secondary)' }}>
-              {t('home_extended.catalog_empty')}
-            </div>
-          ) : loading ? (
-            <div className="skeleton" style={{ width: '100%', height: '100%', borderRadius: '32px' }} />
-          ) : carouselProducts.map((product, index) => (
-            <div
-              key={product.id}
-              className="carousel-slide-content"
-              style={{
-                position: 'absolute', inset: 0,
-                opacity: index === currentSlide ? 1 : 0,
-                transition: 'all 1s cubic-bezier(0.16, 1, 0.3, 1)',
-                transform: `scale(${index === currentSlide ? 1 : 1.1})`,
-                padding: 'clamp(1rem, 4vw, 4rem)',
-                display: 'flex', alignItems: 'flex-end',
-                background: 'linear-gradient(45deg, var(--bg-primary) 20%, transparent 100%)'
-              }}
-            >
-              <img
-                src={product.image || product.image_url}
-                alt={product.title}
-                loading="lazy"
-                onError={(e) => { e.target.src = FALLBACK_IMG; }}
-                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: -1, transition: 'opacity 0.4s ease' }}
-              />
-              <div style={{ maxWidth: '550px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'var(--primary)', fontWeight: '700', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                  <Zap size={18} fill="var(--primary)" /> {t('home_extended.exclusive_release')}
-                </div>
-                <h3 className="carousel-slide-title" style={{ fontSize: 'clamp(1.2rem, 5vw, 3.5rem)', fontWeight: '900', lineHeight: 1, marginBottom: 'clamp(0.6rem, 1vw, 1rem)' }}>
-                  {product.title}
-                </h3>
-                <div style={{ display: 'flex', gap: 'clamp(0.5rem, 1vw, 1rem)', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Link to={`/product/${product.id}`} className="btn-primary" style={{ paddingTop: 'clamp(0.6rem, 1.5vw, 1rem)', paddingBottom: 'clamp(0.6rem, 1.5vw, 1rem)', paddingLeft: 'clamp(1.2rem, 2.5vw, 2.5rem)', paddingRight: 'clamp(1.2rem, 2.5vw, 2.5rem)', fontSize: 'clamp(0.8rem, 1.5vw, 1rem)', borderRadius: 'clamp(12px, 1.5vw, 16px)' }}>
-                    {t('home_extended.btn_explore')}
-                  </Link>
-                  <div>
-                    <span style={{ fontSize: '1.3rem', fontWeight: '900' }}>${product.price}</span>
-                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--primary)', fontWeight: '700' }}>{t('home_extended.limited_stock')}</span>
-                  </div>
+      {/* ─── Lanzamientos Destacados ──────────────────────────────────────────────── */}
+        <section className="home-featured" style={{ padding: 'clamp(2.5rem, 6vw, 6rem) 0', background: 'var(--bg-secondary)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: 'clamp(150px, 20vw, 400px)', height: 'clamp(150px, 20vw, 400px)', borderRadius: '50%', background: 'var(--primary)', opacity: '0.03', filter: 'blur(60px)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: '-10%', right: '-5%', width: 'clamp(150px, 20vw, 400px)', height: 'clamp(150px, 20vw, 400px)', borderRadius: '50%', background: 'var(--primary)', opacity: '0.03', filter: 'blur(60px)', pointerEvents: 'none' }} />
+          <div className="container">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: '4px', height: 'clamp(1.8rem, 3vw, 3rem)', background: 'linear-gradient(to bottom, var(--primary), transparent)', borderRadius: '2px' }} />
+                <div>
+                  <h2 style={{ fontSize: 'clamp(1.3rem, 4vw, 2.5rem)', fontWeight: '900', background: 'linear-gradient(135deg, #fff 30%, var(--primary) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                    {t('home_extended.featured_title') || 'Lanzamientos Destacados'}
+                  </h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.75rem, 1vw, 0.9rem)', margin: '0.2rem 0 0' }}>Lo más buscado de la temporada</p>
                 </div>
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Link to="/shop" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: '700', textDecoration: 'none', fontSize: 'clamp(0.8rem, 1.5vw, 1rem)' }}>
+                  {t('home_extended.view_all')} <ArrowRight size={20} />
+                </Link>
+                {featuredProducts.length > 1 && (<><button onClick={() => setCurrentSlide(prev => (prev - 1 + featuredProducts.length) % featuredProducts.length)}
+                  style={{ background: 'var(--bg-card)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white', marginLeft: '0.5rem' }}>
+                  <ChevronLeft size={18} />
+                </button>
+                <button onClick={() => setCurrentSlide(prev => (prev + 1) % featuredProducts.length)}
+                  style={{ background: 'var(--bg-card)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                  <ChevronRight size={18} />
+                </button></>)}
+              </div>
             </div>
-          ))}
-
-          {carouselProducts.length > 0 && !loading && (
-          <div className="carousel-dots" style={{ position: 'absolute', bottom: '2rem', right: '3rem', display: 'flex', gap: '0.6rem' }}>
-            {carouselProducts.map((_, i) => (
-              <div
-                key={i}
-                onClick={() => setCurrentSlide(i)}
-                role="button"
-                aria-label={`Ir al slide ${i + 1}`}
-                style={{
-                  width: i === currentSlide ? '32px' : '10px', height: '10px',
-                  borderRadius: '10px',
-                  background: i === currentSlide ? 'var(--primary)' : 'rgba(255,255,255,0.3)',
-                  cursor: 'pointer', transition: 'all 0.3s'
-                }}
-              />
-            ))}
-          </div>
-          )}
-        </div>
-      </section>
-
-      {/* Sección: Próximos Lanzamientos (Campañas Prelaunch + Upcoming) */}
-      {prelaunchCampaigns.length > 0 && (
-      <section className="home-seasonal" style={{ background: 'var(--bg-secondary)', padding: 'clamp(2.5rem, 8vw, 10rem) 0' }}>
-        <div className="container">
-          <div style={{ textAlign: 'center', marginBottom: 'clamp(1.5rem, 4vw, 4rem)' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.8rem', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.6rem 1.2rem', borderRadius: '100px', color: 'var(--primary)', fontWeight: '700', fontSize: 'clamp(0.7rem, 1.5vw, 0.85rem)', marginBottom: 'clamp(0.5rem, 1vw, 1.2rem)' }}>
-              <Clock size={16} /> {t('home_extended.upcoming_badge') || 'Próximamente'}
-            </div>
-            <h2 style={{ fontSize: 'clamp(1.3rem, 5vw, 3.5rem)', fontWeight: '900', marginBottom: 'clamp(0.4rem, 1vw, 1rem)' }}>
-              {t('home_extended.upcoming_title') || 'Próximos Lanzamientos'}
-            </h2>
-            <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.85rem, 2vw, 1.1rem)', maxWidth: '600px', margin: '0 auto' }}>
-              {t('home_extended.upcoming_desc')}
-            </p>
-          </div>
-          <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
-            {prelaunchCampaigns.map(campaign => (
-              <div key={campaign.id} style={{ background: 'var(--bg-card)', borderRadius: '20px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', transition: 'transform 0.3s' }}>
-                <div style={{ height: '200px', overflow: 'hidden', position: 'relative', background: '#111' }}>
-                  {campaign.banner_url ? (
-                    <img src={campaign.banner_url} alt={campaign.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.15)', fontSize: '3rem', fontWeight: '900' }}>
-                      ?
-                    </div>
-                  )}
-                  <div style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'var(--primary)', color: '#000', padding: '0.3rem 0.8rem', borderRadius: '100px', fontWeight: '800', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <Clock size={12} /> {campaign.phase === 'prelaunch' ? t('home_extended.pre_order_badge') || 'Reserva Ya' : t('home_extended.upcoming_badge') || 'Próximamente'}
-                  </div>
-                </div>
-                <div style={{ padding: '1.5rem' }}>
-                  <h3 style={{ fontSize: '1.2rem', fontWeight: '800', marginBottom: '0.5rem' }}>{campaign.name}</h3>
-                  {campaign.description && (
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: '1.5' }}>{campaign.description}</p>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    {campaign.start_date && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Zap size={12} /> {new Date(campaign.start_date).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
-                      </span>
+            <div style={{ overflow: 'hidden', borderRadius: '16px', position: 'relative', width: '100%', minHeight: '300px' }}>
+              {featuredProducts.length > 0 ? (
+                <Link to={`/product/${featuredProducts[currentSlide]?.id}`} style={{ display: 'block', position: 'relative', height: 'clamp(300px, 40vw, 500px)', background: '#111', textDecoration: 'none' }}>
+                  <img src={featuredProducts[currentSlide]?.image_url || FALLBACK_IMG} alt={featuredProducts[currentSlide]?.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 60%)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'clamp(1.5rem, 4vw, 4rem)' }}>
+                    <h3 style={{ fontSize: 'clamp(1.2rem, 3vw, 2.2rem)', fontWeight: '900', marginBottom: '0.3rem', color: 'white' }}>{featuredProducts[currentSlide]?.title}</h3>
+                    {featuredProducts[currentSlide]?.price && (
+                      <p style={{ color: 'white', fontWeight: '700', fontSize: 'clamp(1rem, 2vw, 1.4rem)' }}>
+                        ${Number(featuredProducts[currentSlide].price).toLocaleString()}
+                      </p>
                     )}
-                    <span style={{ fontSize: '0.7rem', padding: '0.3rem 0.7rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', color: 'var(--text-secondary)', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                      {campaign.type === 'season' ? 'Temporada' : 'Campaña'}
-                    </span>
                   </div>
-                  {campaign.phase === 'prelaunch' && (
-                    <div style={{ marginTop: '1rem' }}>
-                      <button className="btn-primary" style={{ width: '100%', padding: '0.7rem', borderRadius: '12px', fontWeight: '700', fontSize: '0.9rem' }}>
-                        {t('home_extended.pre_order_btn') || 'Reservar Ya'}
-                      </button>
-                    </div>
+                </Link>
+              ) : (
+                <div style={{ height: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                  No hay productos destacados
+                </div>
+              )}
+            </div>
+            {featuredProducts.length > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem', marginTop: '1rem' }}>
+                {featuredProducts.map((_, i) => (
+                  <button key={i} onClick={() => setCurrentSlide(i)}
+                    style={{ width: i === currentSlide ? '24px' : '8px', height: '8px', borderRadius: '4px', border: 'none', background: i === currentSlide ? 'var(--primary)' : 'var(--text-secondary)', transition: 'all 0.3s', cursor: 'pointer' }} />
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+      {/* ─── Próximos Lanzamientos ──────────────────────────────────────────────── */}
+      {prelaunchCampaigns.length > 0 && (
+        <section style={{ padding: 'clamp(2.5rem, 6vw, 4rem) 0' }}>
+          <div className="container">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
+              <div style={{ width: '4px', height: 'clamp(1.8rem, 3vw, 3rem)', background: `linear-gradient(to bottom, ${prelaunchCampaigns[0]?.accent_color || '#facc15'}, transparent)`, borderRadius: '2px' }} />
+              <div>
+                <h2 style={{ fontSize: 'clamp(1.3rem, 4vw, 2.5rem)', fontWeight: '900', background: `linear-gradient(135deg, #fff 30%, ${prelaunchCampaigns[0]?.accent_color || '#facc15'} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                  {t('home_extended.upcoming_title') || 'Próximos Lanzamientos'}
+                </h2>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.75rem, 1vw, 0.9rem)', margin: '0.2rem 0 0' }}>Las colecciones que están por llegar</p>
+              </div>
+            </div>
+          </div>
+      {prelaunchCampaigns.map((campaign, idx) => {
+        const overlaySide = idx % 2 === 0 ? 'to right' : 'to left';
+        const textSide = idx % 2 === 0 ? 'flex-start' : 'flex-end';
+        const textAlign = idx % 2 === 0 ? 'left' : 'right';
+        return (
+          <section key={campaign.id} className="home-seasonal" style={{ position: 'relative', height: 'clamp(350px, 50vw, 600px)', overflow: 'hidden', background: campaign.accent_color || '#111' }}>
+            {campaign.banner_url ? (
+              <img src={campaign.banner_url} alt={campaign.name} loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg,${campaign.accent_color||'#1a1a2e'},#000)` }} />
+            )}
+            <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(${overlaySide}, rgba(0,0,0,0.85) 0%, transparent 60%)` }} />
+            <div className="container" style={{ position: 'relative', height: '100%', display: 'flex', alignItems: 'center', justifyContent: textSide }}>
+              <div style={{ maxWidth: '500px', textAlign }}>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', background: campaign.accent_color ? `${campaign.accent_color}26` : 'rgba(250,204,21,0.15)', padding: '0.4rem 1rem', borderRadius: '100px', color: campaign.accent_color || '#facc15', fontWeight: '700', fontSize: 'clamp(0.7rem,1.2vw,0.85rem)', marginBottom: 'clamp(0.6rem,1vw,1.2rem)', backdropFilter: 'blur(10px)' }}>
+                  <Clock size={14} />
+                  {campaign.start_date ? (
+                    (() => {
+                      const diff = new Date(campaign.start_date) - now;
+                      if (diff <= 0) return campaign.phase === 'prelaunch' ? (t('home_extended.pre_order_badge')||'Pre-Venta') : (t('home_extended.upcoming_badge')||'Proximamente');
+                      const d = Math.floor(diff / 86400000);
+                      const h = Math.floor((diff % 86400000) / 3600000);
+                      const m = Math.floor((diff % 3600000) / 60000);
+                      const s = Math.floor((diff % 60000) / 1000);
+                      return `${d}d ${h}h ${m}m ${s}s`;
+                    })()
+                  ) : (
+                    campaign.phase === 'prelaunch' ? (t('home_extended.pre_order_badge')||'Pre-Venta') : (t('home_extended.upcoming_badge')||'Proximamente')
                   )}
                 </div>
+                <h2 style={{ fontSize: 'clamp(1.5rem,5vw,3.5rem)', fontWeight: '900', marginBottom: 'clamp(0.4rem,1vw,1rem)' }}>{campaign.name}</h2>
+                {campaign.description && <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 'clamp(0.85rem,1.5vw,1.1rem)', marginBottom: 'clamp(0.8rem,1.5vw,1.5rem)', lineHeight: 1.6 }}>{campaign.description}</p>}
+                {campaign.start_date && <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>{t('home_extended.upcoming_desc')}: {new Date(campaign.start_date).toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'})}</p>}
+                {campaign.phase === 'prelaunch' && (
+                  <Link to={campaign.button_link||'/shop'} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', padding: '0.9rem 2.5rem', borderRadius: '14px', fontWeight: '800', fontSize: '1rem', background: campaign.accent_color || 'var(--primary)' }}
+                    onMouseEnter={e => { e.currentTarget.style.background = campaign.accent_color ? `${campaign.accent_color}cc` : 'var(--primary-hover)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = campaign.accent_color || 'var(--primary)'; }}
+                    onClick={async (e) => {
+                      if (!campaign.pre_order_enabled) return;
+                      e.preventDefault();
+                      try { await axiosInstance.post('/orders/pre-order', { campaign_id: campaign.id }); alert('Pre-orden registrada!'); }
+                      catch (err) { if (err.response?.status===401) { window.location.href='/login?redirect=/'; } else { alert('Error al crear pre-orden.'); } }
+                    }}
+                  >
+                    {t('home_extended.pre_order_btn')||'Reservar Ya'}
+                  </Link>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
+          </section>
+        );
+      })}
+        </section>
       )}
 
       {/* Sección: Colección Destacada (con soporte de 3 templates) */}
       {featuredCollection && (
         (() => {
           const tmpl = featuredCollection.template_type || 'editorial';
+          const colAccent = featuredCollection.accent_color || '#a855f7';
+          console.log('[DEBUG] Rendering collection with accent_color:', colAccent, 'from:', featuredCollection.accent_color);
           if (tmpl === 'hero') {
+            const leftImg = collectionProducts[0]?.image_url || featuredCollection.image_url || FALLBACK_IMG;
+            const rightImg = collectionProducts[1]?.image_url || featuredCollection.image_url || FALLBACK_IMG;
             return (
-              <section className="home-collection-hero" style={{ position: 'relative', height: 'clamp(300px, 60vw, 700px)', overflow: 'hidden' }}>
-                <img src={featuredCollection.image_url || FALLBACK_IMG} alt={featuredCollection.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to right, rgba(0,0,0,0.85) 0%, transparent 100%)', display: 'flex', alignItems: 'center', padding: 'clamp(2rem, 6vw, 6rem)' }}>
-                  <div style={{ maxWidth: '500px' }}>
-                    <span style={{ color: 'var(--primary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: 'clamp(0.65rem, 1.5vw, 0.85rem)' }}>{t('home_extended.exclusive_collection')}</span>
-                    <h2 style={{ fontSize: 'clamp(1.5rem, 5vw, 3.5rem)', fontWeight: '900', margin: '0.5rem 0 1rem' }}>{featuredCollection.name}</h2>
-                    <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem', fontSize: 'clamp(0.85rem, 1.5vw, 1.1rem)' }}>{featuredCollection.description}</p>
-                    <Link to={`/shop?collection=${featuredCollection.slug}`} className="btn-primary" style={{ padding: '0.8rem 2rem', borderRadius: '12px', fontWeight: '700' }}>{t('home_extended.view_collection')}</Link>
+              <section style={{ position: 'relative', width: '100%', background: 'var(--bg-primary)' }}>
+                <div style={{ textAlign: 'center', padding: 'clamp(1rem, 4vw, 3rem) 1rem 1.5rem' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '4px', height: 'clamp(1.8rem, 3vw, 3rem)', background: `linear-gradient(to bottom, ${colAccent}, transparent)`, borderRadius: '2px' }} />
+                    <h2 style={{ fontSize: 'clamp(1.3rem, 3vw, 2.2rem)', fontWeight: '900', background: `linear-gradient(135deg, #fff 30%, ${colAccent} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                      {t('home_extended.exclusive_collection') || 'Colecciones Exclusivas'}
+                    </h2>
+                  </div>
+                  <div style={{ width: '1400px', height: '3px', background: `linear-gradient(90deg, ${colAccent}, transparent)`, borderRadius: '2px', margin: '0.75rem auto 0' }} />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'row', height: 'clamp(350px, 50vh, 550px)' }}>
+                  <div style={{ width: '50%', position: 'relative' }}>
+                    <img src={leftImg} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                  </div>
+                  <div style={{ width: '50%', position: 'relative', overflow: 'hidden' }}>
+                    <img src={rightImg} alt="" loading="lazy" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center' }} />
+                  </div>
+                </div>
+                <div style={{ position: 'absolute', bottom: '50px', left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 'clamp(2rem, 4vw, 2rem)', pointerEvents: 'none' }}>
+                  <div style={{
+                    textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', pointerEvents: 'auto',
+                    backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+                    background: 'rgba(2, 6, 23, 0.55)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '20px',
+                    padding: 'clamp(1.2rem, 2vw, 2rem) clamp(2rem, 4vw, 3.5rem)',
+                    boxShadow: '0 24px 80px rgba(0,0,0,0.5)'
+                  }}>
+                    <h2 style={{ color: 'white', fontSize: 'clamp(1.5rem, 3vw, 3rem)', fontWeight: '900', letterSpacing: '0.05em', textTransform: 'uppercase', lineHeight: '1', margin: '0 0 1.25rem' }}>
+                      {featuredCollection.name}
+                    </h2>
+                    <Link to={`/shop?collection=${featuredCollection.slug}`} style={{ background: colAccent, color: 'white', fontWeight: '700', letterSpacing: '0.15em', textTransform: 'uppercase', padding: '0.75rem 2.5rem', fontSize: 'clamp(0.75rem, 1vw, 0.85rem)', textDecoration: 'none', transition: 'all 0.3s', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = `${colAccent}cc`; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = colAccent; e.currentTarget.style.transform = 'translateY(0)'; }}>
+                      {t('home_extended.view_all') || 'Shop'}
+                    </Link>
                   </div>
                 </div>
               </section>
@@ -340,53 +345,101 @@ export default function Home() {
           }
           if (tmpl === 'grid') {
             return (
-              <section className="home-collection-grid" style={{ padding: 'clamp(2.5rem, 6vw, 6rem) 0', background: 'var(--bg-secondary)' }}>
-                <div className="container">
-                  <div style={{ textAlign: 'center', marginBottom: 'clamp(1.5rem, 3vw, 3rem)' }}>
-                    <span style={{ color: 'var(--primary)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: 'clamp(0.65rem, 1.5vw, 0.85rem)' }}>{t('home_extended.exclusive_collection')}</span>
-                    <h2 style={{ fontSize: 'clamp(1.3rem, 4vw, 2.5rem)', fontWeight: '900', margin: '0.5rem 0' }}>{featuredCollection.name}</h2>
-                    <p style={{ color: 'var(--text-secondary)' }}>{featuredCollection.description}</p>
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                    {[1,2,3,4].map(i => (
-                      <div key={i} style={{ aspectRatio: '3/4', borderRadius: '16px', overflow: 'hidden', background: 'var(--bg-card)' }}>
-                        <Link to={`/shop?collection=${featuredCollection.slug}`}>
-                          <img src={featuredCollection.image_url || FALLBACK_IMG} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.3s' }} onMouseEnter={e => e.target.style.transform = 'scale(1.05)'} onMouseLeave={e => e.target.style.transform = 'scale(1)'} />
-                        </Link>
-                      </div>
+              <section className="home-collection-grid" style={{ padding: 'clamp(2.5rem, 6vw, 6rem) 0', background: 'var(--bg-secondary)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'absolute', top: '-15%', right: '-10%', width: 'clamp(200px, 30vw, 500px)', height: 'clamp(200px, 30vw, 500px)', borderRadius: '50%', background: `${colAccent}08`, filter: 'blur(80px)', pointerEvents: 'none' }} />
+                <div className="container" style={{ position: 'relative' }}>
+                   <div style={{ textAlign: 'center', marginBottom: 'clamp(1.5rem, 3vw, 3rem)' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem', justifyContent: 'center' }}>
+                     <div style={{ width: '4px', height: 'clamp(1.8rem, 3vw, 3rem)', background: `linear-gradient(to bottom, ${colAccent}, transparent)`, borderRadius: '2px' }} />
+                     <h2 style={{ fontSize: 'clamp(1.3rem, 4vw, 2.5rem)', fontWeight: '900', background: `linear-gradient(135deg, #fff 30%, ${colAccent} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                       Colecciones Exclusivas
+                     </h2>
+                   </div>
+                   <div style={{ width: '1180px', height: '3px', background: `linear-gradient(90deg, ${colAccent}, transparent)`, borderRadius: '2px', margin: '2rem auto 1rem' }} />
+                     <h2 style={{ fontSize: 'clamp(1.5rem, 4.5vw, 2.8rem)', fontWeight: '900', margin: '0.5rem 0', background: `linear-gradient(135deg, #fff 40%, ${colAccent} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{featuredCollection.name}</h2>
+                     <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.9rem, 1.8vw, 1.15rem)', lineHeight: '1.8', marginBottom: '1rem' }}>
+                       {featuredCollection.description || 'Colección destacada del momento.'}
+                     </p>
+                   </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.5rem' }}>
+                    {[
+                      { label: 'Edición Limitada', icon: '◆' },
+                      { label: 'Edición Limitada', icon: '◆' },
+                      { label: 'Edición Limitada', icon: '◆' },
+                      { label: 'Edición Limitada', icon: '◆' }
+                    ].map((item, i) => (
+                      <Link key={i} to={`/shop?collection=${featuredCollection.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+                        <div style={{ borderRadius: '20px', overflow: 'hidden', background: 'var(--bg-card)', transition: 'all 0.4s', border: '1px solid rgba(255,255,255,0.03)' }} onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-8px)'; e.currentTarget.style.boxShadow = '0 20px 40px rgba(0,0,0,0.3)'; }} onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}>
+                          <div style={{ aspectRatio: '3/4', position: 'relative', overflow: 'hidden' }}>
+                            <img src={featuredCollection.image_url || FALLBACK_IMG} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s' }} onMouseEnter={e => e.target.style.transform = 'scale(1.08)'} onMouseLeave={e => e.target.style.transform = 'scale(1)'} />
+                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 60%)' }} />
+                            <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', right: '1rem' }}>
+                              <span style={{ fontSize: '1.2rem', marginBottom: '0.3rem', display: 'block' }}>{item.icon}</span>
+                              <p style={{ color: 'white', fontWeight: '700', fontSize: 'clamp(0.8rem, 1.2vw, 0.95rem)', margin: 0 }}>{item.label}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </Link>
                     ))}
                   </div>
-                  <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-                    <Link to={`/shop?collection=${featuredCollection.slug}`} className="btn-primary" style={{ padding: '0.8rem 2rem', borderRadius: '12px', fontWeight: '700' }}>{t('home_extended.view_collection')}</Link>
+                  <div style={{ textAlign: 'center', marginTop: '2.5rem' }}>
+                    {featuredCollection.description_long && (
+                      <p style={{ color: 'var(--text-secondary)', opacity: 0.8, fontSize: 'clamp(0.8rem, 1.5vw, 1rem)', lineHeight: '1.7', marginBottom: '2rem' }}>
+                        {featuredCollection.description_long}
+                      </p>
+                    )}
+                    <Link to={`/shop?collection=${featuredCollection.slug}`} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', padding: '0.9rem 2.5rem', borderRadius: '100px', fontWeight: '800', fontSize: 'clamp(0.8rem, 1.5vw, 0.95rem)' }}>
+                      {t('home_extended.view_collection')} <ArrowRight size={18} />
+                    </Link>
                   </div>
                 </div>
               </section>
             );
           }
-          // editorial (default)
+          // editorial (default) — lookbook con más presencia
           return (
-            <section className="home-collection" style={{ padding: 'clamp(2.5rem, 6vw, 6rem) 0', background: 'var(--bg-primary)' }}>
-              <div className="container">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'clamp(1rem, 2vw, 2rem)', alignItems: 'center' }}>
-                  <div className="home-lookbook-img" style={{ position: 'relative', borderRadius: 'clamp(16px, 2vw, 24px)', overflow: 'hidden', height: 'clamp(260px, 50vw, 600px)' }}>
-                    <img src={featuredCollection.image_url || FALLBACK_IMG} alt={featuredCollection.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: 'clamp(1.2rem, 3vw, 3rem)' }}>
-                      <span style={{ color: 'var(--primary)', fontWeight: '700', textTransform: 'uppercase', fontSize: 'clamp(0.65rem, 1.5vw, 0.85rem)', marginBottom: 'clamp(0.3rem, 0.5vw, 0.5rem)' }}>
-                        {t('home_extended.exclusive_collection')}
-                      </span>
-                      <h3 style={{ fontSize: 'clamp(1.2rem, 3vw, 2rem)', fontWeight: '800', marginBottom: 'clamp(0.5rem, 1vw, 1rem)' }}>
-                        {featuredCollection.name}
-                      </h3>
-                      <Link to={`/shop?collection=${featuredCollection.slug}`} className="btn-primary" style={{ width: 'fit-content', paddingTop: 'clamp(0.5rem, 1vw, 0.8rem)', paddingBottom: 'clamp(0.5rem, 1vw, 0.8rem)', paddingLeft: 'clamp(1.2rem, 2vw, 2rem)', paddingRight: 'clamp(1.2rem, 2vw, 2rem)', fontSize: 'clamp(0.75rem, 1.5vw, 0.95rem)' }}>{t('home_extended.view_collection')}</Link>
-                    </div>
-                  </div>
-                  <div style={{ padding: 'clamp(0.5rem, 2vw, 2rem)' }}>
-                    <h2 className="home-collection-title" style={{ fontSize: 'clamp(1.3rem, 4vw, 3rem)', fontWeight: '900', marginBottom: 'clamp(0.6rem, 1.5vw, 1.5rem)', lineHeight: '1.1' }}>
-                      {featuredCollection.description_long || t('home_extended.editorial_title')}
+            <section className="home-collection" style={{ background: 'var(--bg-primary)', position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: 'clamp(200px, 30vw, 500px)', height: 'clamp(200px, 30vw, 500px)', borderRadius: '50%', background: `${colAccent}08`, filter: 'blur(80px)', pointerEvents: 'none' }} />
+              <div className="container" style={{ position: 'relative' }}>
+                {/* Section header */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: 'clamp(1.5rem, 3vw, 3rem)' }}>
+                  <div style={{ width: '4px', height: 'clamp(1.8rem, 3vw, 3rem)', background: `linear-gradient(to bottom, ${colAccent}, transparent)`, borderRadius: '2px' }} />
+                  <div>
+                    <h2 style={{ fontSize: 'clamp(1.3rem, 4vw, 2.5rem)', fontWeight: '900', background: `linear-gradient(135deg, #fff 30%, ${colAccent} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0 }}>
+                      Colecciones Exclusivas
                     </h2>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.9rem, 2vw, 1.2rem)', lineHeight: '1.8', marginBottom: 0 }}>
+                  </div>
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gap: 'clamp(1.5rem, 3vw, 3rem)',
+                  alignItems: 'center'
+                }}>
+                  <div className="home-lookbook-img" style={{ position: 'relative', borderRadius: 'clamp(20px, 2.5vw, 28px)', overflow: 'hidden', height: 'clamp(320px, 55vw, 650px)', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
+                    <img src={featuredCollection.image_url || FALLBACK_IMG} alt={featuredCollection.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.6s' }} onMouseEnter={e => e.target.style.transform = 'scale(1.05)'} onMouseLeave={e => e.target.style.transform = 'scale(1)'} />
+                    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 50%)' }} />
+                  </div>
+                  <div style={{ padding: 'clamp(0.5rem, 2vw, 2.5rem)' }}>
+                    <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: '900', margin: '0 0 1rem', lineHeight: '1.1', background: `linear-gradient(135deg, #fff 40%, ${colAccent} 100%)`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                      {featuredCollection.name}
+                    </h2>
+                    <span style={{ color: colAccent, fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.25em', fontSize: 'clamp(0.65rem, 1.3vw, 0.8rem)', marginBottom: '0.5rem', display: 'block' }}>
+                      Colección Exclusiva
+                    </span>
+                    <div style={{ width: '60px', height: '3px', background: colAccent, borderRadius: '2px', marginBottom: '1.5rem' }} />
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.9rem, 1.8vw, 1.15rem)', lineHeight: '1.8', marginBottom: '1rem' }}>
                       {featuredCollection.description || 'Colección destacada del momento.'}
                     </p>
+                    <div style={{ width: '60px', height: '3px', background: colAccent, borderRadius: '2px', marginBottom: '1.5rem' }} />
+                    {featuredCollection.description_long && (
+                      <p style={{ color: 'var(--text-secondary)', opacity: 0.8, fontSize: 'clamp(0.8rem, 1.5vw, 1rem)', lineHeight: '1.7', marginBottom: '2rem' }}>
+                        {featuredCollection.description_long}
+                      </p>
+                    )}
+                    <Link to={`/shop?collection=${featuredCollection.slug}`} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.6rem', padding: '0.9rem 2.5rem', borderRadius: '100px', fontWeight: '800', fontSize: 'clamp(0.8rem, 1.5vw, 0.95rem)' }}>
+                      {t('home_extended.view_collection')} <ArrowRight size={18} />
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -397,8 +450,14 @@ export default function Home() {
 
       {/* Sección: Preview del Catálogo Completo */}
       <section className="container home-catalog" style={{ padding: 'clamp(2.5rem, 6vw, 6rem) 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'clamp(1rem, 3vw, 3rem)' }}>
-          <h2 className="home-catalog-title" style={{ fontSize: 'clamp(1.3rem, 4vw, 2.5rem)', fontWeight: '900' }}>{t('home_extended.catalog_title')}</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'clamp(1rem, 3vw, 3rem)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: '4px', height: 'clamp(1.8rem, 3vw, 3rem)', background: 'linear-gradient(to bottom, #06b6d4, transparent)', borderRadius: '2px' }} />
+            <div>
+              <h2 className="home-catalog-title" style={{ fontSize: 'clamp(1.3rem, 4vw, 2.5rem)', fontWeight: '900', margin: 0, background: 'linear-gradient(135deg, #fff 30%, #06b6d4 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t('home_extended.catalog_title')}</h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 'clamp(0.75rem, 1vw, 0.9rem)', margin: '0.2rem 0 0' }}>Explora todo nuestro catálogo</p>
+            </div>
+          </div>
           <Link to="/shop" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: '700', textDecoration: 'none', fontSize: 'clamp(0.8rem, 1.5vw, 1rem)' }}>
             {t('home_extended.view_all')} <ArrowRight size={20} />
           </Link>
@@ -426,7 +485,10 @@ export default function Home() {
       {/* Sección: Newsletter */}
       <section className="newsletter-section" style={{ padding: 'clamp(2.5rem, 8vw, 6rem) 0', borderTop: '1px solid var(--border-light)' }}>
         <div className="container" style={{ maxWidth: '800px', textAlign: 'center' }}>
-          <h2 className="newsletter-title" style={{ fontSize: 'clamp(1.3rem, 5vw, 3rem)', fontWeight: '900', marginBottom: 'clamp(0.4rem, 1vw, 1rem)' }}>{t('home_extended.newsletter_title')}</h2>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem', marginBottom: 'clamp(0.4rem, 1vw, 1rem)' }}>
+            <div style={{ width: '4px', height: 'clamp(1.8rem, 3vw, 3rem)', background: 'linear-gradient(to bottom, #f43f5e, transparent)', borderRadius: '2px' }} />
+            <h2 className="newsletter-title" style={{ fontSize: 'clamp(1.5rem, 5vw, 3.2rem)', fontWeight: '900', margin: 0, background: 'linear-gradient(135deg, #fff 30%, #f43f5e 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t('home_extended.newsletter_title') || 'No te pierdas nada'}</h2>
+          </div>
           <p style={{ color: 'var(--text-secondary)', marginBottom: 'clamp(1rem, 2.5vw, 2.5rem)', fontSize: 'clamp(0.85rem, 2vw, 1.1rem)' }}>
             {t('home_extended.newsletter_desc')}
           </p>
