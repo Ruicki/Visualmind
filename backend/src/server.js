@@ -229,7 +229,22 @@ async function initializeDatabase() {
       console.log('[InitDB] Schema ejecutado correctamente');
     }
 
-    // 2. Asegurar siempre el Administrador por defecto
+    // 2. Migraciones que siempre se ejecutan (columnas nuevas en tablas existentes)
+    try {
+      await pool.query(`
+        DO $migrate$
+        BEGIN
+          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='collections' AND column_name='accent_color') THEN
+            ALTER TABLE collections ADD COLUMN accent_color VARCHAR(50);
+          END IF;
+        END $migrate$;
+      `);
+      console.log('[InitDB] Migraciones aplicadas correctamente');
+    } catch (migrateErr) {
+      console.warn('[InitDB] Error en migraciones (no crítico):', migrateErr.message);
+    }
+
+    // 3. Asegurar siempre el Administrador por defecto
     const adminEmail = 'visualmind@admin.com';
     const adminPassword = 'Visualmind@14'; // Contraseña maestra garantizada
     const hashedPassword = await bcrypt.hash(adminPassword, 10);

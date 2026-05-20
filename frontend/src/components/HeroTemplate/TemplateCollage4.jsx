@@ -27,7 +27,7 @@ export default function TemplateCollage4({ campaign, timeLeft, isActive }) {
         <div className="hero-template-collage4" style={{
             display: 'flex',
             flexDirection: 'row',
-            minHeight: '70vh',
+            minHeight: '80vh',
             width: '100%',
             overflow: 'hidden',
         }}>

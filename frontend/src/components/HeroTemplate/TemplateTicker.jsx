@@ -72,7 +72,7 @@ export default function TemplateTicker({ campaign, timeLeft, isActive }) {
         <div className="hero-template-ticker" style={{
             position: 'relative',
             width: '100%',
-            minHeight: '70vh',
+            minHeight: '80vh',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',

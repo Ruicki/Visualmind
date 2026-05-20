@@ -54,7 +54,7 @@ export default function TemplateSingle({ campaign, timeLeft, isActive }) {
         <div className="hero-template-single" style={{
             position: 'relative',
             width: '100%',
-            minHeight: '70vh',
+            minHeight: '80vh',
             overflow: 'hidden',
             display: 'flex',
             alignItems: 'center',

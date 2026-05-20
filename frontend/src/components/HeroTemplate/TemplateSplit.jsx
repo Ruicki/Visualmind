@@ -51,7 +51,7 @@ export default function TemplateSplit({ campaign, timeLeft, isActive }) {
         <div className="hero-template-split" style={{
             display: 'flex',
             flexDirection: 'row',
-            minHeight: '70vh',
+            minHeight: '80vh',
             width: '100%',
             overflow: 'hidden',
         }}>

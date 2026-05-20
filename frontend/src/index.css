@@ -47,7 +47,7 @@
 /* Tema claro */
 [data-theme="light"] {
   --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
+  --bg-secondary: #838588;
   --bg-card: rgba(241, 245, 249, 0.7);
 
   --text-primary: #0f172a;
@@ -360,6 +360,25 @@ img {
   transform: translateY(-2px);
 }
 
+.navbar-link.active {
+  position: relative;
+    color:white;
+  padding: 5px 15px;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+}
+
+.navbar-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--primary);
+  border-radius: 1px;
+}
+
 /* Iconos de acciones */
 .navbar-actions {
   display: flex;
@@ -460,6 +479,10 @@ img {
 }
 
 .navbar-mobile-link:hover {
+  color: var(--primary);
+}
+
+.navbar-mobile-link.active {
   color: var(--primary);
 }
 

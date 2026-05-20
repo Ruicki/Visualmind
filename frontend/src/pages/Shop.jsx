@@ -18,19 +18,19 @@ const PRICE_RANGES = [
 const SIZE_LIST = ['XS', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
 
 const COLOR_SWATCHES = {
-  black: '#000000',
-  white: '#FFFFFF',
-  red: '#EF4444',
-  blue: '#3B82F6',
-  green: '#22C55E',
-  yellow: '#EAB308',
-  purple: '#A855F7',
-  pink: '#EC4899',
-  orange: '#F97316',
-  gray: '#6B7280',
+  black: '#000000', negro: '#000000',
+  white: '#FFFFFF', blanco: '#FFFFFF',
+  red: '#EF4444', rojo: '#EF4444',
+  blue: '#3B82F6', azul: '#3B82F6',
+  green: '#22C55E', verde: '#22C55E',
+  yellow: '#EAB308', amarillo: '#EAB308',
+  purple: '#A855F7', morado: '#A855F7', violeta: '#A855F7', purpura: '#A855F7',
+  pink: '#EC4899', rosa: '#EC4899',
+  orange: '#F97316', naranja: '#F97316',
+  gray: '#6B7280', gris: '#6B7280',
   navy: '#1E3A5F',
   beige: '#F5F5DC',
-  brown: '#8B4513',
+  brown: '#8B4513', marron: '#8B4513', cafe: '#8B4513',
 };
 
 export default function Shop() {

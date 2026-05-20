@@ -640,7 +640,7 @@ export const translations = {
         },
         home_extended: {
               featured_drops: 'Lanzamientos Destacados',
-              featured_title: 'Lo Nuevo',
+              featured_title: 'Los Favoritos',
               signature_pieces: 'Piezas de Autor',
             exclusive_release: 'LANZAMIENTO EXCLUSIVO',
             desc_prefix: 'Experimenta el lujo con nuestra colección insignia de',

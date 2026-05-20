@@ -227,6 +227,10 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='collections' AND column_name='description_long') THEN
     ALTER TABLE collections ADD COLUMN description_long TEXT;
   END IF;
+  -- Columna accent_color en collections para gradientes personalizados en home
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='collections' AND column_name='accent_color') THEN
+    ALTER TABLE collections ADD COLUMN accent_color VARCHAR(50);
+  END IF;
   -- Columna show_on_home en products para seleccionar los que aparecen en la home
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='show_on_home') THEN
     ALTER TABLE products ADD COLUMN show_on_home BOOLEAN DEFAULT false;

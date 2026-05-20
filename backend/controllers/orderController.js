@@ -93,11 +93,32 @@ export const getAllOrders = async (req, res) => {
  * @description (Admin Only) Actualiza el estado de una orden.
  * Implementa lógica de restauración de stock si el pedido se marca como 'cancelled'.
  */
+export const createPreOrder = async (req, res) => {
+  const { campaign_id } = req.body;
+  const userId = req.user.id;
+
+  if (!campaign_id) {
+    return res.status(400).json({ message: 'Se requiere campaign_id' });
+  }
+
+  try {
+    const preOrder = await pool.query(
+      `INSERT INTO orders (user_id, total, items, status, shipping_details)
+       VALUES ($1, 0, $2, 'pre_order', '{}') RETURNING *`,
+      [userId, JSON.stringify([{ campaign_id, type: 'pre_order' }])]
+    );
+    res.status(201).json(preOrder.rows[0]);
+  } catch (error) {
+    console.error('Error al crear pre-orden:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+};
+
 export const updateOrderStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  const validStatuses = ['pending', 'shipped', 'delivered', 'cancelled'];
+  const validStatuses = ['pending', 'shipped', 'delivered', 'cancelled', 'pre_order'];
   if (!validStatuses.includes(status)) {
     return res.status(400).json({ message: 'Estado inválido' });
   }

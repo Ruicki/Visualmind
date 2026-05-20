@@ -38,7 +38,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [activeEvents, setActiveEvents] = useState([]);
   const [featuredCollection, setFeaturedCollection] = useState(null);
-  const [campaignFeaturedProducts, setCampaignFeaturedProducts] = useState({});
+  const [globalFeatured, setGlobalFeatured] = useState([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [newsletterEmail, setNewsletterEmail] = useState('');
   const [newsletterStatus, setNewsletterStatus] = useState('idle');
@@ -58,21 +58,24 @@ export default function Home() {
     const fetchHomeData = async () => {
       try {
         setLoading(true);
-        const [productsRes, campaignRes, collectionsRes] = await Promise.all([
+        const [productsRes, campaignRes, collectionsRes, featuredRes] = await Promise.all([
           axiosInstance.get('/products'),
           axiosInstance.get('/campaigns/active-all').catch(() => ({ data: [] })),
-          axiosInstance.get('/collections').catch(() => ({ data: [] }))
+          axiosInstance.get('/collections').catch(() => ({ data: [] })),
+          axiosInstance.get('/featured-products').catch(() => ({ data: [] }))
         ]);
         
         if (productsRes.data && productsRes.data.length > 0) {
           setProducts(productsRes.data);
         }
 
+        if (featuredRes.data && featuredRes.data.length > 0) {
+          setGlobalFeatured(featuredRes.data);
+        }
+
         if (collectionsRes.data && collectionsRes.data.length > 0) {
           const activeCollections = collectionsRes.data.filter(c => c.is_active);
           if (activeCollections.length > 0) {
-            console.log('[DEBUG] Featured collection loaded:', activeCollections[0]);
-            console.log('[DEBUG] accent_color:', activeCollections[0].accent_color);
             setFeaturedCollection(activeCollections[0]);
           }
         }
@@ -80,20 +83,6 @@ export default function Home() {
         // Campañas activas, prelaunch y upcoming
         if (campaignRes.data && Array.isArray(campaignRes.data) && campaignRes.data.length > 0) {
           setActiveEvents(campaignRes.data);
-
-          // Cada campaña activa tiene SUS PROPIOS slots destacados
-          const activeCampaigns = campaignRes.data.filter(e => e.phase === 'active');
-          if (activeCampaigns.length > 0) {
-            const campaignSlotsPromises = activeCampaigns.map(c =>
-              axiosInstance.get(`/featured-products?campaign_id=${c.id}`)
-                .then(res => ({ campaignId: c.id, products: res.data }))
-                .catch(() => ({ campaignId: c.id, products: [] }))
-            );
-            const results = await Promise.all(campaignSlotsPromises);
-            const campaignProductsMap = {};
-            results.forEach(r => { campaignProductsMap[r.campaignId] = r.products; });
-            setCampaignFeaturedProducts(campaignProductsMap);
-          }
         }
       } catch (err) {
         console.warn("Error fetching home data:", err);
@@ -107,11 +96,18 @@ export default function Home() {
   // Segmentación de productos para las distintas secciones de la home
   const availableProducts = products.filter(isProductVisible);
 
-  // Productos marcados para aparecer en "Explora el Catálogo" (show_on_home) con fallback
+  // IDs de productos destacados para priorizar los no-destacados en catálogo
+  const featuredIds = React.useMemo(() => {
+    return new Set(globalFeatured.map(p => p.product_id || p.id));
+  }, [globalFeatured]);
+
+  // Catálogo: primero no-destacados, si faltan se rellena con destacados hasta 10
   const homeCatalogProducts = React.useMemo(() => {
-    const marked = availableProducts.filter(p => p.show_on_home).slice(0, 8);
-    return marked.length > 0 ? marked : availableProducts.slice(0, 8);
-  }, [availableProducts]);
+    const nonFeatured = availableProducts.filter(p => !featuredIds.has(p.id));
+    if (nonFeatured.length >= 10) return nonFeatured.slice(0, 10);
+    const featured = availableProducts.filter(p => featuredIds.has(p.id));
+    return [...nonFeatured, ...featured].slice(0, 10);
+  }, [availableProducts, featuredIds]);
 
   const activeCampaigns = React.useMemo(() => {
     return activeEvents.filter(e => e.phase === 'active');
@@ -127,11 +123,10 @@ export default function Home() {
     return availableProducts.filter(p => p.collection_id === featuredCollection.id).slice(0, 2);
   }, [availableProducts, featuredCollection]);
 
-  // Productos destacados por prioridad (para el grid de lanzamientos)
+  // Productos destacados (desde featured_product_slots via API)
   const featuredProducts = React.useMemo(() => {
-    const byPriority = availableProducts.filter(p => (p.priority || 0) > 5).slice(0, 8);
-    return byPriority.length > 0 ? byPriority : availableProducts.slice(0, 8);
-  }, [availableProducts]);
+    return globalFeatured.slice(0, 10);
+  }, [globalFeatured]);
 
   // Auto-slide para carrusel de destacados
   useEffect(() => {
@@ -297,12 +292,11 @@ export default function Home() {
         (() => {
           const tmpl = featuredCollection.template_type || 'editorial';
           const colAccent = featuredCollection.accent_color || '#a855f7';
-          console.log('[DEBUG] Rendering collection with accent_color:', colAccent, 'from:', featuredCollection.accent_color);
           if (tmpl === 'hero') {
             const leftImg = collectionProducts[0]?.image_url || featuredCollection.image_url || FALLBACK_IMG;
             const rightImg = collectionProducts[1]?.image_url || featuredCollection.image_url || FALLBACK_IMG;
             return (
-              <section style={{ position: 'relative', width: '100%', background: 'var(--bg-primary)' }}>
+              <section key={`collection-${featuredCollection.id}-${colAccent}`} style={{ position: 'relative', width: '100%', background: 'var(--bg-primary)' }}>
                 <div style={{ textAlign: 'center', padding: 'clamp(1rem, 4vw, 3rem) 1rem 1.5rem' }}>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ width: '4px', height: 'clamp(1.8rem, 3vw, 3rem)', background: `linear-gradient(to bottom, ${colAccent}, transparent)`, borderRadius: '2px' }} />
@@ -345,7 +339,7 @@ export default function Home() {
           }
           if (tmpl === 'grid') {
             return (
-              <section className="home-collection-grid" style={{ padding: 'clamp(2.5rem, 6vw, 6rem) 0', background: 'var(--bg-secondary)', position: 'relative', overflow: 'hidden' }}>
+              <section key={`collection-${featuredCollection.id}-${colAccent}`} className="home-collection-grid" style={{ padding: 'clamp(2.5rem, 6vw, 6rem) 0', background: 'var(--bg-secondary)', position: 'relative', overflow: 'hidden' }}>
                 <div style={{ position: 'absolute', top: '-15%', right: '-10%', width: 'clamp(200px, 30vw, 500px)', height: 'clamp(200px, 30vw, 500px)', borderRadius: '50%', background: `${colAccent}08`, filter: 'blur(80px)', pointerEvents: 'none' }} />
                 <div className="container" style={{ position: 'relative' }}>
                    <div style={{ textAlign: 'center', marginBottom: 'clamp(1.5rem, 3vw, 3rem)' }}>
@@ -398,7 +392,7 @@ export default function Home() {
           }
           // editorial (default) — lookbook con más presencia
           return (
-            <section className="home-collection" style={{ background: 'var(--bg-primary)', position: 'relative', overflow: 'hidden' }}>
+            <section key={`collection-${featuredCollection.id}-${colAccent}`} className="home-collection" style={{ background: 'var(--bg-primary)', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: '-20%', right: '-10%', width: 'clamp(200px, 30vw, 500px)', height: 'clamp(200px, 30vw, 500px)', borderRadius: '50%', background: `${colAccent}08`, filter: 'blur(80px)', pointerEvents: 'none' }} />
               <div className="container" style={{ position: 'relative' }}>
                 {/* Section header */}

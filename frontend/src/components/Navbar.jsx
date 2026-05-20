@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ShoppingBag, Search, User, Globe, Menu, X, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -24,6 +24,8 @@ import ThemeToggle from './ThemeToggle';
  * 3. Mobile (menú hamburguesa y overlay lateral).
  */
 export default function Navbar() {
+  const { pathname } = useLocation();
+
   // Integración con Contextos de Estado
   const { setIsCartOpen, getCartCount } = useCart();
   const { wishlistItems } = useWishlist();
@@ -111,8 +113,8 @@ export default function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className="navbar-link"
-              >
+                className={`navbar-link${pathname === link.path || (link.path !== '/' && pathname.startsWith(link.path)) ? ' active' : ''}`}
+               >
                 {link.label}
               </Link>
             ))}
@@ -232,7 +234,7 @@ export default function Navbar() {
           <Link
             key={link.path}
             to={link.path}
-            className="navbar-mobile-link"
+            className={`navbar-mobile-link${pathname === link.path || (link.path !== '/' && pathname.startsWith(link.path)) ? ' active' : ''}`}
             onClick={() => setMobileMenuOpen(false)}
           >
             {link.label}

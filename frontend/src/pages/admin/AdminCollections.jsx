@@ -90,9 +90,8 @@ export default function AdminCollections() {
         setFormData({
             ...collection,
             image_file: null,
-            accent_color: collection.accent_color || '' // Convertir null a string vacío
+            accent_color: collection.accent_color || ''
         });
-        console.log('[DEBUG] Editing collection with accent_color:', collection.accent_color);
         setIsModalOpen(true);
     };
 
@@ -110,35 +109,46 @@ export default function AdminCollections() {
         e.preventDefault();
         setIsSaving(true);
         try {
-            const collectionFormData = new FormData();
-            Object.keys(formData).forEach(key => {
-                if (key === 'image_file' && formData.image_file) {
-                    collectionFormData.append('image', formData.image_file);
-                } else if (key === 'campaign_id' && !formData.campaign_id) {
-                    collectionFormData.append('campaign_id', '');
-                } else if (key === 'accent_color') {
-                    // Solo agregar accent_color si tiene un valor válido
-                    if (formData.accent_color && formData.accent_color !== 'null' && formData.accent_color !== 'undefined') {
-                        collectionFormData.append('accent_color', formData.accent_color);
-                    }
-                } else if (key !== 'image_file') {
-                    collectionFormData.append(key, formData[key]);
+            // Si hay imagen nueva, usar FormData
+            if (formData.image_file) {
+                const collectionFormData = new FormData();
+                collectionFormData.append('name', formData.name);
+                collectionFormData.append('slug', formData.slug);
+                collectionFormData.append('description', formData.description || '');
+                collectionFormData.append('description_long', formData.description_long || '');
+                collectionFormData.append('is_active', formData.is_active);
+                collectionFormData.append('template_type', formData.template_type || 'editorial');
+                collectionFormData.append('campaign_id', formData.campaign_id || '');
+                collectionFormData.append('image', formData.image_file);
+                
+                // Enviar accent_color en query parameter
+                const accentColorParam = formData.accent_color ? `?accent_color=${encodeURIComponent(formData.accent_color)}` : '';
+                if (formData.id) {
+                    await api.put(`/collections/${formData.id}${accentColorParam}`, collectionFormData);
+                } else {
+                    await api.post(`/collections${accentColorParam}`, collectionFormData);
                 }
-            });
-            
-            console.log('[DEBUG] Saving accent_color:', formData.accent_color);
-            console.log('[DEBUG] FormData accent_color:', collectionFormData.get('accent_color'));
-
-            // Enviar accent_color en query parameter para ambos casos (PUT y POST)
-            const accentColorParam = formData.accent_color && formData.accent_color !== 'null' && formData.accent_color !== 'undefined' 
-                ? `?accent_color=${encodeURIComponent(formData.accent_color)}` 
-                : '';
-
-            if (formData.id) {
-                await api.put(`/collections/${formData.id}${accentColorParam}`, collectionFormData);
             } else {
-                await api.post(`/collections${accentColorParam}`, collectionFormData);
+                // Sin imagen nueva, enviar JSON directamente
+                const payload = {
+                    name: formData.name,
+                    slug: formData.slug,
+                    description: formData.description || '',
+                    description_long: formData.description_long || '',
+                    image_url: formData.image_url || '',
+                    is_active: formData.is_active,
+                    template_type: formData.template_type || 'editorial',
+                    campaign_id: formData.campaign_id || '',
+                    accent_color: formData.accent_color || null
+                };
+                
+                if (formData.id) {
+                    await api.put(`/collections/${formData.id}`, payload);
+                } else {
+                    await api.post(`/collections`, payload);
+                }
             }
+            
             setIsModalOpen(false);
             fetchCollections();
         } catch (error) {

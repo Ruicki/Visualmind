@@ -106,13 +106,11 @@ export default function AdminProducts() {
         image_file: null,
         hover_image_url: '',
         hover_image_file: null,
-        featured: false,
-        show_on_home: false,
+
         is_new: false,
         new_arrival: false,
         launch_date: '',
         lifecycle_state: 'Published',
-        priority: 0,
         campaign_id: '',
         collection_id: '',
         layout_preference: 'standard',
@@ -262,13 +260,10 @@ export default function AdminProducts() {
             image_file: null,
             hover_image_url: product.hover_image_url || '',
             hover_image_file: null,
-            featured: product.featured || false,
-            show_on_home: product.show_on_home || false,
             is_new: product.is_new || product.new_arrival || false,
             new_arrival: product.new_arrival || false,
             launch_date: product.launch_date ? new Date(product.launch_date).toISOString().split('T')[0] : '',
             lifecycle_state: product.lifecycle_state || 'Published',
-            priority: product.priority || 0,
             campaign_id: product.campaign_id || '',
             collection_id: product.collection_id || '',
             layout_preference: product.layout_preference || 'standard',
@@ -305,15 +300,13 @@ export default function AdminProducts() {
             image_file: null,
             hover_image_url: '',
             hover_image_file: null,
-        featured: false,
-        show_on_home: false,
+
         is_new: false,
         new_arrival: false,
         launch_date: new Date().toISOString().split('T')[0],
-            lifecycle_state: 'Published',
-            priority: 0,
-            campaign_id: '',
-            collection_id: '',
+        lifecycle_state: 'Published',
+        campaign_id: '',
+        collection_id: '',
             layout_preference: 'standard',
             admin_notes: '',
             variants: []
@@ -1020,25 +1013,6 @@ export default function AdminProducts() {
                                         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                                                 <div 
-                                                    onClick={() => setFormData({ ...formData, featured: !formData.featured })}
-                                                    style={{ 
-                                                        padding: '1.5rem', borderRadius: '20px', cursor: 'pointer',
-                                                        background: formData.featured ? 'rgba(234, 179, 8, 0.1)' : 'rgba(255,255,255,0.02)',
-                                                        border: `1px solid ${formData.featured ? 'rgba(234, 179, 8, 0.3)' : 'rgba(255,255,255,0.05)'}`,
-                                                        transition: 'all 0.3s'
-                                                    }}
-                                                >
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                                        <Star size={24} color={formData.featured ? '#eab308' : '#666'} fill={formData.featured ? '#eab308' : 'none'} />
-                                                        <div style={{ width: '40px', height: '20px', borderRadius: '20px', background: formData.featured ? 'var(--primary)' : '#333', position: 'relative' }}>
-                                                            <div style={{ position: 'absolute', top: '2px', left: formData.featured ? '22px' : '2px', width: '16px', height: '16px', background: 'white', borderRadius: '50%', transition: 'all 0.3s' }} />
-                                                        </div>
-                                                    </div>
-                                                    <h5 style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Producto Destacado</h5>
-                                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Aparecerá en la sección "Featured" de la home.</p>
-                                                </div>
-
-                                                <div 
                                                     onClick={() => setFormData({ ...formData, new_arrival: !formData.new_arrival })}
                                                     style={{ 
                                                         padding: '1.5rem', borderRadius: '20px', cursor: 'pointer',
@@ -1055,25 +1029,6 @@ export default function AdminProducts() {
                                                     </div>
                                                     <h5 style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Nueva Llegada</h5>
                                                     <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Etiqueta especial en la tienda para productos recientes.</p>
-                                                </div>
-
-                                                <div 
-                                                    onClick={() => setFormData({ ...formData, show_on_home: !formData.show_on_home })}
-                                                    style={{ 
-                                                        padding: '1.5rem', borderRadius: '20px', cursor: 'pointer',
-                                                        background: formData.show_on_home ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.02)',
-                                                        border: `1px solid ${formData.show_on_home ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255,255,255,0.05)'}`,
-                                                        transition: 'all 0.3s'
-                                                    }}
-                                                >
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                                                        <Package size={24} color={formData.show_on_home ? '#22c55e' : '#666'} />
-                                                        <div style={{ width: '40px', height: '20px', borderRadius: '20px', background: formData.show_on_home ? '#22c55e' : '#333', position: 'relative' }}>
-                                                            <div style={{ position: 'absolute', top: '2px', left: formData.show_on_home ? '22px' : '2px', width: '16px', height: '16px', background: 'white', borderRadius: '50%', transition: 'all 0.3s' }} />
-                                                        </div>
-                                                    </div>
-                                                    <h5 style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Mostrar en Home</h5>
-                                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Aparecerá en la sección "Explora el Catálogo" de la página principal.</p>
                                                 </div>
                                             </div>
 
@@ -1097,16 +1052,6 @@ export default function AdminProducts() {
                                                         <option value="Legacy">Legado (Versión anterior)</option>
                                                         <option value="Archived">Archivado (Solo histórico)</option>
                                                     </select>
-                                                </div>
-                                                <div className="form-group">
-                                                    <label className="label-text">Prioridad (Orden)</label>
-                                                    <input 
-                                                        type="number" 
-                                                        value={formData.priority} 
-                                                        onChange={e => setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })} 
-                                                        className="input-field" 
-                                                        placeholder="0 es normal, mayor es más arriba"
-                                                    />
                                                 </div>
                                             </div>
 

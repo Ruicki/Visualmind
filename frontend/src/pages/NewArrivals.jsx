@@ -21,20 +21,26 @@ import SEO from '../components/SEO';
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /**
- * Devuelve entre 4 y 8 productos asociados a un evento.
- * Filtra por campaign_id o season_id; si no hay asociados usa los más recientes.
+ * Devuelve productos asignados a un evento SOLO via slots de destacados.
+ * Sin mezclar con campaign_id/season_id de la tabla products.
  *
  * @param {Object} event - Evento (campaña o temporada)
- * @param {Array}  allProducts - Todos los productos disponibles
+ * @param {Array}  allProducts - Todos los productos disponibles (no usado internamente)
+ * @param {Object} slotMap - Mapa de { eventId: product[] } desde featured_product_slots
  * @returns {Array} Productos a mostrar para este evento
  */
-const getEventProducts = (event, allProducts) => {
-    const associated = allProducts.filter(
-        p => p.campaign_id === event.id || p.season_id === event.id
-    );
-    if (associated.length > 0) return associated.slice(0, 8);
-    // Fallback: productos más recientes
-    return allProducts.slice(0, 4);
+const getEventProducts = (event, allProducts, slotMap = {}) => {
+    const slotItems = (slotMap[event.id] || []).map(s => ({
+        id: s.product_id || s.id,
+        title: s.title,
+        price: s.price,
+        image_url: s.image_url,
+        hover_image_url: s.hover_image_url,
+        discount: s.discount,
+        stock: s.stock,
+        campaign_id: event.id,
+    }));
+    return slotItems.slice(0, 8);
 };
 
 /**
@@ -59,6 +65,8 @@ export default function NewArrivals() {
     const [products, setProducts]             = useState([]);
     const [loading, setLoading]               = useState(true);
     const [error, setError]                   = useState(null);
+    /** { [eventId]: product[] } — productos asignados vía slots de destacados */
+    const [eventSlotProducts, setEventSlotProducts] = useState({});
     /** { [eventId]: { days, hours, minutes, seconds } | null } */
     const [countdowns, setCountdowns]         = useState({});
 
@@ -92,6 +100,19 @@ export default function NewArrivals() {
 
             const rawProducts = Array.isArray(productsRes.data) ? productsRes.data : [];
             setProducts(rawProducts);
+
+            // Task 12.8 — productos asignados via slots de destacados por evento
+            if (filtered.length > 0) {
+                const slotPromises = filtered.map(ev =>
+                    axiosInstance.get(`/featured-products?campaign_id=${ev.id}`)
+                        .then(res => ({ eventId: ev.id, products: Array.isArray(res.data) ? res.data : [res.data] }))
+                        .catch(() => ({ eventId: ev.id, products: [] }))
+                );
+                const slotResults = await Promise.all(slotPromises);
+                const slotMap = {};
+                slotResults.forEach(r => { slotMap[r.eventId] = r.products; });
+                setEventSlotProducts(slotMap);
+            }
         } catch (err) {
             console.error('[NewArrivals] Error al cargar datos:', err);
             setError('No se pudieron cargar los eventos. Por favor, inténtalo de nuevo.');
@@ -243,7 +264,7 @@ export default function NewArrivals() {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '5rem' }}>
                             {activeEvents.map((event, idx) => {
-                                const eventProducts = getEventProducts(event, products);
+                                const eventProducts = getEventProducts(event, products, eventSlotProducts);
                                 const countdown = countdowns[event.id];
                                 const bannerUrl = getProductImage(null, event.banner_url);
 

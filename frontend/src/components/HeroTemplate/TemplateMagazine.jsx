@@ -50,7 +50,7 @@ export default function TemplateMagazine({ campaign, timeLeft, isActive }) {
         <div className="hero-template-magazine" style={{
             display: 'grid',
             gridTemplateColumns: '55% 45%',
-            minHeight: '70vh',
+            minHeight: '80vh',
             width: '100%',
             overflow: 'hidden',
             background: '#050505',
