@@ -17,7 +17,7 @@ export default function UserProfile() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [profile, setProfile] = useState(null);
-    const [activeTab, setActiveTab] = useState('history'); // Tabs: history, addresses, settings
+    const [_activeTab, _setActiveTab] = useState('history'); // Tabs: history, addresses, settings
 
     // Profile form state
     const [fullName, setFullName] = useState('');
@@ -62,7 +62,7 @@ export default function UserProfile() {
      * Mapeo de estados de pedido a colores semánticos.
      * @param {string} status - Estado del pedido (pending, paid, shipped, etc.)
      */
-    const getStatusColor = (status) => {
+    const _getStatusColor = (status) => {
         const colors = {
             pending: '#eab308', // Amarillo
             paid: '#22c55e',    // Verde

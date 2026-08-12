@@ -11,7 +11,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import { getTemplateComponent } from '../../components/HeroTemplate';
 
 export default function AdminCampaigns({ onOpenCampaignSlots }) {
-    const { t } = useLanguage();
+    const { t: _t } = useLanguage();
     
     // --- Estados ---
     const [campaigns, setCampaigns] = useState([]);
@@ -203,7 +203,7 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
             setExpireResult({ success: true, msg: response.data.message });
             fetchCampaigns();
             setTimeout(() => setExpireResult(null), 5000);
-        } catch (error) {
+        } catch {
             setExpireResult({ success: false, msg: "Error al procesar expiración" });
         } finally {
             setIsExpiring(false);

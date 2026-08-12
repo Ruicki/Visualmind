@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { CheckCircle, Download, Home, ShoppingBag } from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';

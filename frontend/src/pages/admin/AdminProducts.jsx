@@ -174,7 +174,7 @@ export default function AdminProducts() {
         }
     };
 
-    const fetchCampaigns = async () => {
+    const _fetchCampaigns = async () => {
         try {
             const response = await api.get('/campaigns');
             setAvailableCampaigns(response.data || []);

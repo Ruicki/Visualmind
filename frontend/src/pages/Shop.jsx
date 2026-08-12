@@ -32,7 +32,7 @@ export default function Shop() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedSize, setSelectedSize] = useState("all");
   const [selectedColor, setSelectedColor] = useState("all");
-  const [showLegacyOnly, setShowLegacyOnly] = useState(false);
+  const [_showLegacyOnly, setShowLegacyOnly] = useState(false);
   
   // Hooks de navegación y parámetros
   const [searchParams] = useSearchParams();

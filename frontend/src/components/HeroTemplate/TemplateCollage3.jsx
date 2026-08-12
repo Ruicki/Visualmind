@@ -17,7 +17,7 @@ const ImagePlaceholder = () => (
     </div>
 );
 
-export default function TemplateCollage3({ campaign, timeLeft, isActive }) {
+export default function TemplateCollage3({ campaign, isActive }) {
     const accentColor = campaign.accent_color || '#ffffff';
     const btnTextColor = getContrastColor(accentColor);
     const ctaLink = campaign.button_link || `/shop?campaign=${campaign.slug}`;

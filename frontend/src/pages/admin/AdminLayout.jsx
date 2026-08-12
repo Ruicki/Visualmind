@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { LayoutDashboard, Package, ShoppingCart, LogOut, Settings, Sparkles } from 'lucide-react';
@@ -14,7 +14,6 @@ import { LayoutDashboard, Package, ShoppingCart, LogOut, Settings, Sparkles } fr
 export default function AdminLayout() {
     const { user, loading, signOut } = useAuth();
     const { t } = useLanguage();
-    const navigate = useNavigate();
     const location = useLocation();
 
     /**

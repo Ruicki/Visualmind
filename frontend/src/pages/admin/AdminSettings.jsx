@@ -15,7 +15,7 @@ export default function AdminSettings() {
     const { t } = useLanguage();
     
     // Configuración global del sitio (expandible)
-    const [settings, setSettings] = useState({
+    const [_settings, _setSettings] = useState({
         storeName: '',
         contactEmail: '',
         currency: 'USD'

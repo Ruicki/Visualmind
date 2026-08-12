@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-
-/* eslint-disable no-unused-vars */
-/* eslint-disable react-hooks/set-state-in-effect */
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import TemplateCinematic from './HeroTemplate/TemplateCinematic';
 import TemplateSingle from './HeroTemplate/TemplateSingle';

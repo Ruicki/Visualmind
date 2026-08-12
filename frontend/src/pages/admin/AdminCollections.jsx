@@ -15,7 +15,7 @@ import { getProductImage, compressImage } from '../../utils/imageUtils';
  * y subir imágenes de portada para cada colección.
  */
 export default function AdminCollections() {
-    const { t } = useLanguage();
+    const { t: _t } = useLanguage();
     // --- Estados de Datos ---
     const [collections, setCollections] = useState([]); // Lista de colecciones registradas
     const [loading, setLoading] = useState(true); // Estado de carga inicial
@@ -81,7 +81,7 @@ export default function AdminCollections() {
         try {
             await api.delete(`/collections/${id}`);
             setCollections(collections.filter(c => c.id !== id));
-        } catch (error) {
+        } catch {
             alert('Error al eliminar');
         }
     };

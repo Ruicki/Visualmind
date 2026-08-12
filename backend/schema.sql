@@ -172,7 +172,7 @@ CREATE TABLE IF NOT EXISTS featured_product_slots (
 
 -- Columnas adicionales en products para lifecycle, campañas y temporadas
 -- (Se agregan con IF NOT EXISTS para no fallar si ya existen)
-DO $
+DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='lifecycle_state') THEN
     ALTER TABLE products ADD COLUMN lifecycle_state VARCHAR(50) DEFAULT 'Published';
@@ -229,4 +229,4 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='show_on_home') THEN
     ALTER TABLE products ADD COLUMN show_on_home BOOLEAN DEFAULT false;
   END IF;
-END $;
+END $$;

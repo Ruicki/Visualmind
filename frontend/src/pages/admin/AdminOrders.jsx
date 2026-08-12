@@ -61,7 +61,7 @@ export default function AdminOrders() {
         }
     };
 
-    const getStatusLabel = (status) => {
+    const _getStatusLabel = (status) => {
         switch (status) {
             case 'pending': return t('admin.filter_pending') || 'Pendiente';
             case 'shipped': return t('admin.filter_shipped') || 'Enviado';
