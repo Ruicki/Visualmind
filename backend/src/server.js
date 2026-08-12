@@ -21,7 +21,6 @@ import campaignRoutes from '../routes/campaignRoutes.js';
 import collectionRoutes from '../routes/collectionRoutes.js';
 import categoryRoutes from '../routes/categoryRoutes.js';
 import featuredProductsRoutes from '../routes/featuredProductsRoutes.js';
-import subcategoryRoutes from '../routes/subcategoryRoutes.js';
 import newsletterRoutes from '../routes/newsletterRoutes.js';
 import { expireEvents } from '../services/eventService.js';
 import bcrypt from 'bcryptjs';
@@ -99,8 +98,8 @@ app.use(cors({
 }));
 
 // Parsing de cuerpos de petición
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 /**
  * Servidor de Archivos Estáticos (Uploads).
@@ -123,7 +122,6 @@ app.use('/api/campaigns', campaignRoutes);
 app.use('/api/collections', collectionRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductsRoutes);
-app.use('/api/subcategories', subcategoryRoutes);
 app.use('/api/newsletter', newsletterRoutes);
 
 /**
@@ -229,22 +227,7 @@ async function initializeDatabase() {
       console.log('[InitDB] Schema ejecutado correctamente');
     }
 
-    // 2. Migraciones que siempre se ejecutan (columnas nuevas en tablas existentes)
-    try {
-      await pool.query(`
-        DO $migrate$
-        BEGIN
-          IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='collections' AND column_name='accent_color') THEN
-            ALTER TABLE collections ADD COLUMN accent_color VARCHAR(50);
-          END IF;
-        END $migrate$;
-      `);
-      console.log('[InitDB] Migraciones aplicadas correctamente');
-    } catch (migrateErr) {
-      console.warn('[InitDB] Error en migraciones (no crítico):', migrateErr.message);
-    }
-
-    // 3. Asegurar siempre el Administrador por defecto
+    // 2. Asegurar siempre el Administrador por defecto
     const adminEmail = 'visualmind@admin.com';
     const adminPassword = 'Visualmind@14'; // Contraseña maestra garantizada
     const hashedPassword = await bcrypt.hash(adminPassword, 10);

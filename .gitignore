@@ -130,8 +130,10 @@ dist
 .pnp.*
 
 scratch/
-backend/uploads/
 *.cjs
+
+# Uploads (imágenes subidas por usuarios/admin)
+backend/uploads/
 backend/check_users.js
 backend/create_admin_final.js
 backend/migrate_phase_6.js

@@ -24,10 +24,10 @@ export default function TemplateCollage4({ campaign, timeLeft, isActive }) {
     const secondaryImages = Array.isArray(campaign.secondary_images) ? campaign.secondary_images : [];
 
     return (
-        <div className="hero-template-collage4" style={{
+        <div style={{
             display: 'flex',
             flexDirection: 'row',
-            minHeight: '80vh',
+            minHeight: '70vh',
             width: '100%',
             overflow: 'hidden',
         }}>

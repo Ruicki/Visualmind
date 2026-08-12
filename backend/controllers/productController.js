@@ -86,13 +86,10 @@ export const getAdminProducts = async (req, res) => {
                    (SELECT COUNT(*) FROM product_variants WHERE product_id = p.id) as variants_count,
                    (SELECT SUM(stock) FROM product_variants WHERE product_id = p.id) as variants_stock,
                    c.name as campaign_name,
-                   col.name as collection_name,
-                   s.name as subcategory_name,
-                   s.image_url as subcategory_image_url
+                   col.name as collection_name
             FROM products p 
             LEFT JOIN campaigns c ON p.campaign_id = c.id
             LEFT JOIN collections col ON p.collection_id = col.id
-            LEFT JOIN subcategories s ON p.subcategory_id = s.id
             ORDER BY p.created_at DESC
         `);
         res.json(result.rows);
@@ -142,7 +139,7 @@ export const createProduct = async (req, res) => {
         parent_category, variants, launch_date, 
         lifecycle_state, priority, campaign_id,
         collection_id, layout_preference, admin_notes,
-        tags, show_on_home, subcategory_id
+        tags, show_on_home
     } = req.body;
     
     // Normalización de rutas de imagen
@@ -173,12 +170,11 @@ export const createProduct = async (req, res) => {
         const nCampaignId = campaign_id && campaign_id !== '' ? campaign_id : null;
         const nCollectionId = collection_id && collection_id !== '' ? collection_id : null;
         const nLaunchDate = launch_date && launch_date !== '' ? launch_date : null;
-        const nSubcategoryId = subcategory_id && subcategory_id !== '' ? subcategory_id : null;
 
         const productResult = await client.query(
             `INSERT INTO products 
-            (title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, is_new, discount, featured, new_arrival, parent_category, launch_date, lifecycle_state, priority, campaign_id, collection_id, layout_preference, admin_notes, tags, show_on_home, subcategory_id) 
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24) 
+            (title, description, price, category, sub_category, image_url, hover_image_url, sku, stock, is_new, discount, featured, new_arrival, parent_category, launch_date, lifecycle_state, priority, campaign_id, collection_id, layout_preference, admin_notes, tags, show_on_home) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23) 
             RETURNING *`,
             [
                 title, description, normalizedPrice, category, sub_category, image_url, hover_image_url, sku, normalizedStock, 
@@ -187,8 +183,7 @@ export const createProduct = async (req, res) => {
                 nLaunchDate, lifecycle_state || 'Published', normalizedPriority, nCampaignId,
                 nCollectionId, layout_preference || 'standard', admin_notes || '',
                 tags || '',
-                show_on_home === 'true' || show_on_home === true,
-                nSubcategoryId
+                show_on_home === 'true' || show_on_home === true
             ]
         );
         
@@ -241,7 +236,7 @@ export const updateProduct = async (req, res) => {
         parent_category, variants, launch_date,
         lifecycle_state, priority, campaign_id,
         collection_id, layout_preference, admin_notes,
-        tags, show_on_home, subcategory_id
+        tags, show_on_home
     } = req.body;
     
     const client = await pool.connect();
@@ -267,7 +262,6 @@ export const updateProduct = async (req, res) => {
         const nCampaignId = campaign_id && campaign_id !== '' ? campaign_id : null;
         const nCollectionId = collection_id && collection_id !== '' ? collection_id : null;
         const nLaunchDate = launch_date && launch_date !== '' ? launch_date : null;
-        const nSubcategoryId = subcategory_id && subcategory_id !== '' ? subcategory_id : null;
         
         // Construcción dinámica de la consulta SQL para actualización
         let queryFields = [
@@ -276,7 +270,7 @@ export const updateProduct = async (req, res) => {
             'new_arrival = $11', 'parent_category = $12', 'launch_date = $13',
             'lifecycle_state = $14', 'priority = $15', 'campaign_id = $16',
             'collection_id = $17', 'layout_preference = $18', 'admin_notes = $19',
-            'tags = $20', 'show_on_home = $21', 'subcategory_id = $22'
+            'tags = $20', 'show_on_home = $21'
         ];
 
         const values = [
@@ -287,8 +281,7 @@ export const updateProduct = async (req, res) => {
             lifecycle_state || 'Published', normalizedPriority, nCampaignId,
             nCollectionId, layout_preference || 'standard', admin_notes || '',
             tags || '',
-            show_on_home === 'true' || show_on_home === true,
-            nSubcategoryId
+            show_on_home === 'true' || show_on_home === true
         ];
 
         let paramCount = values.length + 1;

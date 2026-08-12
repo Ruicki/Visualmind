@@ -69,10 +69,10 @@ export default function TemplateTicker({ campaign, timeLeft, isActive }) {
     const tickerText = Array(6).fill(campaign.name).join(' · ');
 
     return (
-        <div className="hero-template-ticker" style={{
+        <div style={{
             position: 'relative',
             width: '100%',
-            minHeight: '80vh',
+            minHeight: '70vh',
             overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',

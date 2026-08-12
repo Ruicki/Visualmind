@@ -12,14 +12,13 @@ import {
     Plus, Edit, Trash2, Search, Loader, X, Save, 
     Image as ImageIcon, Upload, Link as LinkIcon, 
     Star, Zap, Calendar, Package, Layers, Info, Settings,
-    Check, Tag, Percent, Type, Grid3X3, DoorOpen
+    Check, Tag, Percent, Type, Grid3X3
 } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { getProductImage, compressImage } from '../../utils/imageUtils';
 import AdminCategories from './AdminCategories';
 import AdminCollections from './AdminCollections';
 import AdminFeaturedProducts from './AdminFeaturedProducts';
-import AdminSubcategoriesSection from './AdminSubcategoriesSection';
 
 /**
  * @typedef {Object} ProductVariant
@@ -95,7 +94,6 @@ export default function AdminProducts() {
         description: '',
         category: 'anime',
         sub_category: '',
-        subcategory_id: '',
         parent_category: '',
         price: '',
         discount: 0,
@@ -106,11 +104,13 @@ export default function AdminProducts() {
         image_file: null,
         hover_image_url: '',
         hover_image_file: null,
-
+        featured: false,
+        show_on_home: false,
         is_new: false,
         new_arrival: false,
         launch_date: '',
         lifecycle_state: 'Published',
+        priority: 0,
         campaign_id: '',
         collection_id: '',
         layout_preference: 'standard',
@@ -131,31 +131,11 @@ export default function AdminProducts() {
     const [dragOver, setDragOver] = useState(false);
     const [hoverDragOver, setHoverDragOver] = useState(false);
     const [currentSection, setCurrentSection] = useState('products');
-    const [selectedSubcategory, setSelectedSubcategory] = useState(null);
-    const [selectedSubcategoryName, setSelectedSubcategoryName] = useState('');
-    const [subcategoryList, setSubcategoryList] = useState([]);
 
     useEffect(() => {
         fetchProducts();
         fetchDynamicMetadata();
     }, []);
-
-    // Cargar subcategorías para el dropdown del formulario cuando cambia la categoría
-    useEffect(() => {
-        const catSlug = formData.category;
-        if (!catSlug) {
-            setSubcategoryList([]);
-            return;
-        }
-        const cat = allCategories.find(c => c.slug === catSlug);
-        if (!cat) {
-            setSubcategoryList([]);
-            return;
-        }
-        api.get(`/subcategories?category_id=${cat.id}`)
-            .then(res => setSubcategoryList(res.data || []))
-            .catch(() => setSubcategoryList([]));
-    }, [formData.category, allCategories]);
 
     /**
      * @function getCategoryDetails
@@ -249,7 +229,6 @@ export default function AdminProducts() {
             description: product.description || '',
             category: product.category,
             sub_category: product.sub_category || '',
-            subcategory_id: product.subcategory_id || '',
             parent_category: product.parent_category || '',
             price: product.price,
             discount: product.discount || 0,
@@ -260,10 +239,13 @@ export default function AdminProducts() {
             image_file: null,
             hover_image_url: product.hover_image_url || '',
             hover_image_file: null,
+            featured: product.featured || false,
+            show_on_home: product.show_on_home || false,
             is_new: product.is_new || product.new_arrival || false,
             new_arrival: product.new_arrival || false,
             launch_date: product.launch_date ? new Date(product.launch_date).toISOString().split('T')[0] : '',
             lifecycle_state: product.lifecycle_state || 'Published',
+            priority: product.priority || 0,
             campaign_id: product.campaign_id || '',
             collection_id: product.collection_id || '',
             layout_preference: product.layout_preference || 'standard',
@@ -288,7 +270,6 @@ export default function AdminProducts() {
             title: '',
             description: '',
             category: categories[0] || 'anime',
-            subcategory_id: '',
             sub_category: '',
             parent_category: '',
             price: '',
@@ -300,13 +281,15 @@ export default function AdminProducts() {
             image_file: null,
             hover_image_url: '',
             hover_image_file: null,
-
+        featured: false,
+        show_on_home: false,
         is_new: false,
         new_arrival: false,
         launch_date: new Date().toISOString().split('T')[0],
-        lifecycle_state: 'Published',
-        campaign_id: '',
-        collection_id: '',
+            lifecycle_state: 'Published',
+            priority: 0,
+            campaign_id: '',
+            collection_id: '',
             layout_preference: 'standard',
             admin_notes: '',
             variants: []
@@ -493,63 +476,33 @@ export default function AdminProducts() {
 
             {currentSection === 'products' && (
             <>
-            {!selectedSubcategory ? (
-                <>
-                {/* Cabecera */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                    <div>
-                        <h2 style={{ fontSize: '2rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                            {t('admin.products') || 'Gestión de Productos'}
-                        </h2>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Administra tu catálogo, variantes y stock local.</p>
-                    </div>
-                    <button onClick={handleAddNew} className="btn-primary" style={{ padding: '0.8rem 1.5rem', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <Plus size={20} /> {t('admin.add_product') || 'Nuevo Producto'}
-                    </button>
+            {/* Cabecera */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <div>
+                    <h2 style={{ fontSize: '2rem', fontWeight: '800', background: 'linear-gradient(to right, #fff, #888)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                        {t('admin.products') || 'Gestión de Productos'}
+                    </h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Administra tu catálogo, variantes y stock local.</p>
                 </div>
+                <button onClick={handleAddNew} className="btn-primary" style={{ padding: '0.8rem 1.5rem', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <Plus size={20} /> {t('admin.add_product') || 'Nuevo Producto'}
+                </button>
+            </div>
 
-                {/* Barra de búsqueda */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '16px', marginBottom: '2rem', display: 'flex', gap: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
-                    <div style={{ flex: 1, position: 'relative' }}>
-                        <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-                        <input
-                            type="text"
-                            placeholder={t('admin.search_products') || 'Buscar productos...'}
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="input-field"
-                            style={{ paddingLeft: '3rem', background: 'transparent' }}
-                        />
-                    </div>
+            {/* Barra de búsqueda */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '0.8rem', borderRadius: '16px', marginBottom: '2rem', display: 'flex', gap: '1rem', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <div style={{ flex: 1, position: 'relative' }}>
+                    <Search size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                    <input
+                        type="text"
+                        placeholder={t('admin.search_products') || 'Buscar productos...'}
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="input-field"
+                        style={{ paddingLeft: '3rem', background: 'transparent' }}
+                    />
                 </div>
-
-                {/* Subcategorías */}
-                <AdminSubcategoriesSection
-                    allCategories={allCategories}
-                    onEnterSubcategory={(id, name) => { setSelectedSubcategory(id); setSelectedSubcategoryName(name || ''); }}
-                />
-                </>
-            ) : (
-                <>
-                {/* Vista dentro de subcategoría */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <button
-                            onClick={() => { setSelectedSubcategory(null); setSelectedSubcategoryName(''); setSearchTerm(''); }}
-                            style={{ padding: '0.6rem 1.2rem', borderRadius: '10px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#10b981', color: '#000', border: 'none', cursor: 'pointer', fontWeight: '700' }}
-                        >
-                            <DoorOpen size={16} /> Volver
-                        </button>
-                        <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#fff' }}>
-                            {selectedSubcategoryName}
-                        </h2>
-                    </div>
-                    <button onClick={handleAddNew} className="btn-primary" style={{ padding: '0.8rem 1.5rem', borderRadius: '14px', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                        <Plus size={20} /> Nuevo Producto
-                    </button>
-                </div>
-                </>
-            )}
+            </div>
 
             {/* Tabla */}
             <div style={{ background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden' }}>
@@ -570,10 +523,7 @@ export default function AdminProducts() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {products
-                                    .filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase()))
-                                    .filter(p => !selectedSubcategory || p.subcategory_id === selectedSubcategory)
-                                    .map(product => (
+                                {products.filter(p => p.title.toLowerCase().includes(searchTerm.toLowerCase())).map(product => (
                                     <tr key={product.id} className="table-row-hover" style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                         <td style={{ padding: '1rem 1.2rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -597,9 +547,7 @@ export default function AdminProducts() {
                                             </span>
                                         </td>
                                         <td style={{ padding: '1rem 1.2rem' }}>
-                                            <span style={{padding: '0.3rem 0.6rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem', textTransform: 'capitalize'}}>
-                                                {product.subcategory_name || product.sub_category || '—'}
-                                            </span>
+                                            <span style={{padding: '0.3rem 0.6rem', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', fontSize: '0.8rem' ,textTransform: 'capitalize'}}>{product.sub_category}</span>
                                         </td>
                                         <td style={{ padding: '1rem 1.2rem' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -739,20 +687,8 @@ export default function AdminProducts() {
                                                 </div>
                                                 <div className="form-group">
                                                     <label className="label-text">Subcategoría</label>
-                                                    <select
-                                                        value={formData.subcategory_id}
-                                                        onChange={e => {
-                                                            const selectedId = e.target.value;
-                                                            setFormData({ ...formData, subcategory_id: selectedId });
-                                                        }}
-                                                        className="input-field"
-                                                        style={{ cursor: 'pointer' }}
-                                                    >
-                                                        <option value="">Sin subcategoría</option>
-                                                        {subcategoryList.map(s => (
-                                                            <option key={s.id} value={s.id}>{s.name}</option>
-                                                        ))}
-                                                    </select>
+                                                    <input list="sub-cats" value={formData.sub_category} onChange={e => setFormData({ ...formData, sub_category: e.target.value })} className="input-field" placeholder="Ej: Naruto" />
+                                                    <datalist id="sub-cats">{subCategories.map(s => <option key={s} value={s} />)}</datalist>
                                                 </div>
                                             </div>
 
@@ -1013,6 +949,25 @@ export default function AdminProducts() {
                                         <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
                                                 <div 
+                                                    onClick={() => setFormData({ ...formData, featured: !formData.featured })}
+                                                    style={{ 
+                                                        padding: '1.5rem', borderRadius: '20px', cursor: 'pointer',
+                                                        background: formData.featured ? 'rgba(234, 179, 8, 0.1)' : 'rgba(255,255,255,0.02)',
+                                                        border: `1px solid ${formData.featured ? 'rgba(234, 179, 8, 0.3)' : 'rgba(255,255,255,0.05)'}`,
+                                                        transition: 'all 0.3s'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                        <Star size={24} color={formData.featured ? '#eab308' : '#666'} fill={formData.featured ? '#eab308' : 'none'} />
+                                                        <div style={{ width: '40px', height: '20px', borderRadius: '20px', background: formData.featured ? 'var(--primary)' : '#333', position: 'relative' }}>
+                                                            <div style={{ position: 'absolute', top: '2px', left: formData.featured ? '22px' : '2px', width: '16px', height: '16px', background: 'white', borderRadius: '50%', transition: 'all 0.3s' }} />
+                                                        </div>
+                                                    </div>
+                                                    <h5 style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Producto Destacado</h5>
+                                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Aparecerá en la sección "Featured" de la home.</p>
+                                                </div>
+
+                                                <div 
                                                     onClick={() => setFormData({ ...formData, new_arrival: !formData.new_arrival })}
                                                     style={{ 
                                                         padding: '1.5rem', borderRadius: '20px', cursor: 'pointer',
@@ -1029,6 +984,25 @@ export default function AdminProducts() {
                                                     </div>
                                                     <h5 style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Nueva Llegada</h5>
                                                     <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Etiqueta especial en la tienda para productos recientes.</p>
+                                                </div>
+
+                                                <div 
+                                                    onClick={() => setFormData({ ...formData, show_on_home: !formData.show_on_home })}
+                                                    style={{ 
+                                                        padding: '1.5rem', borderRadius: '20px', cursor: 'pointer',
+                                                        background: formData.show_on_home ? 'rgba(34, 197, 94, 0.1)' : 'rgba(255,255,255,0.02)',
+                                                        border: `1px solid ${formData.show_on_home ? 'rgba(34, 197, 94, 0.3)' : 'rgba(255,255,255,0.05)'}`,
+                                                        transition: 'all 0.3s'
+                                                    }}
+                                                >
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                                                        <Package size={24} color={formData.show_on_home ? '#22c55e' : '#666'} />
+                                                        <div style={{ width: '40px', height: '20px', borderRadius: '20px', background: formData.show_on_home ? '#22c55e' : '#333', position: 'relative' }}>
+                                                            <div style={{ position: 'absolute', top: '2px', left: formData.show_on_home ? '22px' : '2px', width: '16px', height: '16px', background: 'white', borderRadius: '50%', transition: 'all 0.3s' }} />
+                                                        </div>
+                                                    </div>
+                                                    <h5 style={{ fontWeight: '700', marginBottom: '0.3rem' }}>Mostrar en Home</h5>
+                                                    <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Aparecerá en la sección "Explora el Catálogo" de la página principal.</p>
                                                 </div>
                                             </div>
 
@@ -1052,6 +1026,16 @@ export default function AdminProducts() {
                                                         <option value="Legacy">Legado (Versión anterior)</option>
                                                         <option value="Archived">Archivado (Solo histórico)</option>
                                                     </select>
+                                                </div>
+                                                <div className="form-group">
+                                                    <label className="label-text">Prioridad (Orden)</label>
+                                                    <input 
+                                                        type="number" 
+                                                        value={formData.priority} 
+                                                        onChange={e => setFormData({ ...formData, priority: parseInt(e.target.value) || 0 })} 
+                                                        className="input-field" 
+                                                        placeholder="0 es normal, mayor es más arriba"
+                                                    />
                                                 </div>
                                             </div>
 

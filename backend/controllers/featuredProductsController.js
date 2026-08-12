@@ -38,12 +38,7 @@ export const getFeaturedProducts = async (req, res) => {
             return res.json(validSlots);
         }
 
-        // Si es una campaña específica y no tiene slots, NO hacer fallback genérico
-        if (campaign_id) {
-            return res.json([]);
-        }
-
-        const limit = 8;
+        const limit = campaign_id ? 5 : 8;
         const fallback = await pool.query(`
             SELECT id, title, price, image_url, hover_image_url, discount, stock, priority
             FROM products

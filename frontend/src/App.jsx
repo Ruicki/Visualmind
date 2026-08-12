@@ -23,7 +23,6 @@ import Login from './pages/Login';
 import UserProfile from './pages/UserProfile';
 import InfoPage from './pages/InfoPage';
 import OrderSuccess from './pages/OrderSuccess';
-import NotFound from './pages/NotFound';
 
 // Páginas de administración (Protegidas)
 import AdminLayout from './pages/admin/AdminLayout';
@@ -161,7 +160,6 @@ function InnerApp() {
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/info/:page" element={<InfoPage />} />
             <Route path="/order-success" element={<OrderSuccess />} />
-            <Route path="*" element={<NotFound />} />
 
             {/* Rutas de Administración Protegidas por AdminRoute */}
             <Route path="/admin" element={

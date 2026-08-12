@@ -31,8 +31,6 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
         template_type: 'single',
         start_date: new Date().toISOString().split('T')[0],
         end_date: '',
-        prelaunch_date: '',
-        pre_order_enabled: false,
         is_active: true,
         countdown_enabled: true,
         type: 'campaign',
@@ -72,8 +70,6 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
         template_type: 'cinematic',
             start_date: new Date().toISOString().split('T')[0],
             end_date: '',
-            prelaunch_date: '',
-            pre_order_enabled: false,
             is_active: true,
             countdown_enabled: true,
             type: 'campaign',
@@ -91,7 +87,6 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
             ...campaign,
             start_date: campaign.start_date ? campaign.start_date.split('T')[0] : '',
             end_date: campaign.end_date ? campaign.end_date.split('T')[0] : '',
-            prelaunch_date: campaign.prelaunch_date ? campaign.prelaunch_date.split('T')[0] : '',
             image_file: null,
             secondary_images: campaign.secondary_images || [],
             secondary_image_previews: campaign.secondary_image_previews || []
@@ -280,7 +275,7 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
             {/* Modal */}
             <AnimatePresence>
                 {isModalOpen && (
-                    <div className="modal-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                    <div className="modal-overlay" onClick={() => setIsModalOpen(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(10px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
                         <motion.div onClick={e => e.stopPropagation()} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} style={{ background: '#111', width: '100%', maxWidth: '1000px', borderRadius: '32px', border: '1px solid rgba(255,255,255,0.1)', overflow: 'hidden', display: 'flex', maxHeight: '90vh' }}>
                             {/* Form */}
                             <div style={{ flex: 1.2, padding: '2.5rem', overflowY: 'auto' }}>
@@ -324,8 +319,8 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
                                                 <option value="cinematic">Cinematic — Póster de película</option>
                                                 <option value="magazine">Magazine — Portada de revista</option>
                                                 <option value="ticker">Ticker — Banda animada</option>
-                                                <option value="collage3">Collage 3 — 1 grande + 2 pequeñas</option>
-                                                <option value="collage4">Collage 4 — 1 grande + 3 pequeñas</option>
+                                                <option value="collage-3">Collage 3 — 1 grande + 2 pequeñas</option>
+                                                <option value="collage-4">Collage 4 — 1 grande + 3 pequeñas</option>
                                             </select>
                                         </div>
                                         <div className="form-group">
@@ -343,19 +338,6 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
                                             <input type="date" value={formData.end_date} onChange={e => setFormData({ ...formData, end_date: e.target.value })} className="input-field" />
                                         </div>
                                     </div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '0.8rem 1rem', background: 'rgba(250,204,21,0.06)', borderRadius: '12px', border: '1px solid rgba(250,204,21,0.15)' }}>
-                                        <div className="form-group">
-                                            <label className="label-text">Fecha Prelanzamiento <span style={{ color: '#facc15', fontSize: '0.7rem' }}>(opcional)</span></label>
-                                            <input type="date" value={formData.prelaunch_date} onChange={e => setFormData({ ...formData, prelaunch_date: e.target.value })} className="input-field" />
-                                            <small style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.7rem' }}>Entre esta fecha y la de inicio, la campaña estará en fase de "Reserva"</small>
-                                        </div>
-                                        <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '0.5rem' }}>
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                                                <input type="checkbox" checked={formData.pre_order_enabled} onChange={e => setFormData({ ...formData, pre_order_enabled: e.target.checked })} />
-                                                <span>Pre-orden habilitada</span>
-                                            </label>
-                                        </div>
-                                    </div>
                                     <div className="form-group">
                                         <label className="label-text">Texto Botón</label>
                                         <input type="text" placeholder="Ej: COMPRAR AHORA" value={formData.button_text} onChange={e => setFormData({ ...formData, button_text: e.target.value })} className="input-field" />
@@ -364,12 +346,12 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
                                         <label className="label-text">Banner</label>
                                         <input type="file" onChange={handleFileChange} accept="image/*" />
                                     </div>
-                                    {(formData.template_type === 'collage3' || formData.template_type === 'collage4') && (
+                                    {(formData.template_type === 'collage-3' || formData.template_type === 'collage-4') && (
                                         <div className="form-group">
                                             <label className="label-text">
-                                                Imágenes secundarias ({formData.template_type === 'collage3' ? '2 requeridas' : '3 requeridas'})
+                                                Imágenes secundarias ({formData.template_type === 'collage-3' ? '2 requeridas' : '3 requeridas'})
                                             </label>
-                                            {Array.from({ length: formData.template_type === 'collage3' ? 2 : 3 }, (_, i) => (
+                                            {Array.from({ length: formData.template_type === 'collage-3' ? 2 : 3 }, (_, i) => (
                                                 <div key={i} style={{ marginBottom: '0.5rem' }}>
                                                     <label style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>Imagen {i + 2}</label>
                                                     <input type="file" accept="image/*" onChange={(e) => handleSecondaryImageChange(e, i)} />

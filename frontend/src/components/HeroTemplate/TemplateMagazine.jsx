@@ -47,10 +47,10 @@ export default function TemplateMagazine({ campaign, timeLeft, isActive }) {
     const ctaLink = campaign.button_link || `/shop?campaign=${campaign.slug}`;
 
     return (
-        <div className="hero-template-magazine" style={{
+        <div style={{
             display: 'grid',
             gridTemplateColumns: '55% 45%',
-            minHeight: '80vh',
+            minHeight: '70vh',
             width: '100%',
             overflow: 'hidden',
             background: '#050505',

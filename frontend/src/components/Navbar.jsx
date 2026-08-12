@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ShoppingBag, Search, User, Globe, Menu, X, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -24,8 +24,6 @@ import ThemeToggle from './ThemeToggle';
  * 3. Mobile (menú hamburguesa y overlay lateral).
  */
 export default function Navbar() {
-  const { pathname } = useLocation();
-
   // Integración con Contextos de Estado
   const { setIsCartOpen, getCartCount } = useCart();
   const { wishlistItems } = useWishlist();
@@ -113,8 +111,8 @@ export default function Navbar() {
               <Link
                 key={link.path}
                 to={link.path}
-                className={`navbar-link${pathname === link.path || (link.path !== '/' && pathname.startsWith(link.path)) ? ' active' : ''}`}
-               >
+                className="navbar-link"
+              >
                 {link.label}
               </Link>
             ))}
@@ -131,25 +129,21 @@ export default function Navbar() {
               <Search size={20} />
             </button>
 
-            {/* Selector de Tema (Oscuro/Claro) — se oculta en mobile */}
-            <div className="navbar-hide-mobile">
-              <ThemeToggle />
-            </div>
+            {/* Selector de Tema (Oscuro/Claro) */}
+            <ThemeToggle />
 
-            {/* Selector de Idioma (ES/EN) — se oculta en mobile */}
-            <div className="navbar-hide-mobile">
-              <button
-                className="navbar-lang-btn"
-                onClick={toggleLanguage}
-                aria-label="Cambiar idioma"
-              >
-                <Globe size={14} />
-                <span className="lang-label">{language.toUpperCase()}</span>
-              </button>
-            </div>
+            {/* Selector de Idioma (ES/EN) */}
+            <button
+              className="navbar-lang-btn"
+              onClick={toggleLanguage}
+              aria-label="Cambiar idioma"
+            >
+              <Globe size={14} />
+              <span className="lang-label">{language.toUpperCase()}</span>
+            </button>
 
-            {/* Usuario / Autenticación / Admin — se oculta en mobile */}
-            <div className="navbar-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            {/* Usuario / Autenticación / Admin */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               {user && user.role === 'admin' && (
                 <Link
                   to="/admin"
@@ -183,20 +177,18 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* Favoritos — se oculta en mobile */}
-            <div className="navbar-hide-mobile">
-              <Link
-                to="/wishlist"
-                className="navbar-icon-btn"
-                aria-label={t('nav.wishlist') || 'Lista de deseos'}
-                style={{ position: 'relative' }}
-              >
-                <Heart size={20} />
-                {wishlistItems.length > 0 && (
-                  <span className="cart-badge">{wishlistItems.length}</span>
-                )}
-              </Link>
-            </div>
+            {/* Favoritos con indicador numérico */}
+            <Link
+              to="/wishlist"
+              className="navbar-icon-btn"
+              aria-label={t('nav.wishlist') || 'Lista de deseos'}
+              style={{ position: 'relative' }}
+            >
+              <Heart size={20} />
+              {wishlistItems.length > 0 && (
+                <span className="cart-badge">{wishlistItems.length}</span>
+              )}
+            </Link>
 
             {/* Carrito con indicador dinámico (Badge) */}
             <button
@@ -234,48 +226,12 @@ export default function Navbar() {
           <Link
             key={link.path}
             to={link.path}
-            className={`navbar-mobile-link${pathname === link.path || (link.path !== '/' && pathname.startsWith(link.path)) ? ' active' : ''}`}
+            className="navbar-mobile-link"
             onClick={() => setMobileMenuOpen(false)}
           >
             {link.label}
           </Link>
         ))}
-        <div className="navbar-mobile-divider" />
-        <div className="navbar-mobile-extra">
-          <button
-            className="navbar-mobile-extra-btn"
-            onClick={() => { setMobileMenuOpen(false); setSearchOpen(true); }}
-          >
-            <Search size={18} />
-            Buscar
-          </button>
-          <Link
-            to="/wishlist"
-            className="navbar-mobile-extra-btn"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <Heart size={18} />
-            Favoritos
-            {wishlistItems.length > 0 && (
-              <span className="navbar-mobile-badge">{wishlistItems.length}</span>
-            )}
-          </Link>
-          <Link
-            to={user ? '/profile' : '/login'}
-            className="navbar-mobile-extra-btn"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            <User size={18} />
-            {user ? 'Perfil' : 'Iniciar sesión'}
-          </Link>
-          <div className="navbar-mobile-row">
-            <button className="navbar-mobile-extra-btn" onClick={toggleLanguage}>
-              <Globe size={18} />
-              {language.toUpperCase()}
-            </button>
-            <ThemeToggle />
-          </div>
-        </div>
       </div>
 
       {/* Modal de Búsqueda Global */}
