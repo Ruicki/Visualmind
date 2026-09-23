@@ -155,7 +155,6 @@ export const createProduct = async (req, res) => {
             const skuCheck = await client.query('SELECT id FROM products WHERE sku = $1', [sku]);
             if (skuCheck.rows.length > 0) {
                 await client.query('ROLLBACK');
-                client.release();
                 return res.status(409).json({ error: `El SKU '${sku}' ya está en uso.` });
             }
         }
@@ -248,7 +247,6 @@ export const updateProduct = async (req, res) => {
             const skuCheck = await client.query('SELECT id FROM products WHERE sku = $1 AND id != $2', [sku, id]);
             if (skuCheck.rows.length > 0) {
                 await client.query('ROLLBACK');
-                client.release();
                 return res.status(409).json({ error: `El SKU '${sku}' ya está en uso.` });
             }
         }
@@ -377,6 +375,7 @@ export const deleteProduct = async (req, res) => {
         if (imagePath && imagePath.startsWith('/uploads/')) {
             const absolutePath = path.join(process.cwd(), imagePath);
             if (fs.existsSync(absolutePath)) fs.unlinkSync(absolutePath);
+            await pool.query('DELETE FROM uploaded_files WHERE path = $1', [imagePath]);
         }
 
         res.json({ message: 'Producto eliminado correctamente' });

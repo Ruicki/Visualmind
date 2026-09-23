@@ -8,6 +8,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import pool from '../src/config/db.js';
 
 // Asegurar que la carpeta de destino base exista
 const uploadDir = 'uploads/products';
@@ -66,10 +67,64 @@ const fileFilter = (req, file, cb) => {
  * Instancia de Multer configurada
  * Límite de tamaño: 5MB por archivo.
  */
-const upload = multer({
+const multerUpload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, 
+    limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: fileFilter
 });
+
+/**
+ * persistUploadsToDb
+ * @description Copia cada archivo recién subido a la tabla `uploaded_files`.
+ * El disco de la mayoría de hostings (Railway sin volumen, Render, etc.) se borra
+ * en cada redeploy; así la imagen sigue disponible en la misma URL /uploads/...
+ */
+const persistUploadsToDb = async (req, res, next) => {
+    const files = req.file ? [req.file] : Object.values(req.files || {}).flat();
+    try {
+        for (const file of files) {
+            const publicPath = '/' + path.posix.join(file.destination.replace(/\\/g, '/'), file.filename);
+            const data = await fs.promises.readFile(file.path);
+            await pool.query(
+                `INSERT INTO uploaded_files (path, mime_type, data) VALUES ($1, $2, $3)
+                 ON CONFLICT (path) DO UPDATE SET mime_type = EXCLUDED.mime_type, data = EXCLUDED.data`,
+                [publicPath, file.mimetype, data]
+            );
+        }
+        next();
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Misma API que multer (upload.fields / upload.single / upload.array), pero cada
+ * método devuelve [multer, persistencia]. Express acepta arrays de middlewares,
+ * así que las rutas existentes no cambian.
+ */
+const upload = {
+    fields: (...args) => [multerUpload.fields(...args), persistUploadsToDb],
+    single: (...args) => [multerUpload.single(...args), persistUploadsToDb],
+    array: (...args) => [multerUpload.array(...args), persistUploadsToDb],
+};
+
+/**
+ * serveUploadFromDb
+ * @description Respaldo para GET /uploads/*: si el archivo no está en disco
+ * (p. ej. tras un redeploy), lo sirve desde la base de datos.
+ */
+export const serveUploadFromDb = async (req, res, next) => {
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
+    try {
+        const publicPath = decodeURIComponent('/uploads' + req.path);
+        const result = await pool.query('SELECT mime_type, data FROM uploaded_files WHERE path = $1', [publicPath]);
+        if (result.rowCount === 0) return next();
+        res.set('Content-Type', result.rows[0].mime_type);
+        res.set('Cache-Control', 'public, max-age=31536000, immutable');
+        res.send(result.rows[0].data);
+    } catch (error) {
+        next(error);
+    }
+};
 
 export default upload;

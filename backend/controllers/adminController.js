@@ -8,39 +8,67 @@ import pool from '../src/config/db.js';
 /**
  * getDashboardStats
  * @description Recopila estadísticas clave para la visualización en el panel de control.
- * Ejecuta múltiples consultas agregadas para obtener ventas totales, conteo de clientes
+ * Ventas = solo pedidos cobrados (paid/shipped/delivered); los 'pending' se reportan
+ * aparte como "pendiente de cobro". Ejecuta consultas agregadas para ventas, clientes
  * y alertas de stock bajo (incluyendo variantes).
  */
+// Solo cuentan como venta los pedidos cobrados (pago manual confirmado por el admin)
+const PAID_STATUSES = "('paid', 'shipped', 'delivered')";
+
 export const getDashboardStats = async (req, res) => {
     try {
-        // 1. Total de Ventas (suma de totales de órdenes)
-        const salesResult = await pool.query("SELECT SUM(total) as total_sales FROM orders WHERE status != 'cancelled'");
-        const totalSales = parseFloat(salesResult.rows[0].total_sales || 0);
+        // 1. Ventas cobradas (total histórico) y comparación mes actual vs anterior
+        const salesResult = await pool.query(`
+            SELECT
+                COALESCE(SUM(total), 0) AS total_sales,
+                COALESCE(SUM(total) FILTER (WHERE created_at >= date_trunc('month', NOW())), 0) AS this_month,
+                COALESCE(SUM(total) FILTER (WHERE created_at >= date_trunc('month', NOW()) - INTERVAL '1 month'
+                                              AND created_at <  date_trunc('month', NOW())), 0) AS last_month
+            FROM orders WHERE status IN ${PAID_STATUSES}
+        `);
+        const totalSales = parseFloat(salesResult.rows[0].total_sales);
+        const salesThisMonth = parseFloat(salesResult.rows[0].this_month);
+        const salesLastMonth = parseFloat(salesResult.rows[0].last_month);
+        // null cuando no hay mes anterior con ventas (no se inventa un porcentaje)
+        const growth = salesLastMonth > 0
+            ? Math.round(((salesThisMonth - salesLastMonth) / salesLastMonth) * 1000) / 10
+            : null;
 
-        // 2. Total de Pedidos
-        const ordersCountResult = await pool.query("SELECT COUNT(*) as total_orders FROM orders");
+        // 1b. Pendiente de cobro: pedidos registrados que aún no se han pagado
+        const pendingResult = await pool.query(`
+            SELECT COUNT(*) AS count, COALESCE(SUM(total), 0) AS amount
+            FROM orders WHERE status = 'pending'
+        `);
+        const pendingPayment = {
+            count: parseInt(pendingResult.rows[0].count),
+            amount: parseFloat(pendingResult.rows[0].amount)
+        };
+
+        // 2. Total de Pedidos (sin cancelados)
+        const ordersCountResult = await pool.query("SELECT COUNT(*) as total_orders FROM orders WHERE status != 'cancelled'");
         const totalOrders = parseInt(ordersCountResult.rows[0].total_orders || 0);
 
         // 3. Total de Clientes
         const usersCountResult = await pool.query("SELECT COUNT(*) as total_customers FROM users WHERE role = 'customer'");
         const totalCustomers = parseInt(usersCountResult.rows[0].total_customers || 0);
 
-        // 4. Ventas por semana (para el gráfico)
+        // 4. Ventas cobradas de los últimos 7 días (para el gráfico)
         const weeklySalesResult = await pool.query(`
             SELECT 
                 TO_CHAR(created_at, 'DD/MM') as date,
                 CAST(SUM(total) AS FLOAT) as amount
             FROM orders 
-            WHERE created_at > NOW() - INTERVAL '7 days' AND status != 'cancelled'
+            WHERE created_at > NOW() - INTERVAL '7 days' AND status IN ${PAID_STATUSES}
             GROUP BY TO_CHAR(created_at, 'DD/MM')
             ORDER BY MIN(created_at) ASC
         `);
 
-        // 5. Productos más vendidos
+        // 5. Productos más vendidos (solo pedidos cobrados)
         const topSellersResult = await pool.query(`
             SELECT p.title, COUNT(oi.id) as sales_count, SUM(oi.quantity) as items_sold
             FROM products p
             JOIN order_items oi ON p.id = oi.product_id
+            JOIN orders o ON o.id = oi.order_id AND o.status IN ${PAID_STATUSES}
             GROUP BY p.title
             ORDER BY items_sold DESC
             LIMIT 5
@@ -71,9 +99,11 @@ export const getDashboardStats = async (req, res) => {
         res.json({
             stats: {
                 totalSales,
+                salesThisMonth,
+                growth,
+                pendingPayment,
                 totalOrders,
-                totalCustomers,
-                growth: '+12.5%'
+                totalCustomers
             },
             weeklySales: weeklySalesResult.rows,
             topSellers: topSellersResult.rows,

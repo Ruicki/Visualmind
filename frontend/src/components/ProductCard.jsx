@@ -56,12 +56,6 @@ export default function ProductCard(props) {
 
     const layoutPref = props.layout_preference || 'standard';
 
-    // Lógica dinámica para productos "Legacy"
-    const isSeasonExpired = props.season_end_date ? new Date(props.season_end_date) < new Date() : false;
-    const isLegacy = props.lifecycle_state === 'legacy' || 
-                     props.season_is_active === false || 
-                     isSeasonExpired;
-
     // Calcular si el producto está totalmente agotado comparando todas sus variantes
     const isOutOfStock = props.variants && props.variants.length > 0
         ? props.variants.every(v => (parseInt(v.stock) || 0) === 0)
@@ -196,7 +190,7 @@ export default function ProductCard(props) {
                             const displayImg = defaultColor?.image || getProductImage(props.image, props.image_url);
                             addToCart({
                                 ...props,
-                                price: isLegacy ? price * 0.5 : price,
+                                price,
                                 image: displayImg,
                                 selectedColor: defaultColor,
                                 selectedSize: defaultSize,
@@ -239,11 +233,8 @@ export default function ProductCard(props) {
                             {category}
                         </div>
                         
-                        {/* Etiquetas de Estado (Legacy, New, Draft) */}
-                        {isLegacy && (
-                            <span style={{ background: '#f59e0b', color: 'black', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: '900' }}>LEGACY</span>
-                        )}
-                        {props.priority > 8 && !isLegacy && props.lifecycle_state === 'published' && (
+                        {/* Etiquetas de Estado (New, Draft) */}
+                        {props.priority > 8 && props.lifecycle_state === 'published' && (
                             <span style={{ background: 'var(--primary)', color: 'black', fontSize: '0.6rem', padding: '2px 8px', borderRadius: '4px', fontWeight: '900' }}>NEW</span>
                         )}
                         {props.lifecycle_state === 'draft' && (
@@ -255,19 +246,11 @@ export default function ProductCard(props) {
                         <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem', fontWeight: '600', color: 'white' }}>{title}</h3>
                     </Link>
 
-                    {/* Precios y Descuentos */}
+                    {/* Precio */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
                         <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'white' }}>
-                            ${isLegacy ? (price * 0.5).toFixed(2) : price}
+                            ${price}
                         </div>
-                        {isLegacy && (
-                            <div style={{ fontSize: '0.9rem', textDecoration: 'line-through', color: 'var(--text-secondary)' }}>
-                                ${price}
-                            </div>
-                        )}
-                        {isLegacy && (
-                            <div style={{ color: '#22c55e', fontWeight: '800', fontSize: '0.8rem' }}>50% OFF</div>
-                        )}
                     </div>
                 </div>
             </div>

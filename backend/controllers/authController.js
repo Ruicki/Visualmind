@@ -53,7 +53,14 @@ export const login = async (req, res) => {
  * Aplica hashing a la contraseña antes de la persistencia.
  */
 export const register = async (req, res) => {
-  const { email, password, role = 'customer' } = req.body;
+  const { email, password } = req.body;
+  // El rol nunca se acepta desde el cliente: todo registro público es 'customer'.
+  // Los administradores se crean con /api/auth/promote (solo admin) o con ADMIN_EMAIL/ADMIN_PASSWORD.
+  const role = 'customer';
+
+  if (!email || !password || String(password).length < 6) {
+    return res.status(400).json({ message: 'Email y contraseña (mínimo 6 caracteres) son requeridos' });
+  }
 
   try {
     const userExists = await pool.query('SELECT * FROM users WHERE email = $1', [email]);

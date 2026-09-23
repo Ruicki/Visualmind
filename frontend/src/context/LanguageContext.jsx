@@ -19,6 +19,7 @@ const LanguageContext = createContext();
 export const translations = {
     en: {
         nav: {
+            wishlist: 'Wishlist',
             shop: 'Shop',
             collections: 'Collections',
             new_arrivals: 'New Arrivals',
@@ -66,6 +67,9 @@ export const translations = {
             btn_details: 'View Details',
         },
         shop: {
+            filter_size: 'Size',
+            filter_color: 'Color',
+            clear_filters: 'Clear filters',
             title: 'The Collection',
             subtitle: 'Explore our latest drops and timeless essentials. Designed for the modern visionary.',
             filter_all: 'All Items',
@@ -86,6 +90,13 @@ export const translations = {
             campaign_special: 'Special Campaign',
         },
         product: {
+            not_found: 'Product not found',
+            no_description: 'No description available.',
+            free_shipping: 'Free shipping',
+            free_shipping_from: 'Free shipping from',
+            secure_pay: 'Secure payment',
+            returns_30: '30-day returns',
+            related: 'You may also like',
             select_size: 'Select Size',
             select_color: 'Select Color',
             add_to_bag: 'Add To Bag',
@@ -118,6 +129,8 @@ export const translations = {
             free: 'Free',
         },
         checkout: {
+            login_required: 'Log in to complete your purchase.',
+            error: 'We could not create your order.',
             title: 'Checkout',
             shipping: 'Shipping Detail',
             name: 'Full Name',
@@ -248,6 +261,11 @@ export const translations = {
             update_error: 'Error updating profile.',
         },
         admin: {
+            this_month: 'this month',
+            stats_pending: 'Awaiting payment',
+            orders_awaiting_payment: 'orders awaiting payment',
+            excluding_cancelled: 'excluding cancelled',
+            registered_customers: 'registered customers',
             title: 'VM Admin',
             dashboard: 'Dashboard',
             products: 'Products',
@@ -339,6 +357,12 @@ export const translations = {
             featured_products: 'Featured Products',
         },
         common: {
+            color: 'Color',
+            size: 'Size',
+            added: 'Added!',
+            addToCart: 'Add to bag',
+            searchPlaceholder: 'What are you looking for?',
+            close: 'Close',
             loading: 'Loading...',
             processing: 'Processing...',
             success: 'Success',
@@ -397,6 +421,7 @@ export const translations = {
             general_info: 'General Information',
         },
         collections_page: {
+            active_drop: 'ACTIVE DROP',
             back: 'Back to Collections',
             archive_title: 'Visualmind Archive',
             curations: 'Curations',
@@ -434,6 +459,10 @@ export const translations = {
         search_modal: {
             trending_items: ['Outerwear', 'Knitwear', 'Essentials'],
         },
+        notfound: {
+            message: 'This page does not exist or was removed.',
+            back_home: 'Back to home',
+        },
 
         info: {
             back: 'Back to Home',
@@ -449,6 +478,7 @@ export const translations = {
     },
     es: {
         nav: {
+            wishlist: 'Lista de deseos',
             shop: 'Tienda',
             collections: 'Colecciones',
             new_arrivals: 'Novedades',
@@ -496,6 +526,9 @@ export const translations = {
             btn_details: 'Ver Detalles',
         },
         shop: {
+            filter_size: 'Talla',
+            filter_color: 'Color',
+            clear_filters: 'Limpiar filtros',
             title: 'La Colección',
             subtitle: 'Explora nuestros últimos lanzamientos y básicos atemporales. Diseñado para el visionario moderno.',
             filter_all: 'Todo',
@@ -516,6 +549,13 @@ export const translations = {
             campaign_special: 'Campaña Especial',
         },
         product: {
+            not_found: 'Producto no encontrado',
+            no_description: 'Sin descripción disponible.',
+            free_shipping: 'Envío gratis',
+            free_shipping_from: 'Envío gratis desde',
+            secure_pay: 'Pago seguro',
+            returns_30: '30 días de devolución',
+            related: 'También te puede gustar',
             select_size: 'Seleccionar Talla',
             select_color: 'Seleccionar Color',
             add_to_bag: 'Añadir a la Bolsa',
@@ -548,6 +588,8 @@ export const translations = {
             free: 'Gratis',
         },
         checkout: {
+            login_required: 'Inicia sesión para completar tu compra.',
+            error: 'No se pudo crear el pedido.',
             title: 'Pago',
             shipping: 'Detalles de Envío',
             name: 'Nombre Completo',
@@ -718,6 +760,11 @@ export const translations = {
             update_error: 'Error al actualizar el perfil.',
         },
         admin: {
+            this_month: 'este mes',
+            stats_pending: 'Pendiente de cobro',
+            orders_awaiting_payment: 'pedidos esperando pago',
+            excluding_cancelled: 'sin contar cancelados',
+            registered_customers: 'clientes registrados',
             title: 'VM Admin',
             dashboard: 'Dashboard',
             products: 'Productos',
@@ -809,6 +856,12 @@ export const translations = {
             featured_products: 'Productos Destacados',
         },
         common: {
+            color: 'Color',
+            size: 'Talla',
+            added: '¡Agregado!',
+            addToCart: 'Añadir a la bolsa',
+            searchPlaceholder: '¿Qué estás buscando?',
+            close: 'Cerrar',
             loading: 'Cargando...',
             processing: 'Procesando...',
             success: 'Éxito',
@@ -826,6 +879,7 @@ export const translations = {
             }
         },
         collections_page: {
+            active_drop: 'DROP ACTIVO',
             back: 'Volver a Colecciones',
             archive_title: 'Archivo Visualmind',
             curations: 'Curadurías',
@@ -863,6 +917,10 @@ export const translations = {
         search_modal: {
             trending_items: ['Abrigos', 'Tejidos', 'Esenciales'],
         },
+        notfound: {
+            message: 'Esta página no existe o fue eliminada.',
+            back_home: 'Volver al inicio',
+        },
 
         info: {
             back: 'Volver al Inicio',
@@ -881,14 +939,18 @@ export const translations = {
 export const LanguageProvider = ({ children }) => {
     const [lang, setLang] = useState('es');
 
-    const t = (path) => {
+    /**
+     * Traduce una clave ("seccion.clave"). Si no existe devuelve `fallback`
+     * (útil para textos dinámicos como categorías de la BD) o, en su defecto, la clave.
+     */
+    const t = (path, fallback) => {
         const keys = path.split('.');
         let result = translations[lang];
         for (const key of keys) {
-            if (result[key]) {
+            if (result && result[key]) {
                 result = result[key];
             } else {
-                return path; // Fallback to path if key not found
+                return fallback ?? path;
             }
         }
         return result;

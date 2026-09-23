@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, ShoppingBag, Check, Star } from 'lucide-react';
+import { X, ShoppingBag, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { getProductImage } from '../utils/imageUtils';
@@ -75,7 +75,7 @@ export default function QuickViewModal({ product, isOpen, onClose }) {
     }, 1500);
   };
 
-  const displayPrice = product.lifecycle_state === 'legacy' ? product.price * 0.5 : product.price;
+  const displayPrice = parseFloat(product.price) || 0;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -111,23 +111,15 @@ export default function QuickViewModal({ product, isOpen, onClose }) {
             <span className="product-category-tag">{product.category}</span>
             <h2 className="quickview-title">{product.title}</h2>
             
-            <div className="quickview-rating">
-                {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={14} fill={i < 4 ? "var(--primary)" : "none"} stroke="var(--primary)" />
-                ))}
-                <span className="rating-count">(24 reviews)</span>
-            </div>
-
             <div className="quickview-price-container">
                 <span className="quickview-price">${displayPrice.toFixed(2)}</span>
-                {product.lifecycle_state === 'legacy' && (
-                    <span className="quickview-old-price">${product.price}</span>
-                )}
             </div>
 
-            <p className="quickview-description">
-              {product.description || "High-quality material and modern design. Perfect for everyday use and special occasions."}
-            </p>
+            {product.description && (
+              <p className="quickview-description">
+                {product.description}
+              </p>
+            )}
 
             {/* Color Selection */}
             {product.colors && product.colors.length > 0 && (

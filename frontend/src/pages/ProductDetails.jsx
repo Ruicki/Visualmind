@@ -3,11 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useLanguage } from '../context/LanguageContext';
-import { Star, ShoppingBag, Heart, ChevronRight, Truck, ShieldCheck, RotateCcw, Loader } from 'lucide-react';
+import { ShoppingBag, Heart, ChevronRight, Truck, ShieldCheck, RotateCcw, Loader } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import axiosInstance from '../api/axiosConfig';
 import { getProductImage } from '../utils/imageUtils';
 import { isProductVisible } from '../utils/productUtils';
+import { usePricingConfig } from '../utils/pricing';
 import SEO from '../components/SEO';
 
 /**
@@ -19,6 +20,7 @@ import SEO from '../components/SEO';
 export default function ProductDetails() {
   const { id } = useParams();
   const { t } = useLanguage();
+  const pricing = usePricingConfig();
   const { addToCart } = useCart();
   const { toggleWishlist, isInWishlist } = useWishlist();
 
@@ -35,7 +37,7 @@ export default function ProductDetails() {
 
   /**
    * Carga los datos del producto actual y la lista general para productos relacionados.
-   * Procesa el estado de ciclo de vida (legacy) y configura valores iniciales de variantes.
+   * Normaliza el producto y configura valores iniciales de variantes.
    */
   useEffect(() => {
     const fetchProduct = async () => {
@@ -60,11 +62,6 @@ export default function ProductDetails() {
             colors: data.colors || [],
             sizes: data.sizes || ['S', 'M', 'L', 'XL']
           };
-
-          // Lógica de expiración y estado Legacy
-          const isSeasonExpired = found.season_end_date ? new Date(found.season_end_date) < new Date() : false;
-          const isLegacy = found.lifecycle_state === 'legacy' || found.season_is_active === false || isSeasonExpired;
-          found.isLegacy = isLegacy;
           
           setProduct(found);
           
@@ -199,28 +196,9 @@ export default function ProductDetails() {
           </div>
           <h1 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', marginBottom: '1.2rem', fontWeight: '800' }}>{product.title}</h1>
 
-          {/* Social Proof: Valoraciones (Simuladas) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-            <div style={{ display: 'flex', gap: '0.2rem', color: '#fbbf24' }}>
-              {[1, 2, 3, 4, 5].map(i => <Star key={i} size={16} fill="#fbbf24" />)}
-              <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem', fontSize: '0.85rem' }}>(4.8 / 5.0)</span>
-            </div>
-            <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>42 {t('product.reviews') || 'reseñas'}</span>
-          </div>
-
-          {/* Lógica de Precio y Descuento Legacy */}
+          {/* Precio */}
           <div style={{ fontSize: '2.2rem', fontWeight: '800', marginBottom: '2rem', display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
-            <span>${product.isLegacy ? (product.price * 0.5).toFixed(2) : product.price}</span>
-            {product.isLegacy && (
-              <>
-                <span style={{ fontSize: '1.2rem', textDecoration: 'line-through', color: 'var(--text-secondary)' }}>
-                  ${product.price}
-                </span>
-                <span style={{ fontSize: '0.9rem', color: '#22c55e', background: 'rgba(34, 197, 94, 0.1)', padding: '4px 12px', borderRadius: '50px', fontWeight: '700' }}>
-                  50% OFF - LEGACY
-                </span>
-              </>
-            )}
+            <span>${product.price}</span>
 
             {/* Badge de Stock Dinámico */}
             <div style={{ 
@@ -298,7 +276,7 @@ export default function ProductDetails() {
               <button onClick={() => setQuantity(q => q + 1)} style={{ width: '36px', height: '36px', background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.3rem' }}>+</button>
             </div>
 
-            {/* Botón Añadir al Carrito (Aplica descuento si es Legacy) */}
+            {/* Botón Añadir al Carrito */}
             <button
               className={`btn-primary ${!inStock ? 'disabled' : ''}`}
               disabled={!inStock}
@@ -317,9 +295,8 @@ export default function ProductDetails() {
               }}
               onClick={() => {
                 if (!inStock) return;
-                const finalPrice = product.isLegacy ? product.price * 0.5 : product.price;
                 for (let i = 0; i < quantity; i++) {
-                  addToCart({ ...product, price: finalPrice, image: mainImage, selectedColor, selectedSize });
+                  addToCart({ ...product, image: mainImage, selectedColor, selectedSize });
                 }
               }}
             >
@@ -340,15 +317,21 @@ export default function ProductDetails() {
           <div className="product-detail-trust" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '2rem' }}>
             <div style={{ textAlign: 'center' }}>
               <Truck size={22} style={{ color: 'var(--primary)', marginBottom: '0.4rem' }} />
-              <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>{t('product.free_shipping') || 'Envío Gratis'}</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>
+                {pricing.shippingCost === 0
+                  ? t('product.free_shipping')
+                  : pricing.freeShippingThreshold > 0
+                    ? `${t('product.free_shipping_from')} $${pricing.freeShippingThreshold}`
+                    : `${t('cart.shipping')}: $${pricing.shippingCost.toFixed(2)}`}
+              </div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <ShieldCheck size={22} style={{ color: 'var(--primary)', marginBottom: '0.4rem' }} />
-              <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>{t('product.secure_pay') || 'Pago Seguro'}</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>{t('product.secure_pay')}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
               <RotateCcw size={22} style={{ color: 'var(--primary)', marginBottom: '0.4rem' }} />
-              <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>{t('product.returns_30') || '30 Días Devolución'}</div>
+              <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>{t('product.returns_30')}</div>
             </div>
           </div>
         </div>

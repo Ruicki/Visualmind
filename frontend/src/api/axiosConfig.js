@@ -7,6 +7,11 @@
 
 import axios from 'axios';
 
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+    // Sin esta variable el sitio publicado intenta hablar con localhost y se ve sin datos.
+    console.error('[API] Falta VITE_API_URL en el build de producción (Vercel → Settings → Environment Variables).');
+}
+
 /**
  * Instancia personalizada de Axios.
  * @const {AxiosInstance} api

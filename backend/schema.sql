@@ -170,6 +170,15 @@ CREATE TABLE IF NOT EXISTS featured_product_slots (
   updated_at   TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Archivos subidos (imágenes) guardados en la BD para que sobrevivan a redeploys
+-- en hostings con disco efímero. La URL pública sigue siendo /uploads/<carpeta>/<archivo>.
+CREATE TABLE IF NOT EXISTS uploaded_files (
+  path       VARCHAR(500) PRIMARY KEY,
+  mime_type  VARCHAR(100) NOT NULL,
+  data       BYTEA NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Columnas adicionales en products para lifecycle, campañas y temporadas
 -- (Se agregan con IF NOT EXISTS para no fallar si ya existen)
 DO $$
@@ -228,5 +237,18 @@ BEGIN
   -- Columna show_on_home en products para seleccionar los que aparecen en la home
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='show_on_home') THEN
     ALTER TABLE products ADD COLUMN show_on_home BOOLEAN DEFAULT false;
+  END IF;
+  -- Checkout con pago manual (Yappy / transferencia / contra entrega)
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='payment_method') THEN
+    ALTER TABLE orders ADD COLUMN payment_method VARCHAR(50);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='subtotal') THEN
+    ALTER TABLE orders ADD COLUMN subtotal DECIMAL(10,2);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='shipping_cost') THEN
+    ALTER TABLE orders ADD COLUMN shipping_cost DECIMAL(10,2);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='tax') THEN
+    ALTER TABLE orders ADD COLUMN tax DECIMAL(10,2);
   END IF;
 END $$;

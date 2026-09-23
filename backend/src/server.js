@@ -9,7 +9,6 @@ import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import fs from 'fs';
 import path from 'path';
 import pool from './config/db.js';
 import authRoutes from '../routes/authRoutes.js';
@@ -23,8 +22,8 @@ import categoryRoutes from '../routes/categoryRoutes.js';
 import featuredProductsRoutes from '../routes/featuredProductsRoutes.js';
 import newsletterRoutes from '../routes/newsletterRoutes.js';
 import { expireEvents } from '../services/eventService.js';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import { initializeDatabase } from './config/initDb.js';
+import { serveUploadFromDb } from '../middleware/uploadMiddleware.js';
 
 /**
  * Carga de variables de entorno.
@@ -105,7 +104,7 @@ app.use(express.urlencoded({ extended: true }));
  * Servidor de Archivos Estáticos (Uploads).
  * Expone la carpeta de subidas para que las imágenes sean accesibles vía URL.
  */
-app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')), serveUploadFromDb);
 
 
 /**
@@ -123,28 +122,6 @@ app.use('/api/collections', collectionRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductsRoutes);
 app.use('/api/newsletter', newsletterRoutes);
-
-/**
- * Endpoint: Inicialización Forzada de Admin.
- * @route GET /api/init-admin
- * @description Crea o actualiza el usuario administrador por defecto. Útil en despliegues iniciales.
- */
-app.get('/api/init-admin', async (req, res) => {
-  try {
-    const adminEmail = 'visualmind@admin.com';
-    const adminPassword = 'Visualmind@14';
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    await pool.query(`
-      INSERT INTO users (email, password_hash, full_name, role) 
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role
-    `, [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']);
-    res.json({ message: 'Admin creado/actualizado', email: adminEmail });
-  } catch (error) {
-    console.error('[InitAdmin] Error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 /**
  * Endpoint: Health Check.
@@ -190,7 +167,7 @@ app.listen(PORT, async () => {
   
   // 1. Inicializar Esquema de Base de Datos
   try {
-    await initializeDatabase();
+    await initializeDatabase(pool);
   } catch (err) {
     console.warn('[Startup] Error al inicializar DB:', err.message);
   }
@@ -202,49 +179,3 @@ app.listen(PORT, async () => {
     console.warn('[Startup] No se pudo ejecutar el servicio de eventos:', err.message);
   }
 });
-
-/**
- * initializeDatabase
- * @description Verifica la existencia de tablas fundamentales.
- * Si no existen, ejecuta el script `schema.sql` y crea el administrador inicial.
- */
-async function initializeDatabase() {
-  try {
-    // 1. Verificar si la tabla 'users' existe
-    const tableCheck = await pool.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'users'
-      )
-    `);
-    
-    if (!tableCheck.rows[0].exists) {
-      console.log('[InitDB] Tablas no encontradas, ejecutando schema.sql...');
-      const schemaPath = path.join(process.cwd(), 'schema.sql');
-      const schema = fs.readFileSync(schemaPath, 'utf8');
-      await pool.query(schema);
-      console.log('[InitDB] Schema ejecutado correctamente');
-    }
-
-    // 2. Asegurar siempre el Administrador por defecto
-    const adminEmail = 'visualmind@admin.com';
-    const adminPassword = 'Visualmind@14'; // Contraseña maestra garantizada
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
-
-    await pool.query(`
-      INSERT INTO users (email, password_hash, full_name, role) 
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (email) DO UPDATE 
-      SET password_hash = EXCLUDED.password_hash, 
-          role = 'admin'
-    `, [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']);
-    
-    console.log(`[InitDB] ✅ Usuario Admin asegurado: ${adminEmail}`);
-
-  } catch (error) {
-    console.error('[InitDB] Error crítico durante la inicialización:', error.message);
-    throw error;
-  }
-}
-
