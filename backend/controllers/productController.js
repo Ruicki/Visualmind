@@ -8,6 +8,7 @@
 import pool from '../src/config/db.js';
 import fs from 'fs';
 import path from 'path';
+import { deleteStoredImage } from '../services/imageStore.js';
 
 /**
  * getAllProducts
@@ -377,6 +378,7 @@ export const deleteProduct = async (req, res) => {
         if (imagePath && imagePath.startsWith('/uploads/')) {
             const absolutePath = path.join(process.cwd(), imagePath);
             if (fs.existsSync(absolutePath)) fs.unlinkSync(absolutePath);
+            await deleteStoredImage(imagePath);
         }
 
         res.json({ message: 'Producto eliminado correctamente' });

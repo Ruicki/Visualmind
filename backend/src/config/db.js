@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 
 /**
  * Carga de variables de entorno con precaución para no sobreescribir
- * configuraciones del sistema anfitrión (ej. Railway).
+ * configuraciones del sistema anfitrión (ej. Render).
  */
 dotenv.config({ override: false });
 
@@ -23,7 +23,7 @@ const poolConfig = process.env.DATABASE_URL
   ? { 
       connectionString: process.env.DATABASE_URL,
       ssl: { 
-        // Requerido para la mayoría de proveedores Cloud (AWS, Railway, Supabase)
+        // Requerido para la mayoría de proveedores Cloud (Neon, AWS, Supabase)
         rejectUnauthorized: false 
       }
     }

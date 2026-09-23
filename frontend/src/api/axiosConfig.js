@@ -11,11 +11,12 @@ import axios from 'axios';
  * Instancia personalizada de Axios.
  * @const {AxiosInstance} api
  * @property {string} baseURL - Prioriza la variable de entorno VITE_API_URL sobre el localhost.
- * @property {number} timeout - Tiempo máximo de espera de 5 segundos para evitar cuelgues.
+ * @property {number} timeout - 60s: el backend en Render (plan gratuito) se duerme tras 15 min
+ * sin tráfico y la primera petición puede tardar ~50s en despertarlo.
  */
 const api = axios.create({
     baseURL: import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:5000/api'),
-    timeout: 10000, // Aumentado a 10s para conexiones lentas
+    timeout: 60000,
 });
 
 /**

@@ -8,6 +8,7 @@
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { persistUploads } from '../services/imageStore.js';
 
 // Asegurar que la carpeta de destino base exista
 const uploadDir = 'uploads/products';
@@ -66,10 +67,19 @@ const fileFilter = (req, file, cb) => {
  * Instancia de Multer configurada
  * Límite de tamaño: 5MB por archivo.
  */
-const upload = multer({
+const multerUpload = multer({
     storage: storage,
     limits: { fileSize: 5 * 1024 * 1024 }, 
     fileFilter: fileFilter
 });
+
+/**
+ * upload
+ * @description Envuelve Multer para que cada archivo subido también se guarde en la BD
+ * (ver services/imageStore.js). Uso en rutas: `upload.fields([...])`.
+ */
+const upload = {
+    fields: (fields) => [multerUpload.fields(fields), persistUploads],
+};
 
 export default upload;
