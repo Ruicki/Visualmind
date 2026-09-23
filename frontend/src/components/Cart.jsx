@@ -9,6 +9,7 @@ import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getProductImage } from '../utils/imageUtils';
+import { computeTotals, usePricingConfig } from '../utils/pricing';
 
 export default function Cart() {
     // Hooks de Estado Global y Navegación
@@ -16,6 +17,7 @@ export default function Cart() {
     // getCartTotal/Count: utilidades para cálculos en tiempo real
     const { cartItems, isCartOpen, setIsCartOpen, removeFromCart, updateQuantity, getCartTotal, getCartCount } = useCart();
     const { t } = useLanguage(); // Función de traducción
+    const totals = computeTotals(getCartTotal(), usePricingConfig());
     const navigate = useNavigate(); // Hook para redirección
 
     /**
@@ -125,16 +127,22 @@ export default function Cart() {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '1.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                     <span style={{ color: 'var(--text-secondary)' }}>{t('cart.subtotal')}</span>
-                                    <span>${getCartTotal().toFixed(2)}</span>
+                                    <span>${totals.subtotal.toFixed(2)}</span>
                                 </div>
-
-
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{t('cart.shipping')}</span>
+                                    <span>{totals.shipping > 0 ? `$${totals.shipping.toFixed(2)}` : t('cart.free')}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <span style={{ color: 'var(--text-secondary)' }}>{t('cart.taxes')}</span>
+                                    <span>${totals.tax.toFixed(2)}</span>
+                                </div>
 
                                 {/* Total Final acumulado */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                                     <span style={{ fontWeight: '700' }}>{t('cart.total')}</span>
                                     <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--primary)' }}>
-                                        ${(getCartTotal() + (getCartTotal() > 50 ? 0 : 5)).toFixed(2)}
+                                        ${totals.total.toFixed(2)}
                                     </span>
                                 </div>
                             </div>

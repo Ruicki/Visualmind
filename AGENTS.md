@@ -57,13 +57,15 @@ visualmind/
 
 ## Convenciones importantes
 
-- **Admin por defecto**: `visualmind@admin.com` / `Visualmind@14` (se crea automáticamente al iniciar)
+- **Admin**: en local (sin `DATABASE_URL`) se crea `visualmind@admin.com` con una contraseña aleatoria mostrada en consola si no hay ningún admin (o la de `ADMIN_PASSWORD` si está en `.env`). No escribir contraseñas en el código. En despliegues el admin se define con `ADMIN_PASSWORD` (+ `ADMIN_EMAIL` opcional); nunca se resetea la contraseña en cada arranque. El registro público siempre crea `customer`.
+- **Pedidos**: precios, envío, ITBMS y stock los calcula el servidor (`backend/services/orderPricing.js`, configurable con `SHIPPING_COST`/`FREE_SHIPPING_THRESHOLD`/`TAX_RATE`; envío gratis por defecto). El frontend usa la misma fórmula (`frontend/src/utils/pricing.js`) con la config de `GET /api/orders/pricing`. Sin descuentos automáticos por estado del producto. Pago manual: `pending → paid → shipped → delivered` o `cancelled` (devuelve stock). El dashboard solo cuenta como venta paid/shipped/delivered.
+- **i18n**: `LanguageContext` maneja español/inglés. `t(clave, respaldo?)` devuelve el respaldo (o la clave) si falta la traducción; añade toda clave nueva en `es` y `en`.
+- **Imágenes**: además del disco se guardan en la tabla `uploaded_files`; `/uploads/*` las sirve desde la BD si faltan en disco.
 - **CORS**: Desarrollo permite todo; producción usa `ALLOWED_ORIGINS` (default: localhost:5173)
 - **Rate limiting**: Login (10/15min), Register (5/60min) — solo en producción
 - **Proxy Vite**: `/api/*` y `/uploads/*` se redirigen a `localhost:5000` en dev
 - **Uploads**: Multer guarda en `backend/uploads/`, expuesto estáticamente en `/uploads`
 - **Refresh**: Sin refresh manual — Vite HMR para frontend, nodemon para backend
-- **i18n**: `LanguageContext` maneja español/inglés
 - **Campañas**: Sistema de eventos con `type: campaign|season`, banners, countdown, expiración automática
 
 ## Variables de entorno requeridas
@@ -75,12 +77,14 @@ DATABASE_URL=postgresql://...  # Opción cloud (SSL rejectUnauthorized: false)
 DB_USER/DB_PASSWORD/DB_HOST/DB_PORT/DB_NAME  # Opción local
 JWT_SECRET=<string>
 ALLOWED_ORIGINS=http://localhost:5173
+ADMIN_EMAIL=/ADMIN_PASSWORD=   # obligatorio en despliegues
+SHIPPING_COST=0 / FREE_SHIPPING_THRESHOLD=0 / TAX_RATE=0.07   # opcionales
 ```
 
 ### Frontend (.env en frontend/)
 ```
-VITE_API_URL=http://localhost:5000  # Opcional si usas proxy de Vite
-VITE_STRIPE_PUBLIC_KEY=pk_test_...
+VITE_API_URL=http://localhost:5000/api  # Opcional en dev (proxy de Vite); obligatoria en Vercel
+VITE_WHATSAPP_NUMBER / VITE_YAPPY_NUMBER / VITE_BANK_*  # Datos de cobro mostrados al cliente
 ```
 
 ## Notas de testing

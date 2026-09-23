@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { DollarSign, ShoppingBag, Users, TrendingUp, Loader, ArrowUpRight, ArrowDownRight, AlertTriangle } from 'lucide-react';
+import { DollarSign, ShoppingBag, Users, TrendingUp, Loader, ArrowUpRight, ArrowDownRight, AlertTriangle, Clock } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/axiosConfig';
 import { getProductImage } from '../../utils/imageUtils';
+import { ORDER_STATUSES } from '../../config/storeConfig';
 
 /**
  * @component AdminDashboard
@@ -51,29 +52,42 @@ export default function AdminDashboard() {
      * Definición de las tarjetas de métricas principales.
      * Cada objeto contiene la etiqueta, valor formateado, cambio porcentual y estilo visual.
      */
+    const money = (n) => `$${(Number(n) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const growth = data?.stats?.growth;
+    const pending = data?.stats?.pendingPayment;
+
     const stats = [
-        { 
-            label: t('admin.stats_sales'), 
-            value: `$${data?.stats?.totalSales?.toLocaleString() || '0'}`, 
-            change: data?.stats?.growth || '+12.5%', 
-            trend: 'up',
-            icon: <DollarSign size={24} />, 
+        {
+            label: t('admin.stats_sales'),
+            value: money(data?.stats?.totalSales),
+            // Crecimiento real (mes actual vs anterior); sin mes anterior no se muestra porcentaje
+            change: growth == null ? null : `${growth > 0 ? '+' : ''}${growth}%`,
+            detail: growth == null
+                ? `${money(data?.stats?.salesThisMonth)} ${t('admin.this_month') || 'este mes'}`
+                : (t('admin.vs_previous') || 'vs mes anterior'),
+            trend: growth != null && growth < 0 ? 'down' : 'up',
+            icon: <DollarSign size={24} />,
             color: '#10b981'
         },
-        { 
-            label: t('admin.stats_orders'), 
-            value: data?.stats?.totalOrders || '0', 
-            change: '+5.2%', 
-            trend: 'up',
-            icon: <ShoppingBag size={24} />, 
+        {
+            label: t('admin.stats_pending') || 'Pendiente de cobro',
+            value: money(pending?.amount),
+            detail: `${pending?.count || 0} ${t('admin.orders_awaiting_payment') || 'pedidos esperando pago'}`,
+            icon: <Clock size={24} />,
+            color: '#f59e0b'
+        },
+        {
+            label: t('admin.stats_orders'),
+            value: data?.stats?.totalOrders || '0',
+            detail: t('admin.excluding_cancelled') || 'sin contar cancelados',
+            icon: <ShoppingBag size={24} />,
             color: '#3b82f6'
         },
-        { 
-            label: t('admin.stats_customers'), 
-            value: data?.stats?.totalCustomers || '0', 
-            change: '+2.4%', 
-            trend: 'up',
-            icon: <Users size={24} />, 
+        {
+            label: t('admin.stats_customers'),
+            value: data?.stats?.totalCustomers || '0',
+            detail: t('admin.registered_customers') || 'clientes registrados',
+            icon: <Users size={24} />,
             color: '#8b5cf6'
         },
     ];
@@ -110,16 +124,18 @@ export default function AdminDashboard() {
                             </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '1rem', fontSize: '0.85rem' }}>
-                            <span style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                color: stat.trend === 'up' ? '#10b981' : '#ef4444',
-                                fontWeight: '600'
-                            }}>
-                                {stat.trend === 'up' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                                {stat.change}
-                            </span>
-                            <span style={{ color: 'var(--text-secondary)' }}>{t('admin.vs_previous') || 'vs mes anterior'}</span>
+                            {stat.change && (
+                                <span style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    color: stat.trend === 'up' ? '#10b981' : '#ef4444',
+                                    fontWeight: '600'
+                                }}>
+                                    {stat.trend === 'up' ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                                    {stat.change}
+                                </span>
+                            )}
+                            <span style={{ color: 'var(--text-secondary)' }}>{stat.detail}</span>
                         </div>
                     </div>
                 ))}
@@ -163,7 +179,8 @@ export default function AdminDashboard() {
                                 />
                                 <Area 
                                     type="monotone" 
-                                    dataKey="amount" 
+                                    dataKey="amount"
+                                    name={t('admin.stats_sales')} 
                                     stroke="var(--primary)" 
                                     strokeWidth={3}
                                     fillOpacity={1} 
@@ -230,16 +247,16 @@ export default function AdminDashboard() {
                             <tbody>
                                 {data?.recentOrders?.map(order => (
                                     <tr key={order.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                                        <td style={{ padding: '1.2rem 0', color: 'var(--primary)', fontWeight: '600' }}>#{order.id.substring(0, 8)}</td>
+                                        <td style={{ padding: '1.2rem 0', color: 'var(--primary)', fontWeight: '600' }}>#{order.id.substring(0, 8).toUpperCase()}</td>
                                         <td style={{ padding: '1.2rem 0', color: 'white' }}>{order.customer_name || order.customer_email}</td>
                                         <td style={{ padding: '1.2rem 0' }}>{new Date(order.created_at).toLocaleDateString()}</td>
                                         <td style={{ padding: '1.2rem 0' }}>
-                                            <span style={{ 
-                                                background: order.status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', 
-                                                color: order.status === 'paid' ? '#10b981' : '#f59e0b', 
+                                            <span style={{
+                                                border: `1px solid ${ORDER_STATUSES[order.status]?.color || '#6b7280'}`,
+                                                color: ORDER_STATUSES[order.status]?.color || '#6b7280',
                                                 padding: '0.4rem 0.8rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase'
                                             }}>
-                                                {order.status}
+                                                {ORDER_STATUSES[order.status]?.label || order.status}
                                             </span>
                                         </td>
                                         <td style={{ padding: '1.2rem 0', color: 'white', fontWeight: '700' }}>${order.total}</td>

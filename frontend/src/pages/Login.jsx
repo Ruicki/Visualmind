@@ -161,6 +161,7 @@ export default function Login() {
                                 type="password"
                                 placeholder={t('auth.password')}
                                 required
+                                minLength={isLogin ? undefined : 6}
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 style={{

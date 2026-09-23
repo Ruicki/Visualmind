@@ -4,6 +4,7 @@ import api from '../api/axiosConfig';
 import { Package, User, LogOut, Clock, CheckCircle, XCircle, Loader, MapPin, Pencil, Trash2, Plus, ArrowRight } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { ORDER_STATUSES } from '../config/storeConfig';
 
 /**
  * @component UserProfile
@@ -336,7 +337,7 @@ export default function UserProfile() {
                                 <div key={order.id} style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '16px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                                         <div>
-                                            <div style={{ fontWeight: 'bold', marginBottom: '0.3rem' }}>{t('profile.order_prefix') || "Pedido "}#{order.id.slice(0, 8)}</div>
+                                            <div style={{ fontWeight: 'bold', marginBottom: '0.3rem' }}>{t('profile.order_prefix') || "Pedido "}#{order.id.slice(0, 8).toUpperCase()}</div>
                                             <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                                                 {new Date(order.created_at).toLocaleDateString()}
                                             </div>
@@ -345,11 +346,12 @@ export default function UserProfile() {
                                             <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '0.3rem' }}>${order.total}</div>
                                             <div style={{
                                                 fontSize: '0.8rem', padding: '0.2rem 0.6rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '0.3rem',
-                                                background: order.status === 'delivered' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(234, 179, 8, 0.1)',
-                                                color: order.status === 'delivered' ? '#10b981' : '#eab308'
+                                                background: 'var(--bg-primary)',
+                                                color: ORDER_STATUSES[order.status]?.color || '#6b7280',
+                                                border: `1px solid ${ORDER_STATUSES[order.status]?.color || '#6b7280'}`
                                             }}>
-                                                {order.status === 'delivered' ? <CheckCircle size={12} /> : <Clock size={12} />}
-                                                {order.status}
+                                                {order.status === 'delivered' ? <CheckCircle size={12} /> : order.status === 'cancelled' ? <XCircle size={12} /> : <Clock size={12} />}
+                                                {ORDER_STATUSES[order.status]?.label || order.status}
                                             </div>
                                         </div>
                                     </div>

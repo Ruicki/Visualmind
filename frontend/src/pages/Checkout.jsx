@@ -2,19 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
-import { CreditCard, Loader, Lock } from 'lucide-react';
+import { CheckCircle, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
 import { getProductImage } from '../utils/imageUtils';
+import { PAYMENT_METHODS } from '../config/storeConfig';
+import { computeTotals, usePricingConfig } from '../utils/pricing';
 
 /**
  * @component CheckoutForm
  * @description Sub-componente que gestiona la captura de datos de envío y la lógica de pago.
  * Procesa la creación de órdenes en el servidor y maneja los estados de carga y error.
- * Actualmente simula la integración con pasarelas de pago.
+ * El pago es manual (Yappy / transferencia / contra entrega): el pedido queda
+ * "pendiente de pago" y el admin lo marca como pagado.
  */
 const CheckoutForm = () => {
-  const { cartItems, clearCart, getCartTotal } = useCart();
+  const { cartItems, clearCart } = useCart();
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
@@ -26,10 +29,13 @@ const CheckoutForm = () => {
   const [shippingInfo, setShippingInfo] = useState({
     name: '',
     email: user?.email || '',
+    phone: '',
     address: '',
     city: '',
-    zip: ''
+    zip: '',
+    notes: ''
   });
+  const [paymentMethod, setPaymentMethod] = useState('');
 
   /**
    * Maneja los cambios en los campos de entrada del formulario de envío.
@@ -51,43 +57,49 @@ const CheckoutForm = () => {
       return;
     }
 
+    if (!paymentMethod) {
+      setError('Selecciona un método de pago.');
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      // 1. Enviar orden al Backend (Sincronización de stock y persistencia ACID)
-      const orderResponse = await api.post('/orders', {
+      // El servidor recalcula precios, envío, ITBMS y valida el stock
+      const { data: order } = await api.post('/orders', {
         items: cartItems.map(item => ({
           product_id: item.id,
-          title: item.title,
           quantity: item.quantity,
-          price: item.price,
           size: item.selectedSize,
-          color: item.selectedColor
+          color: item.selectedColor?.name || item.selectedColor || null
         })),
-        total: getCartTotal(),
+        paymentMethod,
         shippingDetails: shippingInfo
       });
 
-      // 2. Limpiar estado local del carrito tras éxito
+      const orderItems = cartItems;
       clearCart();
-      
-      // 3. Navegar a página de éxito con metadatos de la orden para el resumen final
-      navigate('/order-success', { 
-        state: { 
+
+      navigate('/order-success', {
+        state: {
           order: {
-            id: orderResponse.data.id || Math.floor(Math.random() * 1000000),
-            items: cartItems,
-            total: getCartTotal(),
-            date: new Date().toLocaleDateString(),
-            shippingDetails: shippingInfo
+            id: order.id,
+            items: Array.isArray(order.items) ? order.items : orderItems,
+            subtotal: parseFloat(order.subtotal),
+            shipping: parseFloat(order.shipping_cost),
+            tax: parseFloat(order.tax),
+            total: parseFloat(order.total),
+            paymentMethod: order.payment_method,
+            date: new Date(order.created_at).toLocaleDateString(),
+            shippingDetails: order.shipping_details || shippingInfo
           }
-        } 
+        }
       });
 
     } catch (err) {
       console.error("Error en checkout:", err);
-      setError(err.response?.data?.message || err.message || t('checkout.error') || "Ocurrió un error durante el pago.");
+      setError(err.response?.data?.message || err.message || t('checkout.error') || "No se pudo crear el pedido.");
     } finally {
       setLoading(false);
     }
@@ -110,6 +122,10 @@ const CheckoutForm = () => {
             <input required name="email" value={shippingInfo.email} onChange={handleShippingChange} className="input-field" type="email" />
           </div>
           <div>
+            <label className="label-text">Teléfono / WhatsApp</label>
+            <input required name="phone" value={shippingInfo.phone} onChange={handleShippingChange} className="input-field" type="tel" placeholder="6000-0000" />
+          </div>
+          <div>
             <label className="label-text">{t('checkout.address')}</label>
             <input required name="address" value={shippingInfo.address} onChange={handleShippingChange} className="input-field" type="text" />
           </div>
@@ -119,72 +135,62 @@ const CheckoutForm = () => {
               <input required name="city" value={shippingInfo.city} onChange={handleShippingChange} className="input-field" type="text" />
             </div>
             <div>
-              <label className="label-text">{t('checkout.zip') || 'Código Postal'}</label>
-              <input required name="zip" value={shippingInfo.zip} onChange={handleShippingChange} className="input-field" type="text" />
+              <label className="label-text">{t('checkout.zip') || 'Código Postal'} (opcional)</label>
+              <input name="zip" value={shippingInfo.zip} onChange={handleShippingChange} className="input-field" type="text" />
             </div>
+          </div>
+          <div>
+            <label className="label-text">Indicaciones de entrega (opcional)</label>
+            <input name="notes" value={shippingInfo.notes} onChange={handleShippingChange} className="input-field" type="text" placeholder="Punto de referencia, horario..." />
           </div>
         </div>
       </div>
 
-      {/* Sección de Pago: Placeholder para pasarela de pagos segura */}
+      {/* Sección de Pago: métodos manuales (el admin confirma el pago) */}
       <div style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '1.3rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
           {t('checkout.payment')}
         </h2>
-        <div style={{ background: 'var(--bg-secondary)', padding: '1.5rem', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-          <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            <Lock size={14} /> {t('common.secure_payment') || 'Pago seguro'}
-          </div>
-          
-          <div style={{ padding: '1.5rem', background: 'var(--bg-secondary)', borderRadius: '12px', border: '1px solid var(--border-light)' }}>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              {t('checkout.payment_info') || 'Información de pago (simulado)'}
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-              <input 
-                type="text" 
-                placeholder="Número de tarjeta" 
-                style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                disabled
-              />
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
-                <input 
-                  type="text" 
-                  placeholder="MM/AA" 
-                  style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                  disabled
+        <div role="radiogroup" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+          {PAYMENT_METHODS.map(method => {
+            const selected = paymentMethod === method.id;
+            return (
+              <label
+                key={method.id}
+                style={{ display: 'flex', gap: '0.8rem', alignItems: 'flex-start', padding: '1rem 1.2rem', borderRadius: '12px', cursor: 'pointer', background: 'var(--bg-secondary)', border: `1px solid ${selected ? 'var(--primary)' : 'var(--border-light)'}` }}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value={method.id}
+                  checked={selected}
+                  onChange={() => setPaymentMethod(method.id)}
+                  style={{ marginTop: '0.25rem' }}
                 />
-                <input 
-                  type="text" 
-                  placeholder="CVV" 
-                  style={{ padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--border-light)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}
-                  disabled
-                />
-              </div>
-            </div>
-          </div>
-          {error && <div style={{ color: '#ff4d4d', marginTop: '1rem', fontSize: '0.85rem' }}>{error}</div>}
+                <span>
+                  <span style={{ display: 'block', fontWeight: '600' }}>{method.label}</span>
+                  <span style={{ display: 'block', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{method.description}</span>
+                </span>
+              </label>
+            );
+          })}
         </div>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '1rem' }}>
+          Al confirmar verás los datos para pagar. Tu pedido se prepara en cuanto confirmemos el pago.
+        </p>
+        {error && <div role="alert" style={{ color: '#ff4d4d', marginTop: '1rem', fontSize: '0.85rem' }}>{error}</div>}
       </div>
 
       <button
         type="submit"
-        disabled={loading}
+        disabled={loading || cartItems.length === 0}
         className="btn-primary"
         style={{ width: '100%', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: loading ? 0.7 : 1, marginTop: '1rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
       >
-        {loading ? <Loader className="spin" /> : <CreditCard size={20} />}
+        {loading ? <Loader className="spin" /> : <CheckCircle size={20} />}
         {loading ? (t('common.processing') || 'Procesando...') : (t('checkout.btn_complete') || 'Completar Pedido')}
       </button>
 
-      <div style={{ marginTop: '1.5rem', textAlign: 'center', fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-        <p>Tus datos están protegidos por encriptación SSL de 256 bits.</p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem', opacity: 0.6, filter: 'grayscale(1)' }}>
-            <span style={{ fontWeight: '800', fontSize: '0.9rem' }}>VISA</span>
-            <span style={{ fontWeight: '800', fontSize: '0.9rem' }}>MASTERCARD</span>
-            <span style={{ fontWeight: '800', fontSize: '0.9rem' }}>AMERICAN EXPRESS</span>
-        </div>
-      </div>
     </form>
   );
 };
@@ -201,6 +207,8 @@ export default function Checkout() {
   const { t } = useLanguage();
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const pricing = usePricingConfig();
+  const totals = computeTotals(getCartTotal(), pricing);
 
   /**
    * Middleware de navegación: Redirige al login si se intenta acceder sin sesión activa,
@@ -258,22 +266,22 @@ export default function Checkout() {
           <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               <span>{t('cart.subtotal')}</span>
-              <span>${getCartTotal().toFixed(2)}</span>
+              <span>${totals.subtotal.toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               <span>{t('cart.shipping')}</span>
-              <span style={{ color: getCartTotal() > 50 ? '#10b981' : 'white', fontWeight: getCartTotal() > 50 ? '700' : 'normal' }}>
-                {getCartTotal() > 50 ? t('cart.free') : '$5.00'}
+              <span style={{ color: totals.shipping > 0 ? 'var(--text-primary)' : '#10b981', fontWeight: totals.shipping > 0 ? 'normal' : '700' }}>
+                {totals.shipping > 0 ? `$${totals.shipping.toFixed(2)}` : t('cart.free')}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              <span>{t('cart.taxes')} (7%)</span>
-              <span>${(getCartTotal() * 0.07).toFixed(2)}</span>
+              <span>{t('cart.taxes')} ({Math.round(pricing.taxRate * 100)}%)</span>
+              <span>${totals.tax.toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.3rem', fontWeight: '900', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
               <span>{t('cart.total')}</span>
               <span style={{ color: 'var(--primary)' }}>
-                ${(getCartTotal() + (getCartTotal() > 50 ? 0 : 5) + (getCartTotal() * 0.07)).toFixed(2)}
+                ${totals.total.toFixed(2)}
               </span>
             </div>
           </div>

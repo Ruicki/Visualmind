@@ -2,10 +2,10 @@
 nixPkgs = ["nodejs"]
 
 [phases.install]
-cmds = ["npm install --production=false"]
+cmds = ["npm ci"]
 
-[phases.build]
-cmds = ["node scripts/init_prod_db.js || echo 'DB init skipped'"]
+# La BD se inicializa al arrancar el servidor (src/config/initDb.js),
+# porque durante el build la red privada de la BD no está disponible.
 
 [start]
 cmd = "node src/server.js"

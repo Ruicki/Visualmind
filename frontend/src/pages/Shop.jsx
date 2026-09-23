@@ -260,7 +260,7 @@ export default function Shop() {
                   transition: 'all 0.3s'
                 }}
               >
-                {t(`shop.cat_${cat}`) || cat}
+                {t(`shop.cat_${String(cat).toLowerCase()}`, cat)}
               </motion.button>
             ))}
           </div>

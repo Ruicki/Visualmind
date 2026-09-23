@@ -1,30 +1,31 @@
 import React, { useEffect, useRef } from 'react';
 import { useLocation, Link } from 'react-router-dom';
-import { CheckCircle, Download, Home, ShoppingBag } from 'lucide-react';
+import { CheckCircle, Download, Home, ShoppingBag, MessageCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { getPaymentMethod, whatsappLink } from '../config/storeConfig';
 
 /**
  * @component OrderSuccess
  * @description Página de confirmación post-compra.
- * Visualiza el resumen del pedido realizado y permite la descarga del recibo 
- * en formato PDF utilizando jsPDF y html2canvas.
+ * Muestra el resumen del pedido, las instrucciones de pago (pago manual) y permite
+ * descargar el resumen en PDF utilizando jsPDF y html2canvas.
  */
 export default function OrderSuccess() {
   const location = useLocation();
   const receiptRef = useRef();
   
-  // Datos del pedido pasados vía state desde Checkout o recuperados
-  const orderData = React.useMemo(() => location.state?.order || {
-    id: Math.floor(Math.random() * 1000000),
-    items: [],
-    total: 0,
-    date: new Date().toLocaleDateString()
-  }, [location.state]);
+  // Datos del pedido pasados vía state desde Checkout
+  const orderData = location.state?.order;
+  const shortId = orderData ? String(orderData.id).slice(0, 8).toUpperCase() : '';
+  const payment = getPaymentMethod(orderData?.paymentMethod);
+  const paymentDetails = (payment?.details || []).filter(([, value]) => value);
+  const money = (n) => `$${(Number(n) || 0).toFixed(2)}`;
 
   useEffect(() => {
+    if (!orderData) return;
     // Lanzar confeti al cargar
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
@@ -47,7 +48,7 @@ export default function OrderSuccess() {
     }, 250);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [orderData]);
 
   const downloadReceipt = async () => {
     const element = receiptRef.current;
@@ -62,8 +63,20 @@ export default function OrderSuccess() {
       format: [canvas.width / 2, canvas.height / 2]
     });
     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width / 2, canvas.height / 2);
-    pdf.save(`recibo-visualmind-${orderData.id}.pdf`);
+    pdf.save(`pedido-visualmind-${shortId}.pdf`);
   };
+
+  if (!orderData) {
+    return (
+      <div className="container" style={{ paddingTop: '140px', paddingBottom: '6rem', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '2rem', marginBottom: '1rem' }}>No hay un pedido reciente para mostrar</h1>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem' }}>Puedes ver el estado de tus pedidos en tu perfil.</p>
+        <Link to="/profile" className="btn-primary" style={{ padding: '1rem 2rem', textDecoration: 'none', borderRadius: '12px' }}>Ver mis pedidos</Link>
+      </div>
+    );
+  }
+
+  const whatsappMessage = `Hola! Hice el pedido #${shortId} por ${money(orderData.total)} (${payment?.label || orderData.paymentMethod}). Adjunto el comprobante de pago.`;
 
   return (
     <div className="container" style={{ paddingTop: '140px', paddingBottom: '6rem', maxWidth: '800px', margin: '0 auto' }}>
@@ -75,11 +88,43 @@ export default function OrderSuccess() {
         <div style={{ display: 'inline-flex', background: 'rgba(16, 185, 129, 0.1)', padding: '1.5rem', borderRadius: '50%', color: '#10b981', marginBottom: '1.5rem' }}>
           <CheckCircle size={64} />
         </div>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', fontWeight: '900' }}>¡Gracias por tu compra!</h1>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', fontWeight: '900' }}>¡Pedido recibido!</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-          Tu pedido <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>#{orderData.id}</span> ha sido procesado correctamente.
+          Tu pedido <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>#{shortId}</span> está registrado y pendiente de pago.
         </p>
       </motion.div>
+
+      {/* Instrucciones de pago */}
+      <div style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', borderRadius: '16px', padding: '1.5rem', marginBottom: '2.5rem' }}>
+        <h2 style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>Cómo completar tu pago: {payment?.label || orderData.paymentMethod}</h2>
+        <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', marginBottom: paymentDetails.length ? '1rem' : 0 }}>
+          {orderData.paymentMethod === 'cash_on_delivery'
+            ? `Ten listo ${money(orderData.total)} en efectivo al recibir tu pedido. Te contactaremos para coordinar la entrega.`
+            : `Paga ${money(orderData.total)} e indica el número de pedido #${shortId} en la referencia. Luego envíanos el comprobante por WhatsApp.`}
+        </p>
+        {paymentDetails.length > 0 && (
+          <dl style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.4rem 1rem', fontSize: '0.95rem', margin: 0 }}>
+            {paymentDetails.map(([label, value]) => (
+              <React.Fragment key={label}>
+                <dt style={{ color: 'var(--text-secondary)' }}>{label}</dt>
+                <dd style={{ margin: 0, fontWeight: 600 }}>{value}</dd>
+              </React.Fragment>
+            ))}
+          </dl>
+        )}
+        {orderData.paymentMethod !== 'cash_on_delivery' && paymentDetails.length === 0 && (
+          <p style={{ fontSize: '0.9rem' }}>Escríbenos por WhatsApp y te enviamos los datos para pagar.</p>
+        )}
+        <a
+          href={whatsappLink(whatsappMessage)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn-primary"
+          style={{ marginTop: '1.2rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.9rem 1.4rem', borderRadius: '12px', textDecoration: 'none' }}
+        >
+          <MessageCircle size={18} /> {orderData.paymentMethod === 'cash_on_delivery' ? 'Coordinar entrega por WhatsApp' : 'Enviar comprobante por WhatsApp'}
+        </a>
+      </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem', alignItems: 'center' }}>
         
@@ -87,12 +132,12 @@ export default function OrderSuccess() {
         <div ref={receiptRef} style={{ width: '100%', background: 'white', color: '#111', padding: '2.5rem', borderRadius: '4px', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', fontFamily: 'Inter, sans-serif', marginBottom: '1rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2rem', borderBottom: '2px solid #eee', paddingBottom: '1rem' }}>
             <div>
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '900', letterSpacing: '-0.5px' }}>VISUALMIND</h2>
-              <p style={{ fontSize: '0.8rem', color: '#666' }}>Recibo Digital</p>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '900', letterSpacing: '-0.5px', color: '#111' }}>VISUALMIND</h2>
+              <p style={{ fontSize: '0.8rem', color: '#666' }}>Resumen de pedido</p>
             </div>
             <div style={{ textAlign: 'right' }}>
               <p style={{ fontSize: '0.8rem', fontWeight: '600' }}>Fecha: {orderData.date}</p>
-              <p style={{ fontSize: '0.8rem', color: '#666' }}>Pedido: #{orderData.id}</p>
+              <p style={{ fontSize: '0.8rem', color: '#666' }}>Pedido: #{shortId}</p>
             </div>
           </div>
 
@@ -102,6 +147,7 @@ export default function OrderSuccess() {
               <p style={{ fontWeight: '700', textTransform: 'uppercase', color: '#888', marginBottom: '0.4rem', fontSize: '0.7rem' }}>Datos de Envío</p>
               <p style={{ fontWeight: '600' }}>{orderData.shippingDetails.name}</p>
               {orderData.shippingDetails.address && <p style={{ color: '#555' }}>{orderData.shippingDetails.address}, {orderData.shippingDetails.city} {orderData.shippingDetails.zip}</p>}
+              {orderData.shippingDetails.phone && <p style={{ color: '#555' }}>{orderData.shippingDetails.phone}</p>}
               {orderData.shippingDetails.email && <p style={{ color: '#555' }}>{orderData.shippingDetails.email}</p>}
             </div>
           )}
@@ -137,20 +183,28 @@ export default function OrderSuccess() {
           <div style={{ borderTop: '2px solid #eee', paddingTop: '1rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
               <span>Subtotal</span>
-              <span>${orderData.total.toFixed(2)}</span>
+              <span>{money(orderData.subtotal)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
               <span>Envío</span>
-              <span style={{ color: '#10b981', fontWeight: '600' }}>Gratis ✓</span>
+              <span>{orderData.shipping > 0 ? money(orderData.shipping) : 'Gratis'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+              <span>ITBMS</span>
+              <span>{money(orderData.tax)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: '900', marginTop: '0.5rem' }}>
-              <span>Total Pagado</span>
-              <span>${orderData.total.toFixed(2)}</span>
+              <span>Total a pagar</span>
+              <span>{money(orderData.total)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#666', marginTop: '0.5rem' }}>
+              <span>Método de pago</span>
+              <span>{payment?.label || orderData.paymentMethod}</span>
             </div>
           </div>
 
           <div style={{ marginTop: '3rem', textAlign: 'center', borderTop: '1px dashed #ddd', paddingTop: '1.5rem', fontSize: '0.75rem', color: '#888' }}>
-            Gracias por confiar en Visualmind. Este es un comprobante de pago oficial.
+            Gracias por confiar en Visualmind. Este documento es un resumen de pedido, no un comprobante de pago.
           </div>
         </div>
 
@@ -159,9 +213,9 @@ export default function OrderSuccess() {
           <button 
             onClick={downloadReceipt}
             className="btn-secondary"
-            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1.2rem', borderRadius: '12px' }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '1.2rem', borderRadius: '12px', color: 'var(--text-primary)', background: 'var(--bg-secondary)', border: '1px solid var(--border-light)', cursor: 'pointer' }}
           >
-            <Download size={18} /> Descargar Recibo Digital
+            <Download size={18} /> Descargar resumen (PDF)
           </button>
           
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -174,9 +228,9 @@ export default function OrderSuccess() {
             </Link>
           </div>
 
-          <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
-            Te hemos enviado una copia de este recibo a tu correo electrónico.
-          </p>
+          <Link to="/profile" style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+            Ver el estado de mis pedidos
+          </Link>
         </div>
       </div>
     </div>

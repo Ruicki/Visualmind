@@ -1172,6 +1172,24 @@ img {
 
 /* Mobile pequeño (≤ 480px) */
 @media (max-width: 480px) {
+  /* Navbar: que todos los iconos (incluido el carrito) quepan en pantalla */
+  .navbar-actions {
+    gap: 0.25rem;
+  }
+
+  .navbar-actions .navbar-icon-btn,
+  .navbar-actions .navbar-lang-btn {
+    padding: 0.4rem;
+  }
+
+  .navbar-logo-text {
+    display: none;
+  }
+
+  .navbar-hamburger {
+    padding: 0.25rem;
+  }
+
   .products-grid {
     grid-template-columns: 1fr !important;
   }
