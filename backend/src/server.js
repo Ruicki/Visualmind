@@ -23,12 +23,12 @@ import categoryRoutes from '../routes/categoryRoutes.js';
 import featuredProductsRoutes from '../routes/featuredProductsRoutes.js';
 import newsletterRoutes from '../routes/newsletterRoutes.js';
 import { expireEvents } from '../services/eventService.js';
+import { ensureImagesTable, serveStoredImage } from '../services/imageStore.js';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 
 /**
  * Carga de variables de entorno.
- * Se utiliza `override: false` para respetar las variables definidas en plataformas PaaS (ej. Railway).
+ * Se utiliza `override: false` para respetar las variables definidas en plataformas PaaS (ej. Render).
  */
 dotenv.config({ override: false });
 
@@ -50,6 +50,10 @@ if (missingVars.length > 0) {
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Render (y la mayoría de PaaS) ponen un proxy delante: sin esto, el rate limiting
+// vería la IP del proxy y bloquearía a todos los usuarios a la vez.
+app.set('trust proxy', 1);
 
 /**
  * Configuraciones de Rate Limiting (Seguridad).
@@ -81,7 +85,10 @@ if (process.env.NODE_ENV !== 'production') {
  * Middleware de CORS.
  * Configurado para permitir orígenes específicos en producción y flexibilidad en desarrollo.
  */
-const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173,https://visualmind-one-vercel.app').split(',');
+const allowedOrigins = (process.env.ALLOWED_ORIGINS || 'http://localhost:5173')
+  .split(',')
+  .map(o => o.trim().replace(/\/$/, ''))
+  .filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -106,6 +113,8 @@ app.use(express.urlencoded({ extended: true }));
  * Expone la carpeta de subidas para que las imágenes sean accesibles vía URL.
  */
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+// Fallback: si el archivo ya no está en disco (disco efímero en Render), se sirve desde la BD
+app.use('/uploads', serveStoredImage);
 
 
 /**
@@ -123,28 +132,6 @@ app.use('/api/collections', collectionRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductsRoutes);
 app.use('/api/newsletter', newsletterRoutes);
-
-/**
- * Endpoint: Inicialización Forzada de Admin.
- * @route GET /api/init-admin
- * @description Crea o actualiza el usuario administrador por defecto. Útil en despliegues iniciales.
- */
-app.get('/api/init-admin', async (req, res) => {
-  try {
-    const adminEmail = 'visualmind@admin.com';
-    const adminPassword = 'Visualmind@14';
-    const hashedPassword = await bcrypt.hash(adminPassword, 10);
-    await pool.query(`
-      INSERT INTO users (email, password_hash, full_name, role) 
-      VALUES ($1, $2, $3, $4)
-      ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash, role = EXCLUDED.role
-    `, [adminEmail, hashedPassword, 'Administrador Visualmind', 'admin']);
-    res.json({ message: 'Admin creado/actualizado', email: adminEmail });
-  } catch (error) {
-    console.error('[InitAdmin] Error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 /**
  * Endpoint: Health Check.
@@ -195,7 +182,14 @@ app.listen(PORT, async () => {
     console.warn('[Startup] Error al inicializar DB:', err.message);
   }
   
-  // 2. Tarea Programada Inicial: Expirar eventos obsoletos
+  // 2. Tabla de imágenes persistentes
+  try {
+    await ensureImagesTable();
+  } catch (err) {
+    console.warn('[Startup] No se pudo crear la tabla de imágenes:', err.message);
+  }
+
+  // 3. Tarea Programada Inicial: Expirar eventos obsoletos
   try {
     await expireEvents();
   } catch (err) {
@@ -227,9 +221,13 @@ async function initializeDatabase() {
       console.log('[InitDB] Schema ejecutado correctamente');
     }
 
-    // 2. Asegurar siempre el Administrador por defecto
-    const adminEmail = 'visualmind@admin.com';
-    const adminPassword = 'Visualmind@14'; // Contraseña maestra garantizada
+    // 2. Asegurar el Administrador (credenciales solo desde variables de entorno)
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminEmail || !adminPassword) {
+      console.warn('[InitDB] ADMIN_EMAIL/ADMIN_PASSWORD no definidos: no se crea ni actualiza el admin.');
+      return;
+    }
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     await pool.query(`

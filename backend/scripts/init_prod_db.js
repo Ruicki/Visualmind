@@ -1,6 +1,6 @@
 /**
  * @file init_prod_db.js
- * @description Script de inicialización de base de datos para producción (Railway).
+ * @description Script de inicialización de base de datos para producción (Neon).
  * Ejecuta schema.sql y crea el usuario admin por defecto.
  */
 
@@ -44,8 +44,11 @@ async function initDatabase() {
     }
 
     // 2. Crear/actualizar el administrador por defecto
-    const adminEmail = 'visualmind@admin.com';
-    const adminPassword = 'Visualmind@14';
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+    if (!adminEmail || !adminPassword) {
+      throw new Error('Define ADMIN_EMAIL y ADMIN_PASSWORD para crear el administrador');
+    }
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
     await client.query(`

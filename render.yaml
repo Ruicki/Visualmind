@@ -1,0 +1,28 @@
+# Blueprint de Render para el backend de Visualmind (plan gratuito).
+# Render → New → Blueprint → seleccionar este repo. Las variables con `sync: false`
+# se piden en el panel al crear el servicio (nunca se guardan en el repo).
+services:
+  - type: web
+    name: visualmind-api
+    runtime: node
+    plan: free
+    region: virginia # misma región que la BD de Neon (AWS us-east-1)
+    rootDir: backend
+    buildCommand: npm ci
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
