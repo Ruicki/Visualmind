@@ -251,4 +251,36 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='tax') THEN
     ALTER TABLE orders ADD COLUMN tax DECIMAL(10,2);
   END IF;
+  -- Versión de sesión: al subirla se invalidan los tokens emitidos antes (cambio de rol, cierre de sesión global)
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='token_version') THEN
+    ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 0;
+  END IF;
+  -- Fecha de pago confirmada (para medir ventas por fecha de cobro)
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='orders' AND column_name='paid_at') THEN
+    ALTER TABLE orders ADD COLUMN paid_at TIMESTAMPTZ;
+  END IF;
+  -- Detecta ediciones simultáneas de un producto (p. ej. el admin guarda un formulario viejo tras una venta)
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='updated_at') THEN
+    ALTER TABLE products ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+  END IF;
 END $$;
+
+-- Historial de cambios de estado de cada pedido (quién, cuándo, de qué a qué)
+CREATE TABLE IF NOT EXISTS order_events (
+  id          BIGSERIAL PRIMARY KEY,
+  order_id    UUID REFERENCES orders(id) ON DELETE CASCADE NOT NULL,
+  from_status VARCHAR(50),
+  to_status   VARCHAR(50) NOT NULL,
+  changed_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+  note        TEXT,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at);
+
+-- Suscriptores del newsletter
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  id            SERIAL PRIMARY KEY,
+  email         VARCHAR(255) UNIQUE NOT NULL,
+  subscribed_at TIMESTAMP DEFAULT NOW()
+);

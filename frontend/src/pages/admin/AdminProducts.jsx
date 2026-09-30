@@ -158,7 +158,7 @@ export default function AdminProducts() {
                 categoriesRes
             ] = await Promise.all([
                 api.get('/products/admin'),
-                api.get('/campaigns'),
+                api.get('/campaigns/admin'),
                 api.get('/collections'),
                 api.get('/categories')
             ]);
@@ -176,7 +176,7 @@ export default function AdminProducts() {
 
     const _fetchCampaigns = async () => {
         try {
-            const response = await api.get('/campaigns');
+            const response = await api.get('/campaigns/admin');
             setAvailableCampaigns(response.data || []);
         } catch (error) {
             console.error('Error fetching campaigns:', error);

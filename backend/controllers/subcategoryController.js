@@ -69,7 +69,7 @@ export const createSubcategory = async (req, res) => {
         if (error.code === '23505') {
             return res.status(409).json({ error: 'Ya existe una subcategoría con ese slug en esta categoría' });
         }
-        res.status(500).json({ error: 'Error al crear subcategoría: ' + error.message });
+        res.status(500).json({ error: 'Error al crear subcategoría' });
     }
 };
 
@@ -96,7 +96,7 @@ export const updateSubcategory = async (req, res) => {
         if (error.code === '23505') {
             return res.status(409).json({ error: 'Ya existe otra subcategoría con ese slug en esta categoría' });
         }
-        res.status(500).json({ error: 'Error al actualizar subcategoría: ' + error.message });
+        res.status(500).json({ error: 'Error al actualizar subcategoría' });
     }
 };
 

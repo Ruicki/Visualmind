@@ -13,6 +13,10 @@
 
 export const PAYMENT_METHODS = ['yappy', 'transfer', 'cash_on_delivery'];
 
+/** Límites por pedido: evitan que un solo pedido aparte todo el inventario. */
+export const MAX_UNITS_PER_LINE = 20;
+export const MAX_LINES_PER_ORDER = 30;
+
 const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
 const envNumber = (name, fallback) => {
@@ -81,14 +85,21 @@ export function normalizeCartItems(items) {
   const map = new Map();
   for (const raw of items) {
     const quantity = Number(raw?.quantity);
-    if (!raw?.product_id || !Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
+    if (!raw?.product_id || !Number.isInteger(quantity) || quantity < 1 || quantity > MAX_UNITS_PER_LINE) {
       throw Object.assign(new Error('Artículo inválido en el carrito'), { status: 400 });
     }
     const size = raw.size ?? null;
     const color = colorName(raw.color);
     const key = `${raw.product_id}|${size}|${color}`;
     const prev = map.get(key);
-    map.set(key, { product_id: String(raw.product_id), size, color, quantity: (prev?.quantity || 0) + quantity });
+    const total = (prev?.quantity || 0) + quantity;
+    if (total > MAX_UNITS_PER_LINE) {
+      throw Object.assign(new Error(`Máximo ${MAX_UNITS_PER_LINE} unidades por talla en un pedido`), { status: 400 });
+    }
+    map.set(key, { product_id: String(raw.product_id), size, color, quantity: total });
+  }
+  if (map.size > MAX_LINES_PER_ORDER) {
+    throw Object.assign(new Error(`Un pedido admite como máximo ${MAX_LINES_PER_ORDER} artículos distintos`), { status: 400 });
   }
   return [...map.values()];
 }

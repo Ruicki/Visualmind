@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import {
-  computeTotals, getPricingConfig, unitPrice, findVariant, normalizeCartItems, colorName
+  MAX_LINES_PER_ORDER, MAX_UNITS_PER_LINE, computeTotals, getPricingConfig, unitPrice, findVariant, normalizeCartItems, colorName
 } from '../services/orderPricing.js';
 
 describe('computeTotals', () => {
@@ -89,6 +89,18 @@ describe('normalizeCartItems', () => {
     expect(() => normalizeCartItems([{ product_id: 'p1', quantity: 0 }])).toThrow();
     expect(() => normalizeCartItems([{ product_id: 'p1', quantity: 1.5 }])).toThrow();
     expect(() => normalizeCartItems([{ quantity: 1 }])).toThrow();
+    expect(() => normalizeCartItems([{ product_id: 'p1', quantity: MAX_UNITS_PER_LINE + 1 }])).toThrow();
+  });
+
+  it('limita las unidades acumuladas de una misma talla y los artículos distintos', () => {
+    const half = Math.ceil(MAX_UNITS_PER_LINE / 2) + 1;
+    expect(() => normalizeCartItems([
+      { product_id: 'p1', size: 'M', quantity: half },
+      { product_id: 'p1', size: 'M', quantity: half },
+    ])).toThrow();
+    const many = Array.from({ length: MAX_LINES_PER_ORDER + 1 }, (_, i) => ({ product_id: `p${i}`, quantity: 1 }));
+    expect(() => normalizeCartItems(many)).toThrow();
+    expect(normalizeCartItems(many.slice(0, MAX_LINES_PER_ORDER))).toHaveLength(MAX_LINES_PER_ORDER);
   });
 
   it('colorName acepta string u objeto', () => {
