@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
 import { Eye, Loader, MessageCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { ORDER_STATUSES, getPaymentMethod } from '../../config/storeConfig';
+import { ORDER_STATUSES, ORDER_TRANSITIONS, getPaymentMethod } from '../../config/storeConfig';
 import { getProductImage } from '../../utils/imageUtils';
 
 /** Los pedidos antiguos pueden traer items/shipping como string JSON. */
@@ -75,10 +75,14 @@ export default function AdminOrders() {
 
     const renderStatusSelect = (order) => {
         const status = ORDER_STATUSES[order.status] || { color: 'var(--text-primary)' };
+        const next = ORDER_TRANSITIONS[order.status] || [];
+        const options = [order.status, ...next];
+        const locked = next.length === 0;
         return (
             <select
                 value={order.status}
-                disabled={order.status === 'cancelled'}
+                disabled={locked}
+                title={locked ? 'Este pedido ya está cerrado' : 'Cambiar estado'}
                 onChange={(e) => updateStatus(order.id, e.target.value)}
                 aria-label="Estado del pedido"
                 style={{
@@ -88,11 +92,11 @@ export default function AdminOrders() {
                     borderRadius: '100px',
                     fontSize: '0.8rem',
                     border: `1px solid ${status.color}`,
-                    cursor: order.status === 'cancelled' ? 'not-allowed' : 'pointer'
+                    cursor: locked ? 'not-allowed' : 'pointer'
                 }}
             >
-                {Object.entries(ORDER_STATUSES).map(([value, { label }]) => (
-                    <option key={value} value={value}>{label}</option>
+                {options.map((value) => (
+                    <option key={value} value={value}>{ORDER_STATUSES[value]?.label || value}</option>
                 ))}
             </select>
         );

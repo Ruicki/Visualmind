@@ -136,7 +136,8 @@ export default function Home() {
     if (!newsletterEmail) return;
     setNewsletterStatus('sending');
     try {
-      const res = await axiosInstance.post('/newsletter/subscribe', { email: newsletterEmail });
+      const website = e.target.elements?.website?.value || '';
+      const res = await axiosInstance.post('/newsletter/subscribe', { email: newsletterEmail, website });
       setNewsletterStatus(res.data.alreadySubscribed ? 'already' : 'success');
       setNewsletterEmail('');
     } catch {
@@ -371,6 +372,9 @@ export default function Home() {
             </p>
           ) : (
             <form style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }} onSubmit={handleNewsletterSubmit}>
+              {/* Campo trampa para bots: invisible para personas */}
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true"
+                style={{ position: 'absolute', left: '-10000px', width: '1px', height: '1px', opacity: 0 }} />
               <input 
                 type="email"
                 value={newsletterEmail}

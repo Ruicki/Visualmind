@@ -11,6 +11,17 @@ const env = import.meta.env;
 // Número usado por el botón flotante de WhatsApp (WhatsAppButton.jsx) como valor por defecto
 export const WHATSAPP_NUMBER = (env.VITE_WHATSAPP_NUMBER || '+50763148640').replace(/[^\d]/g, '');
 
+/**
+ * Redes sociales de la tienda (VITE_INSTAGRAM_URL, VITE_FACEBOOK_URL, VITE_TIKTOK_URL).
+ * Las que queden vacías no se muestran. WhatsApp usa VITE_WHATSAPP_NUMBER.
+ */
+export const SOCIAL_LINKS = [
+  { id: 'instagram', name: 'Instagram', url: env.VITE_INSTAGRAM_URL ?? 'https://www.instagram.com/visualmind.pa/' },
+  { id: 'tiktok', name: 'TikTok', url: env.VITE_TIKTOK_URL ?? '' },
+  { id: 'facebook', name: 'Facebook', url: env.VITE_FACEBOOK_URL ?? 'https://www.facebook.com/Visualmind.pa' },
+  { id: 'whatsapp', name: 'WhatsApp', url: WHATSAPP_NUMBER ? `https://wa.me/${WHATSAPP_NUMBER}` : '' },
+].filter(s => s.url);
+
 export const PAYMENT_METHODS = [
   {
     id: 'yappy',
@@ -48,6 +59,15 @@ export const ORDER_STATUSES = {
   shipped:   { label: 'Enviado',           color: '#3b82f6' },
   delivered: { label: 'Entregado',         color: '#10b981' },
   cancelled: { label: 'Cancelado',         color: '#ef4444' },
+};
+
+/** Estados a los que puede pasar un pedido (misma regla que el servidor). */
+export const ORDER_TRANSITIONS = {
+  pending: ['paid', 'cancelled'],
+  paid: ['shipped', 'cancelled'],
+  shipped: ['delivered'],
+  delivered: [],
+  cancelled: [],
 };
 
 /** Link de WhatsApp de la tienda con un mensaje prellenado. */

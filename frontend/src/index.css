@@ -790,12 +790,14 @@ img {
 .social-favicon {
   width: 22px;
   height: 22px;
-  filter: grayscale(1) brightness(2);
-  transition: filter 0.4s;
+  color: var(--text-primary);
+  opacity: 0.8;
+  transition: opacity 0.4s, color 0.4s;
 }
 
 .social-icon-wrapper:hover .social-favicon {
-  filter: grayscale(0) brightness(1);
+  opacity: 1;
+  color: var(--primary);
 }
 
 /* =====================

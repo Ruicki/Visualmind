@@ -42,4 +42,26 @@ api.interceptors.request.use((config) => {
     return Promise.reject(error);
 });
 
+/**
+ * Interceptor de Respuestas.
+ * Si el servidor dice que la sesión ya no vale (expiró, cambió el rol o se cerró),
+ * se limpia la sesión local y se lleva al usuario a iniciar sesión de nuevo.
+ */
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error.response?.status;
+        const url = error.config?.url || '';
+        const hadToken = !!localStorage.getItem('token');
+        if (status === 401 && hadToken && !url.includes('/auth/login')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            if (!window.location.pathname.startsWith('/login')) {
+                window.location.assign('/login');
+            }
+        }
+        return Promise.reject(error);
+    }
+);
+
 export default api;

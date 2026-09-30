@@ -24,6 +24,16 @@ export default function InfoPage() {
                     title: t('info.returns_title'),
                     body: t('info.returns_body')
                 };
+            case 'privacy':
+                return {
+                    title: t('info.privacy_title'),
+                    body: t('info.privacy_body')
+                };
+            case 'terms':
+                return {
+                    title: t('info.terms_title'),
+                    body: t('info.terms_body')
+                };
             case 'faq':
                 return {
                     title: t('info.faq_title'),

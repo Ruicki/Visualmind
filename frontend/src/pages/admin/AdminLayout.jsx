@@ -46,6 +46,12 @@ export default function AdminLayout() {
         { path: '/admin/settings', icon: <Settings size={20} />, label: t('admin.settings') || 'Ajustes' },
     ];
 
+    // Título de la cabecera según la sección abierta (la ruta más específica gana)
+    const currentSectionLabel = [...navItems]
+        .sort((a, b) => b.path.length - a.path.length)
+        .find(item => location.pathname === item.path || location.pathname.startsWith(item.path + '/'))?.label
+        || t('admin.overview') || 'Resumen';
+
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0a' }}>
             {/* Sidebar */}
@@ -120,7 +126,7 @@ export default function AdminLayout() {
                     justifyContent: 'space-between',
                     padding: '0 3rem'
                 }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{t('admin.overview') || 'Resumen'}</h2>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{currentSectionLabel}</h2>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{t('admin.user_label') || 'Administrador'}</div>

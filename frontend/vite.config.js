@@ -1,9 +1,23 @@
+/* global process */
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
+/**
+ * URL pública del sitio para las vistas previas al compartir (Open Graph).
+ * VITE_SITE_URL tiene prioridad; en Vercel se usa su dominio de producción.
+ */
+const siteUrl = (process.env.VITE_SITE_URL ||
+  (process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : '')
+).replace(/\/$/, '')
+
+const siteUrlPlugin = {
+  name: 'site-url',
+  transformIndexHtml: (html) => html.replaceAll('__SITE_URL__', siteUrl),
+}
+
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), siteUrlPlugin],
   server: {
     port: 5173,
     strictPort: false,

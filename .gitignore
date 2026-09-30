@@ -139,3 +139,6 @@ backend/create_admin_final.js
 backend/migrate_phase_6.js
 backend/src/check_admin.js
 backend/src/find_duplicates.js
+
+# Caché de Vite
+.vite/

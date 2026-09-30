@@ -161,7 +161,9 @@ export default function Login() {
                                 type="password"
                                 placeholder={t('auth.password')}
                                 required
-                                minLength={isLogin ? undefined : 6}
+                                minLength={isLogin ? undefined : 8}
+                                pattern={isLogin ? undefined : '(?=.*[A-Za-z])(?=.*\\d).{8,}'}
+                                title={isLogin ? undefined : t('auth.password_rules', 'Mínimo 8 caracteres, con letras y números')}
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 style={{
