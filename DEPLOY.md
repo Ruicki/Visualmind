@@ -35,10 +35,10 @@ El servicio ya está configurado: rama `main`, Root Directory `/backend`, builde
    borrado por la prueba vencida, se creará vacío).
 3. Revisa las **Variables** del servicio **Visualmind** (ya existen casi todas):
    - `DATABASE_URL` = `${{Postgres.DATABASE_URL}}` (referencia al servicio Postgres)
-   - `JWT_SECRET` = cadena larga aleatoria (p. ej. `openssl rand -hex 32`)
+   - `JWT_SECRET` = cadena aleatoria de 32+ caracteres (p. ej. `openssl rand -hex 32`). **Sin ella el servidor no arranca.**
    - `NODE_ENV` = `production`
    - `ADMIN_PASSWORD` = contraseña fuerte del admin. Se aplica a `visualmind@admin.com`
-     (o al email de `ADMIN_EMAIL`, si la defines). **Reemplaza la contraseña antigua, que es pública en el repo.**
+     (o al email de `ADMIN_EMAIL`, si la defines). **No reutilices contraseñas antiguas del admin: están en el historial público del repositorio.**
    - `ALLOWED_ORIGINS` = URL de Vercel, p. ej. `https://tu-tienda.vercel.app` (varias separadas por coma, sin espacios)
    - `DB_HOST`, `DB_USER`, etc. sobran si existe `DATABASE_URL` (se ignoran).
 4. Haz merge de estos cambios a `main` (Railway despliega `main`) o pulsa **Redeploy**.
@@ -54,7 +54,7 @@ El servicio ya está configurado: rama `main`, Root Directory `/backend`, builde
    - Instance type: Free
 3. **Environment** (variables):
    - `DATABASE_URL` = la de Neon
-   - `JWT_SECRET` = cadena larga aleatoria (p. ej. `openssl rand -hex 32`)
+   - `JWT_SECRET` = cadena aleatoria de 32+ caracteres (p. ej. `openssl rand -hex 32`). **Sin ella el servidor no arranca.**
    - `NODE_ENV` = `production`
    - `ADMIN_PASSWORD` = contraseña fuerte (admin `visualmind@admin.com`, o el email de `ADMIN_EMAIL`)
    - `ALLOWED_ORIGINS` = URL de Vercel (p. ej. `https://tu-tienda.vercel.app`)
@@ -70,6 +70,8 @@ El servicio ya está configurado: rama `main`, Root Directory `/backend`, builde
    - Datos de cobro (opcionales; lo que quede vacío no se muestra):
      `VITE_WHATSAPP_NUMBER`, `VITE_YAPPY_NUMBER`, `VITE_BANK_NAME`, `VITE_BANK_ACCOUNT_TYPE`,
      `VITE_BANK_ACCOUNT`, `VITE_BANK_HOLDER`
+   - Redes del pie (opcionales): `VITE_INSTAGRAM_URL`, `VITE_FACEBOOK_URL`, `VITE_TIKTOK_URL`
+   - `VITE_SITE_URL` solo si usas un dominio propio (p. ej. `https://visualmind.com.pa`); si no, se usa el de Vercel
 3. **Redeploy** (las variables `VITE_*` se leen al compilar: cambiar una exige redeploy).
 
 ---
@@ -81,7 +83,27 @@ El servicio ya está configurado: rama `main`, Root Directory `/backend`, builde
 - [ ] Entrar al admin con `ADMIN_EMAIL` (o `visualmind@admin.com`) y `ADMIN_PASSWORD`
 - [ ] Compra de prueba: carrito → checkout → elegir pago → aparece en `/admin/orders`
 - [ ] Marcar el pedido de prueba como **Cancelado** (devuelve el stock)
-- [ ] En los logs del backend aparece `Admin asegurado desde variables de entorno`
+- [ ] En los logs del backend aparece `Admin asegurado desde variables de entorno` (o `Admin verificado`)
+- [ ] Compartir la URL de la tienda por WhatsApp muestra la imagen de vista previa
+
+## Avisos de pedidos nuevos al celular (opcional, gratis)
+
+1. En Telegram, habla con **@BotFather** → `/newbot` → copia el token.
+2. Escríbele cualquier mensaje a tu bot y abre `https://api.telegram.org/bot<TOKEN>/getUpdates`: copia `chat.id`.
+3. En el backend define `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` y redespliega.
+   Cada pedido nuevo llega con total, método de pago, artículos, nombre, teléfono y dirección.
+
+## Pedidos sin pagar
+
+Los pedidos por Yappy o transferencia que no se pagan en 48 h se cancelan solos y el stock
+vuelve a la venta (`PENDING_ORDER_HOURS`). Contra entrega no vence. Cada cliente puede tener
+hasta 3 pedidos sin pagar a la vez (`MAX_PENDING_ORDERS`).
+
+## Reportes
+
+En **Admin → Pedidos → Exportar ventas (CSV)** descargas las ventas cobradas de un rango de fechas,
+con subtotal, envío e ITBMS separados (para el contador). En **Admin → Ajustes** descargas la lista
+de suscriptores del newsletter.
 
 ## Flujo de ventas (pago manual)
 

@@ -9,6 +9,7 @@ import {
   PAYMENT_METHODS, computeTotals, findVariant, getPricingConfig, normalizeCartItems, unitPrice
 } from '../services/orderPricing.js';
 import { restockOrderItems, syncProductStock } from '../services/orderExpiry.js';
+import { notifyNewOrder } from '../services/notifier.js';
 
 /** Pedidos sin pagar que un cliente puede tener abiertos a la vez (MAX_PENDING_ORDERS). */
 const maxPendingOrders = () => {
@@ -170,6 +171,7 @@ export const createOrder = async (req, res) => {
 
     await client.query('COMMIT');
     res.status(201).json(order);
+    notifyNewOrder(order); // sin await: el aviso nunca retrasa ni rompe la compra
   } catch (error) {
     await client.query('ROLLBACK');
     if (error.status) {
@@ -217,6 +219,26 @@ export const getAllOrders = async (req, res) => {
     res.json(orders.rows);
   } catch (error) {
     console.error('Error al obtener todas las órdenes:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+};
+
+/**
+ * getOrderEvents
+ * @description (Admin Only) Historial de estados de un pedido.
+ */
+export const getOrderEvents = async (req, res) => {
+  try {
+    const { rows } = await pool.query(
+      `SELECT e.from_status, e.to_status, e.note, e.created_at, u.email AS changed_by_email
+       FROM order_events e LEFT JOIN users u ON u.id = e.changed_by
+       WHERE e.order_id::text = $1
+       ORDER BY e.created_at ASC, e.id ASC`,
+      [req.params.id]
+    );
+    res.json(rows);
+  } catch (error) {
+    console.error('Error al obtener historial del pedido:', error);
     res.status(500).json({ message: 'Error en el servidor' });
   }
 };

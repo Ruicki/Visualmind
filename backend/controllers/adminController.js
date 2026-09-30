@@ -4,6 +4,67 @@
  * Calcula métricas de ventas, stock, pedidos recientes y rendimiento de productos.
  */
 import pool from '../src/config/db.js';
+import { toCsv } from '../services/csv.js';
+
+const isDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
+
+/**
+ * exportSalesCsv
+ * @description (Admin) Ventas cobradas en un rango de fechas, con ITBMS separado,
+ * lista para el contador o para declarar. GET /api/admin/reports/sales.csv?from=YYYY-MM-DD&to=YYYY-MM-DD
+ */
+export const exportSalesCsv = async (req, res) => {
+    const { from, to } = req.query;
+    if ((from && !isDate(from)) || (to && !isDate(to))) {
+        return res.status(400).json({ error: 'Usa fechas con formato AAAA-MM-DD' });
+    }
+    try {
+        const { rows } = await pool.query(`
+            SELECT o.id, o.created_at, COALESCE(o.paid_at, o.created_at) AS paid_at, o.status, o.payment_method,
+                   o.subtotal, o.shipping_cost, o.tax, o.total, o.items, o.shipping_details, u.email
+            FROM orders o LEFT JOIN users u ON u.id = o.user_id
+            WHERE o.status IN ${PAID_STATUSES}
+              AND ($1::date IS NULL OR COALESCE(o.paid_at, o.created_at) >= $1::date)
+              AND ($2::date IS NULL OR COALESCE(o.paid_at, o.created_at) < $2::date + INTERVAL '1 day')
+            ORDER BY COALESCE(o.paid_at, o.created_at) ASC
+        `, [from || null, to || null]);
+        const data = rows.map(o => {
+            const ship = o.shipping_details || {};
+            const items = (o.items || []).map(i => `${i.quantity}x ${i.title}${i.size ? ` (${i.size})` : ''}`).join(' | ');
+            return [
+                String(o.id).slice(0, 8).toUpperCase(), o.created_at, o.paid_at, o.status, o.payment_method,
+                Number(o.subtotal ?? o.total), Number(o.shipping_cost ?? 0), Number(o.tax ?? 0), Number(o.total),
+                ship.name || '', o.email || ship.email || '', ship.phone || '', ship.city || '', items
+            ];
+        });
+        const csv = toCsv(
+            ['Pedido', 'Creado', 'Pagado', 'Estado', 'Método', 'Subtotal', 'Envío', 'ITBMS', 'Total', 'Cliente', 'Email', 'Teléfono', 'Ciudad', 'Artículos'],
+            data
+        );
+        res.set('Content-Type', 'text/csv; charset=utf-8');
+        res.set('Content-Disposition', `attachment; filename="ventas-${from || 'inicio'}-a-${to || 'hoy'}.csv"`);
+        res.send(csv);
+    } catch (error) {
+        console.error('Error al exportar ventas:', error);
+        res.status(500).json({ error: 'Error al exportar ventas' });
+    }
+};
+
+/**
+ * exportNewsletterCsv
+ * @description (Admin) Lista de suscriptores del newsletter.
+ */
+export const exportNewsletterCsv = async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT email, subscribed_at FROM newsletter_subscribers ORDER BY subscribed_at DESC');
+        res.set('Content-Type', 'text/csv; charset=utf-8');
+        res.set('Content-Disposition', 'attachment; filename="suscriptores.csv"');
+        res.send(toCsv(['Email', 'Fecha'], rows.map(r => [r.email, r.subscribed_at])));
+    } catch (error) {
+        console.error('Error al exportar suscriptores:', error);
+        res.status(500).json({ error: 'Error al exportar suscriptores' });
+    }
+};
 
 /**
  * getDashboardStats
@@ -51,6 +112,9 @@ export const getDashboardStats = async (req, res) => {
         // 3. Total de Clientes
         const usersCountResult = await pool.query("SELECT COUNT(*) as total_customers FROM users WHERE role = 'customer'");
         const totalCustomers = parseInt(usersCountResult.rows[0].total_customers || 0);
+
+        const subscribersResult = await pool.query('SELECT COUNT(*)::int AS count FROM newsletter_subscribers');
+        const newsletterSubscribers = subscribersResult.rows[0].count;
 
         // 4. Ventas cobradas de los últimos 7 días (para el gráfico)
         const weeklySalesResult = await pool.query(`
@@ -103,7 +167,8 @@ export const getDashboardStats = async (req, res) => {
                 growth,
                 pendingPayment,
                 totalOrders,
-                totalCustomers
+                totalCustomers,
+                newsletterSubscribers
             },
             weeklySales: weeklySalesResult.rows,
             topSellers: topSellersResult.rows,
