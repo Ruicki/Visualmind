@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
 import api from '../../api/axiosConfig';
-import { getProductImage } from '../../utils/imageUtils';
+import { getProductImage, assetUrl } from '../../utils/imageUtils';
 import { ORDER_STATUSES } from '../../config/storeConfig';
 
 /**
@@ -277,7 +277,7 @@ export default function AdminDashboard() {
                         {data?.lowStock?.map((item, i) => (
                             <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <div style={{ width: '48px', height: '48px', borderRadius: '14px', overflow: 'hidden', border: '1px solid var(--border-light)' }}>
-                                    <img src={getProductImage(null, item.image_url)} alt={item.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }} />
+                                    <img src={getProductImage(null, item.image_url)} alt={item.title} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }} />
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ color: 'white', fontWeight: '600', fontSize: '0.9rem' }}>{item.title}</div>

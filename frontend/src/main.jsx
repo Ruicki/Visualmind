@@ -10,6 +10,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App';
 import './index.css';
 import { LanguageProvider } from './context/LanguageContext';
+import api from './api/axiosConfig';
 
 /**
  * Registro de inicio de la aplicación para depuración en entornos de desarrollo.
@@ -23,10 +24,23 @@ const container = document.getElementById('root');
  * Si el elemento #root no existe, se muestra un mensaje de error fatal
  * directamente en el body para evitar una pantalla en blanco sin contexto.
  */
+/**
+ * Versión de demostración (VITE_DEMO=1): un servidor simulado responde en el navegador.
+ * El build normal de la tienda nunca incluye este código.
+ */
+async function prepareDemo() {
+  if (!import.meta.env.VITE_DEMO) return;
+  const { installDemo } = await import('./demo/mockBackend.js');
+  installDemo(api);
+  const { mountDemoBar } = await import('./demo/demoBar.js');
+  mountDemoBar(api);
+}
+
 if (!container) {
   console.error('Main: Root container not found!');
   document.body.innerHTML = '<h1 style="color: red; padding: 2rem;">Error: #root element not found in HTML</h1>';
 } else {
+  prepareDemo().then(() => {
   try {
     const root = createRoot(container);
     
@@ -50,5 +64,6 @@ if (!container) {
     console.error('Main: Error during rendering:', error);
     container.innerHTML = `<h1 style="color: red; padding: 2rem;">React Render Error: ${error.message}</h1>`;
   }
+  });
 }
 

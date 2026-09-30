@@ -6,7 +6,10 @@
  */
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+
+// La demo publicada como página única usa rutas con # (no hay servidor que las resuelva)
+const Router = import.meta.env.VITE_DEMO ? HashRouter : BrowserRouter;
 import { useEffect } from 'react';
 
 // Páginas principales (Publicas)

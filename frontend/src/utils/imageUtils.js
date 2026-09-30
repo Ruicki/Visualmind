@@ -41,6 +41,12 @@ export const compressImage = async (file, options = {}) => {
 };
 
 /**
+ * URL de un archivo de public/ (logo, placeholder, fotos de /Post) respetando la base del build.
+ * @param {string} path - Ruta con o sin "/" inicial
+ */
+export const assetUrl = (path) => `${import.meta.env.BASE_URL}${String(path).replace(/^\/+/, '')}`;
+
+/**
  * Normaliza la URL de una imagen del producto.
  * Gestiona rutas locales del servidor y URLs externas de placeholders.
  * @param {string|number} productId - ID opcional (para futura lógica de caché).
@@ -48,13 +54,16 @@ export const compressImage = async (file, options = {}) => {
  * @returns {string} - URL completa y válida para el atributo src.
  */
 export const getProductImage = (productId, imageUrl) => {
-  // Placeholder si no hay imagen
-  if (!imageUrl) return 'https://placehold.co/800x1000?text=Visualmind';
+  // Placeholder propio si no hay imagen (sin depender de servicios externos)
+  if (!imageUrl) return assetUrl('placeholder-product.png');
   
   // Si ya es una URL completa o un DataURL, se retorna tal cual
   if (imageUrl.startsWith('http') || imageUrl.startsWith('data:')) return imageUrl;
   
-  // Construcción de la URL del backend
+  // Las fotos que viven en el frontend (public/, p. ej. /Post/...) no están en el backend
+  if (!/^\/?uploads\//.test(imageUrl)) return assetUrl(imageUrl);
+
+  // Construcción de la URL del backend (solo imágenes subidas desde el admin)
   // En desarrollo sin VITE_API_URL, usamos rutas relativas para activar el Proxy de Vite
   const apiBase = import.meta.env.VITE_API_URL 
     ? import.meta.env.VITE_API_URL.replace(/\/api$/, '') 

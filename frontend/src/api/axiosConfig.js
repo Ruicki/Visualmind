@@ -7,7 +7,7 @@
 
 import axios from 'axios';
 
-if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL && !import.meta.env.VITE_DEMO) {
     // Sin esta variable el sitio publicado intenta hablar con localhost y se ve sin datos.
     console.error('[API] Falta VITE_API_URL en el build de producción (Vercel → Settings → Environment Variables).');
 }
@@ -56,7 +56,9 @@ api.interceptors.response.use(
         if (status === 401 && hadToken && !url.includes('/auth/login')) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
-            if (!window.location.pathname.startsWith('/login')) {
+            if (import.meta.env.VITE_DEMO) {
+                window.location.hash = '#/login';
+            } else if (!window.location.pathname.startsWith('/login')) {
                 window.location.assign('/login');
             }
         }

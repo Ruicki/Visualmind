@@ -11,7 +11,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { Link } from 'react-router-dom';
 import QuickViewModal from './QuickViewModal';
-import { getProductImage } from '../utils/imageUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 
 /**
  * ProductCard
@@ -93,7 +93,7 @@ export default function ProductCard(props) {
                             src={displayImage}
                             alt={title}
                             loading="lazy"
-                            onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                            onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                             style={{
                                 width: '100%',
                                 height: '100%',
@@ -111,7 +111,7 @@ export default function ProductCard(props) {
                                 src={hoverImage}
                                 alt={`${title} hover`}
                                 loading="lazy"
-                                onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                                onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                 style={{
                                     width: '100%',
                                     height: '100%',

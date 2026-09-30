@@ -4,7 +4,7 @@ import { Eye, Loader, MessageCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
 import { ORDER_STATUSES, ORDER_TRANSITIONS, getPaymentMethod } from '../../config/storeConfig';
 import { downloadFromApi } from '../../api/download';
-import { getProductImage } from '../../utils/imageUtils';
+import { getProductImage, assetUrl } from '../../utils/imageUtils';
 
 /** Los pedidos antiguos pueden traer items/shipping como string JSON. */
 const parseJson = (value, fallback) => {
@@ -274,7 +274,7 @@ export default function AdminOrders() {
                                         <div key={idx} style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
                                             <img
                                                 src={getProductImage(item.product_id, item.image_url)}
-                                                onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                                                onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                                 alt=""
                                                 style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }}
                                             />

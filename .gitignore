@@ -142,3 +142,6 @@ backend/src/find_duplicates.js
 
 # Caché de Vite
 .vite/
+
+# Build de la demo
+frontend/dist-demo/

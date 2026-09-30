@@ -15,7 +15,7 @@ import { motion } from 'framer-motion';
 import axiosInstance from '../api/axiosConfig';
 import ProductCard from '../components/ProductCard';
 import { getTimeLeft } from '../utils/heroUtils';
-import { getProductImage } from '../utils/imageUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 import SEO from '../components/SEO';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -273,7 +273,7 @@ export default function NewArrivals() {
                                                 <img
                                                     src={bannerUrl}
                                                     alt={event.name}
-                                                    onError={e => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                                                    onError={e => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                                     style={{
                                                         width: '100%',
                                                         height: '100%',
@@ -469,7 +469,7 @@ export default function NewArrivals() {
                                             <img
                                                 src={bannerUrl}
                                                 alt={event.name}
-                                                onError={e => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                                                onError={e => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.6)' }}
                                             />
                                             {/* Badge PRÓXIMAMENTE */}

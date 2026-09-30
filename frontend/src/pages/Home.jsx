@@ -14,6 +14,7 @@ import axiosInstance from '../api/axiosConfig';
 import { ChevronRight, ChevronLeft, ArrowRight, Clock, Zap } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { isProductVisible } from '../utils/productUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 
 /**
  * Componente Home
@@ -30,7 +31,7 @@ import { isProductVisible } from '../utils/productUtils';
  * Orquestador principal que renderiza el Hero estacional, secciones de 
  * productos destacados, categorías principales y contenido de campaña.
  */
-const FALLBACK_IMG = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800';
+const FALLBACK_IMG = assetUrl('og-image.jpg');
 
 export default function Home() {
   const { t } = useLanguage();
@@ -303,7 +304,7 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'center' }}>
             <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', height: '600px' }}>
               <img 
-                src={featuredCollection.image_url || FALLBACK_IMG} 
+                src={featuredCollection.image_url ? getProductImage(null, featuredCollection.image_url) : FALLBACK_IMG} 
                 alt={featuredCollection.name}
                 loading="lazy"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}

@@ -8,7 +8,7 @@ import { X, Trash2, Minus, Plus, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { getProductImage } from '../utils/imageUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 import { computeTotals, usePricingConfig } from '../utils/pricing';
 
 export default function Cart() {
@@ -74,7 +74,7 @@ export default function Cart() {
                                             <img
                                                 src={item.image || getProductImage(item.image, item.image_url)}
                                                 alt={item.title}
-                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/100x100?text=?'; }}
+                                                onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />
                                         </div>

@@ -14,6 +14,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import SearchModal from './SearchModal';
 import ThemeToggle from './ThemeToggle';
+import { assetUrl } from '../utils/imageUtils';
 
 /**
  * Navbar
@@ -91,7 +92,7 @@ export default function Navbar() {
           <div className="navbar-logo">
             <Link to="/">
               <img 
-                src="/Logo.png" 
+                src={assetUrl('Logo.png')} 
                 alt="Visualmind" 
                 className="navbar-logo-img"
                 onError={(e) => {

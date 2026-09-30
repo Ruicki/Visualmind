@@ -17,6 +17,8 @@ const siteUrlPlugin = {
 
 // https://vite.dev/config/
 export default defineConfig({
+  // La demo (VITE_DEMO=1) se publica como página única: rutas de archivos relativas
+  base: process.env.VITE_DEMO ? './' : '/',
   plugins: [react(), siteUrlPlugin],
   server: {
     port: 5173,

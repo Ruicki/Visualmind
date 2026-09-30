@@ -5,7 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { CheckCircle, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
-import { getProductImage } from '../utils/imageUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 import { PAYMENT_METHODS } from '../config/storeConfig';
 import { computeTotals, usePricingConfig } from '../utils/pricing';
 import { trackInitiateCheckout } from '../utils/analytics';
@@ -243,7 +243,7 @@ export default function Checkout() {
                 <div style={{ width: '55px', height: '55px', borderRadius: '8px', overflow: 'hidden', background: '#333', flexShrink: 0 }}>
                   <img
                     src={item.image || getProductImage(item.image, item.image_url)}
-                    onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                    onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                     loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     alt={item.title}

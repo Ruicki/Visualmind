@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { assetUrl } from '../utils/imageUtils';
 
 /**
  * @component About
@@ -27,7 +28,7 @@ export default function About() {
                 </div>
                 <div style={{ height: '500px', background: '#1e293b', borderRadius: '32px', overflow: 'hidden' }}>
                     <img
-                        src="https://images.unsplash.com/photo-1578587018452-892bacefd3f2?q=80&w=1000&auto=format&fit=crop"
+                        src={assetUrl('og-image.jpg')}
                         alt="Design Process"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />

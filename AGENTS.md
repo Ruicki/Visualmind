@@ -101,6 +101,10 @@ VITE_SITE_URL                           # URL pública para vistas previas; en V
 VITE_META_PIXEL_ID                      # opcional: píxel de Meta
 ```
 
+## Demo sin backend
+`cd frontend && npm run build:demo` genera `dist-demo/`: la tienda completa con un servidor simulado en el navegador (`src/demo/mockBackend.js`, datos en localStorage, `HashRouter`, base relativa). Sirve para probar flujos sin desplegar. El build normal no incluye nada de `src/demo/`. Si cambias reglas del backend (precios, estados, stock), replícalas en `mockBackend.js`. Las fotos de la demo usan nombres `img/<slug>.webp`: al publicarla, copia las de `public/Post` con esos nombres (ver el mapa `img/... → Post/...` que sale de las rutas del seed).
+- Las imágenes del frontend (`/Post/...`, logo, placeholders) se sirven desde el propio sitio con `assetUrl`/`getProductImage`; solo `/uploads/...` va al backend.
+
 ## Notas de testing
 - Los tests importan lógica pura duplicada (no los componentes reales) para hacer property-based testing sin montar React
 - fast-check arbitraries están definidos por archivo de test
