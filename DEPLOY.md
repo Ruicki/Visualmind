@@ -86,13 +86,6 @@ El servicio ya está configurado: rama `main`, Root Directory `/backend`, builde
 - [ ] En los logs del backend aparece `Admin asegurado desde variables de entorno` (o `Admin verificado`)
 - [ ] Compartir la URL de la tienda por WhatsApp muestra la imagen de vista previa
 
-## Avisos de pedidos nuevos al celular (opcional, gratis)
-
-1. En Telegram, habla con **@BotFather** → `/newbot` → copia el token.
-2. Escríbele cualquier mensaje a tu bot y abre `https://api.telegram.org/bot<TOKEN>/getUpdates`: copia `chat.id`.
-3. En el backend define `TELEGRAM_BOT_TOKEN` y `TELEGRAM_CHAT_ID` y redespliega.
-   Cada pedido nuevo llega con total, método de pago, artículos, nombre, teléfono y dirección.
-
 ## Pedidos sin pagar
 
 Los pedidos por Yappy o transferencia que no se pagan en 48 h se cancelan solos y el stock
@@ -102,7 +95,7 @@ hasta 3 pedidos sin pagar a la vez (`MAX_PENDING_ORDERS`).
 ## Reportes
 
 En **Admin → Pedidos → Exportar ventas (CSV)** descargas las ventas cobradas de un rango de fechas,
-con subtotal, envío e ITBMS separados (para el contador). En **Admin → Ajustes** descargas la lista
+con subtotal, envío y total. En **Admin → Ajustes** descargas la lista
 de suscriptores del newsletter.
 
 ## Flujo de ventas (pago manual)
@@ -112,17 +105,17 @@ de suscriptores del newsletter.
 3. En `/admin/orders` el admin cambia el estado: **Pendiente de pago → Pagado → Enviado → Entregado**.
 4. **Cancelado** devuelve el stock automáticamente (no se puede reabrir).
 
-## Precios, envío e impuestos
+## Precios y envío
 
 El servidor calcula todo (`backend/services/orderPricing.js`) y el carrito/checkout leen la misma
 configuración desde `GET /api/orders/pricing`, así que lo mostrado = lo cobrado.
+Los productos no llevan ITBMS: total = subtotal + envío.
 Se cambia con variables del backend, **sin tocar código** (reinicia el servicio tras cambiarlas):
 
 | Variable | Por defecto | Efecto |
 |---|---|---|
 | `SHIPPING_COST` | `0` | Costo de envío. `0` = envío gratis para todos (situación actual) |
 | `FREE_SHIPPING_THRESHOLD` | `0` | Si es > 0, el envío es gratis cuando el subtotal lo supera |
-| `TAX_RATE` | `0.07` | ITBMS |
 
 Ejemplo futuro: `SHIPPING_COST=5` y `FREE_SHIPPING_THRESHOLD=50` → $5 de envío, gratis desde $50.
 

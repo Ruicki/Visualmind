@@ -142,7 +142,7 @@ export default function AdminOrders() {
         <div>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.8rem', fontWeight: '800', margin: 0 }}>{t('admin.orders') || 'Pedidos'}</h2>
-                {/* Exportar ventas cobradas (con ITBMS separado) para el contador */}
+                {/* Exportar ventas cobradas para llevar la contabilidad */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '0.5rem', fontSize: '0.8rem' }}>
                     <label style={{ display: 'grid', gap: '0.2rem', color: 'var(--text-secondary)' }}>Desde
                         <input type="date" value={range.from} max={range.to} onChange={e => setRange(r => ({ ...r, from: e.target.value }))}
@@ -290,7 +290,6 @@ export default function AdminOrders() {
                                     <>
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Subtotal</span><span>{money(selectedOrder.subtotal)}</span></div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Envío</span><span>{money(selectedOrder.shipping_cost)}</span></div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>ITBMS</span><span>{money(selectedOrder.tax)}</span></div>
                                     </>
                                 )}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.1rem' }}><span>Total</span><span>{money(selectedOrder.total)}</span></div>

@@ -8,7 +8,8 @@
  * - SHIPPING_COST (por defecto 0 → envío gratis para todos)
  * - FREE_SHIPPING_THRESHOLD (por defecto 0 → sin umbral; si es > 0, el envío es gratis
  *   cuando el subtotal lo supera)
- * - TAX_RATE (por defecto 0.07 → ITBMS de Panamá)
+ *
+ * Los productos no llevan ITBMS: total = subtotal + envío.
  */
 
 export const PAYMENT_METHODS = ['yappy', 'transfer', 'cash_on_delivery'];
@@ -29,7 +30,6 @@ export function getPricingConfig() {
   return {
     shippingCost: envNumber('SHIPPING_COST', 0),
     freeShippingThreshold: envNumber('FREE_SHIPPING_THRESHOLD', 0),
-    taxRate: envNumber('TAX_RATE', 0.07),
   };
 }
 
@@ -43,8 +43,7 @@ export function computeTotals(subtotal, config = getPricingConfig()) {
   const sub = round2(subtotal);
   const freeByThreshold = config.freeShippingThreshold > 0 && sub > config.freeShippingThreshold;
   const shipping = freeByThreshold ? 0 : round2(config.shippingCost);
-  const tax = round2(sub * config.taxRate);
-  return { subtotal: sub, shipping, tax, total: round2(sub + shipping + tax) };
+  return { subtotal: sub, shipping, total: round2(sub + shipping) };
 }
 
 /** Normaliza el color que llega del carrito (puede ser string u objeto {name}). */

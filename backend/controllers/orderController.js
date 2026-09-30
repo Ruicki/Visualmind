@@ -9,7 +9,6 @@ import {
   PAYMENT_METHODS, computeTotals, findVariant, getPricingConfig, normalizeCartItems, unitPrice
 } from '../services/orderPricing.js';
 import { restockOrderItems, syncProductStock } from '../services/orderExpiry.js';
-import { notifyNewOrder } from '../services/notifier.js';
 
 /** Pedidos sin pagar que un cliente puede tener abiertos a la vez (MAX_PENDING_ORDERS). */
 const maxPendingOrders = () => {
@@ -30,7 +29,7 @@ const clip = (value, max) => String(value ?? '').trim().slice(0, max);
 
 /**
  * getPricing
- * @description (Público) Configuración de envío e impuestos para que el carrito y el
+ * @description (Público) Configuración de envío para que el carrito y el
  * checkout muestren exactamente lo que el servidor cobrará.
  */
 export const getPricing = (req, res) => {
@@ -40,7 +39,7 @@ export const getPricing = (req, res) => {
 /**
  * createOrder
  * @description Registra una nueva orden de compra.
- * El servidor es la fuente de verdad: precios, envío, impuestos y stock se calculan
+ * El servidor es la fuente de verdad: precios, envío y stock se calculan
  * aquí (nunca se confía en el total enviado por el cliente). Todo ocurre en una
  * transacción con bloqueo de filas para evitar vender más unidades de las que hay.
  */
@@ -149,8 +148,8 @@ export const createOrder = async (req, res) => {
 
     const newOrder = await client.query(
       `INSERT INTO orders (user_id, items, subtotal, shipping_cost, tax, total, status, payment_method, shipping_details)
-       VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8) RETURNING *`,
-      [userId, JSON.stringify(orderItems), totals.subtotal, totals.shipping, totals.tax, totals.total,
+       VALUES ($1, $2, $3, $4, 0, $5, 'pending', $6, $7) RETURNING *`,
+      [userId, JSON.stringify(orderItems), totals.subtotal, totals.shipping, totals.total,
        paymentMethod, JSON.stringify(shippingDetailsClean)]
     );
     const order = newOrder.rows[0];
@@ -171,7 +170,6 @@ export const createOrder = async (req, res) => {
 
     await client.query('COMMIT');
     res.status(201).json(order);
-    notifyNewOrder(order); // sin await: el aviso nunca retrasa ni rompe la compra
   } catch (error) {
     await client.query('ROLLBACK');
     if (error.status) {

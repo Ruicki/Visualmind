@@ -66,7 +66,7 @@ const CheckoutForm = () => {
     setError(null);
 
     try {
-      // El servidor recalcula precios, envío, ITBMS y valida el stock
+      // El servidor recalcula precios y envío, y valida el stock
       const { data: order } = await api.post('/orders', {
         items: cartItems.map(item => ({
           product_id: item.id,
@@ -88,7 +88,6 @@ const CheckoutForm = () => {
             items: Array.isArray(order.items) ? order.items : orderItems,
             subtotal: parseFloat(order.subtotal),
             shipping: parseFloat(order.shipping_cost),
-            tax: parseFloat(order.tax),
             total: parseFloat(order.total),
             paymentMethod: order.payment_method,
             date: new Date(order.created_at).toLocaleDateString(),
@@ -262,7 +261,7 @@ export default function Checkout() {
             ))}
           </div>
 
-          {/* Cálculo de Totales (Subtotal, Envío, Impuestos) */}
+          {/* Cálculo de Totales (Subtotal, Envío) */}
           <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               <span>{t('cart.subtotal')}</span>
@@ -273,10 +272,6 @@ export default function Checkout() {
               <span style={{ color: totals.shipping > 0 ? 'var(--text-primary)' : '#10b981', fontWeight: totals.shipping > 0 ? 'normal' : '700' }}>
                 {totals.shipping > 0 ? `$${totals.shipping.toFixed(2)}` : t('cart.free')}
               </span>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              <span>{t('cart.taxes')} ({Math.round(pricing.taxRate * 100)}%)</span>
-              <span>${totals.tax.toFixed(2)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.3rem', fontWeight: '900', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
               <span>{t('cart.total')}</span>

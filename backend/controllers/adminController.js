@@ -10,8 +10,8 @@ const isDate = (v) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 /**
  * exportSalesCsv
- * @description (Admin) Ventas cobradas en un rango de fechas, con ITBMS separado,
- * lista para el contador o para declarar. GET /api/admin/reports/sales.csv?from=YYYY-MM-DD&to=YYYY-MM-DD
+ * @description (Admin) Ventas cobradas en un rango de fechas (subtotal, envío y total),
+ * lista para llevar la contabilidad. GET /api/admin/reports/sales.csv?from=YYYY-MM-DD&to=YYYY-MM-DD
  */
 export const exportSalesCsv = async (req, res) => {
     const { from, to } = req.query;
@@ -21,7 +21,7 @@ export const exportSalesCsv = async (req, res) => {
     try {
         const { rows } = await pool.query(`
             SELECT o.id, o.created_at, COALESCE(o.paid_at, o.created_at) AS paid_at, o.status, o.payment_method,
-                   o.subtotal, o.shipping_cost, o.tax, o.total, o.items, o.shipping_details, u.email
+                   o.subtotal, o.shipping_cost, o.total, o.items, o.shipping_details, u.email
             FROM orders o LEFT JOIN users u ON u.id = o.user_id
             WHERE o.status IN ${PAID_STATUSES}
               AND ($1::date IS NULL OR COALESCE(o.paid_at, o.created_at) >= $1::date)
@@ -33,12 +33,12 @@ export const exportSalesCsv = async (req, res) => {
             const items = (o.items || []).map(i => `${i.quantity}x ${i.title}${i.size ? ` (${i.size})` : ''}`).join(' | ');
             return [
                 String(o.id).slice(0, 8).toUpperCase(), o.created_at, o.paid_at, o.status, o.payment_method,
-                Number(o.subtotal ?? o.total), Number(o.shipping_cost ?? 0), Number(o.tax ?? 0), Number(o.total),
+                Number(o.subtotal ?? o.total), Number(o.shipping_cost ?? 0), Number(o.total),
                 ship.name || '', o.email || ship.email || '', ship.phone || '', ship.city || '', items
             ];
         });
         const csv = toCsv(
-            ['Pedido', 'Creado', 'Pagado', 'Estado', 'Método', 'Subtotal', 'Envío', 'ITBMS', 'Total', 'Cliente', 'Email', 'Teléfono', 'Ciudad', 'Artículos'],
+            ['Pedido', 'Creado', 'Pagado', 'Estado', 'Método', 'Subtotal', 'Envío', 'Total', 'Cliente', 'Email', 'Teléfono', 'Ciudad', 'Artículos'],
             data
         );
         res.set('Content-Type', 'text/csv; charset=utf-8');

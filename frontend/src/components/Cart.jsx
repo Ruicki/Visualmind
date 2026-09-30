@@ -133,10 +133,6 @@ export default function Cart() {
                                     <span style={{ color: 'var(--text-secondary)' }}>{t('cart.shipping')}</span>
                                     <span>{totals.shipping > 0 ? `$${totals.shipping.toFixed(2)}` : t('cart.free')}</span>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--text-secondary)' }}>{t('cart.taxes')}</span>
-                                    <span>${totals.tax.toFixed(2)}</span>
-                                </div>
 
                                 {/* Total Final acumulado */}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>

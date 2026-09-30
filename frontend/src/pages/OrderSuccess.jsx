@@ -189,10 +189,6 @@ export default function OrderSuccess() {
               <span>Envío</span>
               <span>{orderData.shipping > 0 ? money(orderData.shipping) : 'Gratis'}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-              <span>ITBMS</span>
-              <span>{money(orderData.tax)}</span>
-            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.2rem', fontWeight: '900', marginTop: '0.5rem' }}>
               <span>Total a pagar</span>
               <span>{money(orderData.total)}</span>

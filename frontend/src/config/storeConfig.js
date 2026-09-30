@@ -3,7 +3,7 @@
  * @description Datos de cobro de la tienda (pago manual).
  * Se configuran con variables de entorno en Vercel (Settings → Environment Variables)
  * para poder cambiarlos sin tocar código. Si una variable está vacía, ese dato no se muestra.
- * Las reglas de precio (envío/ITBMS) viven en el backend: services/orderPricing.js.
+ * Las reglas de precio (envío) viven en el backend: services/orderPricing.js.
  */
 
 const env = import.meta.env;
