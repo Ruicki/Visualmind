@@ -7,6 +7,7 @@
 import pool from '../src/config/db.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Hash de relleno: el login tarda lo mismo exista o no el email
@@ -167,6 +168,82 @@ export const updateMe = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Error en el servidor' });
+  }
+};
+
+const hashToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex');
+export const RESET_LINK_HOURS = 24;
+
+/** URL pública de la tienda para armar enlaces (FRONTEND_URL o el primer origen permitido). */
+export const frontendUrl = () =>
+  (process.env.FRONTEND_URL || (process.env.ALLOWED_ORIGINS || 'http://localhost:5173').split(',')[0]).trim().replace(/\/$/, '');
+
+/**
+ * createResetLink
+ * @description (Admin) Genera un enlace de un solo uso para que un cliente cambie su
+ * contraseña. El admin se lo envía por WhatsApp; no hace falta un servicio de correo.
+ */
+export const createResetLink = async (req, res) => {
+  const email = normalizeEmail(req.body?.email);
+  try {
+    const { rows } = await pool.query('SELECT id FROM users WHERE LOWER(email) = $1', [email]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: 'No hay ninguna cuenta con ese email' });
+    }
+    const token = crypto.randomBytes(32).toString('base64url');
+    const expires = await pool.query(
+      `INSERT INTO password_resets (token_hash, user_id, expires_at, created_by)
+       VALUES ($1, $2, NOW() + make_interval(hours => $3), $4) RETURNING expires_at`,
+      [hashToken(token), rows[0].id, RESET_LINK_HOURS, req.user.id]
+    );
+    res.status(201).json({
+      url: `${frontendUrl()}/reset-password?token=${token}`,
+      expires_at: expires.rows[0].expires_at
+    });
+  } catch (error) {
+    console.error('Error al crear enlace de recuperación:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  }
+};
+
+/**
+ * resetPassword
+ * @description Cambia la contraseña con un enlace válido. El enlace deja de servir tras
+ * usarse, y todas las sesiones abiertas de esa cuenta se cierran.
+ */
+export const resetPassword = async (req, res) => {
+  const token = String(req.body?.token || '');
+  const problem = passwordProblem(req.body?.password);
+  if (!token) return res.status(400).json({ message: 'El enlace no es válido' });
+  if (problem) return res.status(400).json({ message: problem });
+
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `SELECT user_id FROM password_resets
+       WHERE token_hash = $1 AND used_at IS NULL AND expires_at > NOW()
+       FOR UPDATE`,
+      [hashToken(token)]
+    );
+    if (rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({ message: 'El enlace venció o ya se usó. Pide uno nuevo por WhatsApp.' });
+    }
+    const hash = await bcrypt.hash(String(req.body.password), 10);
+    await client.query(
+      'UPDATE users SET password_hash = $1, token_version = token_version + 1 WHERE id = $2',
+      [hash, rows[0].user_id]
+    );
+    await client.query('UPDATE password_resets SET used_at = NOW() WHERE user_id = $1 AND used_at IS NULL', [rows[0].user_id]);
+    await client.query('COMMIT');
+    res.json({ message: 'Contraseña actualizada. Ya puedes iniciar sesión.' });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error al restablecer contraseña:', error);
+    res.status(500).json({ message: 'Error en el servidor' });
+  } finally {
+    client.release();
   }
 };
 

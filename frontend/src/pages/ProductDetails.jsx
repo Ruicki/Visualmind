@@ -10,6 +10,8 @@ import { getProductImage } from '../utils/imageUtils';
 import { isProductVisible } from '../utils/productUtils';
 import { usePricingConfig } from '../utils/pricing';
 import SEO from '../components/SEO';
+import ShareButtons from '../components/ShareButtons';
+import { trackViewContent, trackAddToCart } from '../utils/analytics';
 
 /**
  * @component ProductDetails
@@ -64,6 +66,7 @@ export default function ProductDetails() {
           };
           
           setProduct(found);
+          trackViewContent(found);
           
           // Configuración inicial de selección
           const firstColor = found.colors?.[0] || null;
@@ -298,6 +301,7 @@ export default function ProductDetails() {
                 for (let i = 0; i < quantity; i++) {
                   addToCart({ ...product, image: mainImage, selectedColor, selectedSize });
                 }
+                trackAddToCart(product, quantity);
               }}
             >
               <ShoppingBag size={20} /> {inStock ? (t('product.add_to_bag') || 'Agregar') : 'Agotado'}
@@ -312,6 +316,8 @@ export default function ProductDetails() {
               <Heart size={22} fill={isInWishlist(product.id) ? '#ff4d4d' : 'none'} />
             </button>
           </div>
+
+          <ShareButtons product={product} />
 
           {/* Trust Badges: USP (Unique Selling Propositions) */}
           <div className="product-detail-trust" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '2rem' }}>

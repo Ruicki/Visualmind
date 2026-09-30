@@ -45,7 +45,7 @@ export const getPricing = (req, res) => {
  */
 export const createOrder = async (req, res) => {
   const { items, shippingDetails, paymentMethod } = req.body || {};
-  const userId = req.user.id;
+  const userId = req.user?.id || null; // null = compra como invitado
 
   let lines;
   try {
@@ -65,10 +65,25 @@ export const createOrder = async (req, res) => {
     return res.status(400).json({ message: `Faltan datos de envío: ${missing.join(', ')}` });
   }
 
-  const pendingRes = await pool.query(
-    "SELECT COUNT(*)::int AS count FROM orders WHERE user_id = $1 AND status = 'pending'",
-    [userId]
-  );
+  const guestEmail = String(shipping.email || '').trim().toLowerCase();
+  if (!userId && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guestEmail)) {
+    return res.status(400).json({ message: 'Escribe un email válido para enviarte la confirmación.' });
+  }
+  const phoneDigits = String(shipping.phone || '').replace(/\D/g, '');
+
+  // Tope de pedidos sin pagar: por cuenta, o por teléfono/email si es invitado
+  const pendingRes = userId
+    ? await pool.query(
+      "SELECT COUNT(*)::int AS count FROM orders WHERE user_id = $1 AND status = 'pending'",
+      [userId]
+    )
+    : await pool.query(
+      `SELECT COUNT(*)::int AS count FROM orders
+       WHERE status = 'pending' AND user_id IS NULL
+         AND (regexp_replace(shipping_details->>'phone', '\\D', '', 'g') = $1
+              OR LOWER(shipping_details->>'email') = $2)`,
+      [phoneDigits, guestEmail]
+    );
   if (pendingRes.rows[0].count >= maxPendingOrders()) {
     return res.status(429).json({
       message: 'Tienes pedidos pendientes de pago. Completa el pago o escríbenos por WhatsApp antes de hacer otro.'
@@ -138,7 +153,7 @@ export const createOrder = async (req, res) => {
     const totals = computeTotals(subtotal);
     const shippingDetailsClean = {
       name: clip(shipping.name, 120),
-      email: clip(shipping.email || req.user.email, 255),
+      email: clip(shipping.email || req.user?.email, 255),
       phone: clip(shipping.phone, 30),
       address: clip(shipping.address, 300),
       city: clip(shipping.city, 100),

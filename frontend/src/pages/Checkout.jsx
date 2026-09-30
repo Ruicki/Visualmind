@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { CheckCircle, Loader } from 'lucide-react';
@@ -8,6 +8,7 @@ import api from '../api/axiosConfig';
 import { getProductImage } from '../utils/imageUtils';
 import { PAYMENT_METHODS } from '../config/storeConfig';
 import { computeTotals, usePricingConfig } from '../utils/pricing';
+import { trackInitiateCheckout } from '../utils/analytics';
 
 /**
  * @component CheckoutForm
@@ -51,11 +52,6 @@ const CheckoutForm = () => {
    */
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!user) {
-      setError(t('checkout.login_required') || "Inicia sesión para completar tu compra.");
-      return;
-    }
 
     if (!paymentMethod) {
       setError('Selecciona un método de pago.');
@@ -106,6 +102,15 @@ const CheckoutForm = () => {
 
   return (
     <form onSubmit={handleSubmit}>
+      {!user && (
+        <div style={{ marginBottom: '2rem', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+          {t('checkout.guest_note', 'Estás comprando como invitado.')}{' '}
+          <Link to="/login" state={{ from: '/checkout' }} style={{ color: 'var(--primary)', fontWeight: 600 }}>
+            {t('checkout.guest_login', 'Inicia sesión')}
+          </Link>{' '}
+          {t('checkout.guest_benefit', 'para guardar tus datos y ver tus pedidos.')}
+        </div>
+      )}
       {/* Sección de Envío: Captura de datos del destinatario */}
       <div style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '1.3rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
@@ -197,30 +202,25 @@ const CheckoutForm = () => {
 /**
  * @component Checkout
  * @description Contenedor principal de la página de checkout.
- * Implementa un Guard de autenticación para asegurar que solo usuarios logueados accedan.
- * 
- * @returns {JSX.Element|null} La vista de checkout o redirección si no hay sesión.
+ * Se puede comprar con cuenta o como invitado (sin registrarse).
+ *
+ * @returns {JSX.Element|null} La vista de checkout.
  */
 export default function Checkout() {
   const { cartItems, getCartTotal } = useCart();
   const { t } = useLanguage();
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
+  const { loading } = useAuth();
   const pricing = usePricingConfig();
   const totals = computeTotals(getCartTotal(), pricing);
 
-  /**
-   * Middleware de navegación: Redirige al login si se intenta acceder sin sesión activa,
-   * preservando el destino original mediante el estado de la ruta.
-   */
+  // Evento de analítica al entrar al checkout (una vez por visita)
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/login', { state: { from: '/checkout', message: 'Inicia sesión para completar tu compra.' }, replace: true });
-    }
-  }, [user, loading, navigate]);
+    if (cartItems.length > 0) trackInitiateCheckout(cartItems, totals.total);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Evitar parpadeo de contenido mientras se verifica la sesión
-  if (loading || !user) {
+  // Evitar parpadeo mientras se recupera la sesión guardada
+  if (loading) {
     return null;
   }
 

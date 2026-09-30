@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { Mail, Lock, User, ArrowRight, Loader } from 'lucide-react';
+import { whatsappLink } from '../config/storeConfig';
 
 /**
  * @component Login
@@ -178,6 +179,16 @@ export default function Login() {
                                 }}
                             />
                         </div>
+                        {isLogin && (
+                            <a
+                                href={whatsappLink(`Hola, olvidé la contraseña de mi cuenta en Visualmind${formData.email ? ` (${formData.email})` : ''}. ¿Me ayudan a cambiarla?`)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ display: 'block', textAlign: 'right', marginTop: '0.6rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+                            >
+                                {t('auth.forgot', '¿Olvidaste tu contraseña?')}
+                            </a>
+                        )}
                     </div>
 
                     <button

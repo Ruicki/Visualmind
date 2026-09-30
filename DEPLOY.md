@@ -86,6 +86,21 @@ El servicio ya está configurado: rama `main`, Root Directory `/backend`, builde
 - [ ] En los logs del backend aparece `Admin asegurado desde variables de entorno` (o `Admin verificado`)
 - [ ] Compartir la URL de la tienda por WhatsApp muestra la imagen de vista previa
 
+## Compras sin cuenta, contraseñas olvidadas y compartir
+
+- Los clientes pueden comprar **sin registrarse** (invitado). En el admin esos pedidos llevan la etiqueta *Invitado*.
+- Si un cliente olvida su contraseña, te escribe por WhatsApp desde el login. En **Admin → Ajustes → Restablecer
+  contraseña** generas un enlace (sirve una vez, vence en 24 h) y se lo envías por WhatsApp. No hace falta servicio de correo.
+- Cada producto tiene botones para compartir. El enlace (`https://<backend>/share/p/<id>`) muestra foto, nombre y precio
+  en WhatsApp/Facebook. Define `FRONTEND_URL` en el backend con la URL de la tienda para que redirija bien.
+
+## Instagram / Facebook Shopping y Google
+
+1. **Catálogo:** en Meta Commerce Manager → Catálogo → Orígenes de datos → *Feed programado*, pega
+   `https://<backend>/api/feeds/catalog.csv` (se actualiza solo). Sirve igual para Google Merchant Center.
+2. **Píxel:** crea un píxel en el Administrador de eventos de Meta y define `VITE_META_PIXEL_ID` en Vercel.
+   La tienda envía PageView, ViewContent, AddToCart, InitiateCheckout y Purchase para medir y hacer remarketing.
+
 ## Pedidos sin pagar
 
 Los pedidos por Yappy o transferencia que no se pagan en 48 h se cancelan solos y el stock

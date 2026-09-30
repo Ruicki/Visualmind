@@ -247,7 +247,12 @@ export default function AdminOrders() {
                             <section>
                                 <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Cliente y envío</h4>
                                 <div style={{ fontWeight: 600 }}>{detail.shipping.name || '—'}</div>
-                                <div>{detail.shipping.email || selectedOrder.user_email}</div>
+                                <div>
+                                    {detail.shipping.email || selectedOrder.user_email}
+                                    {!selectedOrder.user_id && (
+                                        <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '999px', border: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>Invitado</span>
+                                    )}
+                                </div>
                                 {detail.shipping.phone && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         {detail.shipping.phone}

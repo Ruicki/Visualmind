@@ -6,6 +6,8 @@ import confetti from 'canvas-confetti';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { getPaymentMethod, whatsappLink } from '../config/storeConfig';
+import { useAuth } from '../context/AuthContext';
+import { trackPurchase } from '../utils/analytics';
 
 /**
  * @component OrderSuccess
@@ -19,6 +21,7 @@ export default function OrderSuccess() {
   
   // Datos del pedido pasados vía state desde Checkout
   const orderData = location.state?.order;
+  const { user } = useAuth();
   const shortId = orderData ? String(orderData.id).slice(0, 8).toUpperCase() : '';
   const payment = getPaymentMethod(orderData?.paymentMethod);
   const paymentDetails = (payment?.details || []).filter(([, value]) => value);
@@ -26,6 +29,7 @@ export default function OrderSuccess() {
 
   useEffect(() => {
     if (!orderData) return;
+    trackPurchase(orderData);
     // Lanzar confeti al cargar
     const duration = 3 * 1000;
     const animationEnd = Date.now() + duration;
@@ -224,9 +228,16 @@ export default function OrderSuccess() {
             </Link>
           </div>
 
-          <Link to="/profile" style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-            Ver el estado de mis pedidos
-          </Link>
+          {user ? (
+            <Link to="/profile" style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              Ver el estado de mis pedidos
+            </Link>
+          ) : (
+            <p style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              Guarda tu número de pedido <strong>#{shortId}</strong>. Para consultar su estado escríbenos por WhatsApp,
+              o <Link to="/login" style={{ color: 'var(--primary)' }}>crea una cuenta</Link> para seguir tus próximas compras.
+            </p>
+          )}
         </div>
       </div>
     </div>

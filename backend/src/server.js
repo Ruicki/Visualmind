@@ -22,6 +22,7 @@ import collectionRoutes from '../routes/collectionRoutes.js';
 import categoryRoutes from '../routes/categoryRoutes.js';
 import featuredProductsRoutes from '../routes/featuredProductsRoutes.js';
 import newsletterRoutes from '../routes/newsletterRoutes.js';
+import storefrontRoutes from '../routes/storefrontRoutes.js';
 import { expireEvents } from '../services/eventService.js';
 import { expireStalePendingOrders } from '../services/orderExpiry.js';
 import { initializeDatabase } from './config/initDb.js';
@@ -152,6 +153,7 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')), serveUp
  */
 app.use('/api/auth/login', loginLimiter);
 app.use('/api/auth/register', registerLimiter);
+app.use('/api/auth/reset-password', registerLimiter);
 app.use('/api/newsletter/subscribe', newsletterLimiter);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -163,6 +165,7 @@ app.use('/api/collections', collectionRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/featured-products', featuredProductsRoutes);
 app.use('/api/newsletter', newsletterRoutes);
+app.use(storefrontRoutes); // /share/p/:id y /api/feeds/catalog.csv
 
 /**
  * Endpoint: Health Check.

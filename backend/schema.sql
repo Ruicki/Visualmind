@@ -278,6 +278,16 @@ CREATE TABLE IF NOT EXISTS order_events (
 CREATE INDEX IF NOT EXISTS idx_order_events_order ON order_events(order_id);
 CREATE INDEX IF NOT EXISTS idx_orders_status_created ON orders(status, created_at);
 
+-- Enlaces de un solo uso para restablecer contraseña (solo se guarda el hash del token)
+CREATE TABLE IF NOT EXISTS password_resets (
+  token_hash  CHAR(64) PRIMARY KEY,
+  user_id     UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ,
+  created_by  UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
 -- Suscriptores del newsletter
 CREATE TABLE IF NOT EXISTS newsletter_subscribers (
   id            SERIAL PRIMARY KEY,

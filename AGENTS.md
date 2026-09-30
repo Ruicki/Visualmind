@@ -38,10 +38,10 @@ visualmind/
 │   ├── controllers/          # Lógica por recurso
 │   ├── middleware/            # authMiddleware (JWT), uploadMiddleware (multer)
 │   ├── services/             # orderPricing (precios), orderExpiry (stock y vencimiento de pedidos),
-│   │                         # eventService (campañas vencidas), csv
+│   │                         # eventService (campañas vencidas), csv, storefront (compartir y catálogo)
 │   ├── schema.sql            # DDL idempotente, se aplica en cada arranque
 │   ├── scripts/init_prod_db.js  # Aplica el esquema contra DATABASE_URL a mano
-│   ├── tests/                # campaigns, orderPricing, csv
+│   ├── tests/                # campaigns, orderPricing, csv, storefront
 │   └── uploads/              # Imágenes subidas (statiqo via /uploads)
 ├── frontend/                 # React SPA (:5173)
 │   ├── vite.config.js        # Proxy /api → :5000, /uploads → :5000
@@ -62,13 +62,16 @@ visualmind/
 - **Pedidos**: precios, envío y stock los calcula el servidor (los productos no llevan ITBMS: total = subtotal + envío) (`backend/services/orderPricing.js`, configurable con `SHIPPING_COST`/`FREE_SHIPPING_THRESHOLD`; envío gratis por defecto). El frontend usa la misma fórmula (`frontend/src/utils/pricing.js`) con la config de `GET /api/orders/pricing`. Sin descuentos automáticos por estado del producto. Pago manual: `pending → paid → shipped → delivered`; se puede cancelar desde pending o paid (devuelve stock). Las transiciones válidas están en `ORDER_TRANSITIONS` (backend `orderController.js` y frontend `storeConfig.js`, mantenerlas iguales) y cada cambio queda en `order_events`. Los pedidos Yappy/transferencia sin pago vencen a las `PENDING_ORDER_HOURS` (48 h) y devuelven stock; contra entrega no vence. Un cliente puede tener hasta `MAX_PENDING_ORDERS` (3) sin pagar. Si un producto tiene tallas, la talla pedida debe existir y `products.stock` siempre es la suma de sus variantes (`syncProductStock`). El dashboard solo cuenta como venta paid/shipped/delivered.
 - **Productos**: al editar, las variantes conservan su ID y el formulario manda `expected_updated_at`; si el producto cambió (p. ej. una venta) el servidor responde 409 `STALE_PRODUCT`. La tienda pública nunca recibe `admin_notes` (`toPublicProduct`) ni productos que no estén `Published`/`Legacy`.
 - **Sesiones**: `protect` lee el usuario de la BD en cada petición; el rol efectivo es el de la BD y `users.token_version` (campo `tv` del JWT) invalida sesiones. Emails siempre en minúsculas; contraseñas de 8+ caracteres con letras y números.
+- **Compra como invitado**: `POST /api/orders` usa `optionalAuth`; sin sesión el pedido queda con `user_id` NULL, exige email válido y el tope de pendientes se cuenta por teléfono/email. Límite de 5 pedidos/hora por IP para invitados.
+- **Recuperar contraseña (sin correo)**: el admin genera en Ajustes un enlace de un solo uso (24 h, `POST /api/auth/reset-link`, se guarda solo el hash en `password_resets`) y lo envía por WhatsApp; el cliente lo usa en `/reset-password` (`POST /api/auth/reset-password`), lo que sube `token_version` y cierra sus sesiones.
+- **Compartir y catálogo**: `GET /share/p/:id` (fuera de `/api`) devuelve metadatos Open Graph del producto y redirige a la ficha; `GET /api/feeds/catalog.csv` es el feed para Meta Commerce/Google Merchant (`services/storefront.js`). El píxel de Meta (`frontend/src/utils/analytics.js`) solo se activa con `VITE_META_PIXEL_ID`.
 - **Admin del negocio**: `GET /api/admin/reports/sales.csv?from&to` (ventas cobradas) y `/api/admin/reports/newsletter.csv`. Campañas: `/api/campaigns` es la lista pública (solo activas); el admin usa `/api/campaigns/admin`.
 - **i18n**: `LanguageContext` maneja español/inglés. `t(clave, respaldo?)` devuelve el respaldo (o la clave) si falta la traducción; añade toda clave nueva en `es` y `en`.
 - **Imágenes**: además del disco se guardan en la tabla `uploaded_files`; `/uploads/*` las sirve desde la BD si faltan en disco. Solo se aceptan JPEG/PNG/WebP verificados por su firma real. Las fotos de `frontend/public/Post` están en WebP (máx. 1600 px).
 - **CORS**: Desarrollo permite todo; producción usa `ALLOWED_ORIGINS` (default: localhost:5173)
 - **Rate limiting**: Login (10 fallos/15 min por IP+email), Register (5/60 min), Newsletter (5/60 min) — solo en producción. `trust proxy` = `TRUST_PROXY` (1 por defecto, Railway/Render).
 - **Seguridad HTTP**: `helmet` en el backend; cabeceras del frontend en `frontend/vercel.json`.
-- **Proxy Vite**: `/api/*` y `/uploads/*` se redirigen a `localhost:5000` en dev
+- **Proxy Vite**: `/api/*`, `/uploads/*` y `/share/*` se redirigen a `localhost:5000` en dev
 - **Uploads**: Multer guarda en `backend/uploads/`, expuesto estáticamente en `/uploads`
 - **Refresh**: Sin refresh manual — Vite HMR para frontend, nodemon para backend
 - **Campañas**: Sistema de eventos con `type: campaign|season`, banners, countdown, expiración automática
@@ -86,6 +89,7 @@ ADMIN_EMAIL=/ADMIN_PASSWORD=   # obligatorio en despliegues
 SHIPPING_COST=0 / FREE_SHIPPING_THRESHOLD=0                    # opcionales
 PENDING_ORDER_HOURS=48 / MAX_PENDING_ORDERS=3                   # opcionales
 TRUST_PROXY=1                                                   # opcional
+FRONTEND_URL / API_PUBLIC_URL                                   # opcionales: URLs públicas para enlaces y vistas previas
 ```
 
 ### Frontend (.env en frontend/)
@@ -94,6 +98,7 @@ VITE_API_URL=http://localhost:5000/api  # Opcional en dev (proxy de Vite); oblig
 VITE_WHATSAPP_NUMBER / VITE_YAPPY_NUMBER / VITE_BANK_*  # Datos de cobro mostrados al cliente
 VITE_INSTAGRAM_URL / VITE_FACEBOOK_URL / VITE_TIKTOK_URL  # Redes del pie (vacío = oculto)
 VITE_SITE_URL                           # URL pública para vistas previas; en Vercel se detecta sola
+VITE_META_PIXEL_ID                      # opcional: píxel de Meta
 ```
 
 ## Notas de testing

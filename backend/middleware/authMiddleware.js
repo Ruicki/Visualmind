@@ -49,6 +49,21 @@ export const protect = async (req, res, next) => {
 };
 
 /**
+ * optionalAuth
+ * @description Igual que `protect` si llega un token; sin token deja pasar como invitado
+ * (`req.user = null`). Un token inválido o vencido sí se rechaza, para no crear por
+ * error un pedido de invitado cuando el cliente cree que tiene sesión.
+ */
+export const optionalAuth = (req, res, next) => {
+  const header = req.headers.authorization || '';
+  if (!header.startsWith('Bearer ')) {
+    req.user = null;
+    return next();
+  }
+  return protect(req, res, next);
+};
+
+/**
  * checkRole
  * @description Genera un middleware para validar que el usuario autenticado tiene un rol específico.
  * @param {string} role - Rol requerido (ej: 'admin').
