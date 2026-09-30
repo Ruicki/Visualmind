@@ -16,9 +16,9 @@ const siteUrlPlugin = {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  // La demo (VITE_DEMO=1) se publica como página única: rutas de archivos relativas
-  base: process.env.VITE_DEMO ? './' : '/',
+export default defineConfig(({ mode }) => ({
+  // La demo (npm run build:demo → modo "demo") se publica como página única: rutas relativas
+  base: mode === 'demo' ? './' : '/',
   plugins: [react(), siteUrlPlugin],
   server: {
     port: 5173,
@@ -47,4 +47,4 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/setupTests.js',
   }
-})
+}))
