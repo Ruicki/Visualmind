@@ -6,6 +6,11 @@
 import { DEMO_ADMIN, DEMO_CUSTOMER, resetDemo } from './mockBackend';
 
 export function mountDemoBar(api) {
+    // Algunos visores (como los artefactos) no muestran confirm()/alert() y responden "no".
+    // En la demo las confirmaciones se aceptan y los avisos se muestran en la barra.
+    window.confirm = () => true;
+    window.alert = (msg) => showNotice(String(msg));
+
     const bar = document.createElement('div');
     bar.setAttribute('role', 'region');
     bar.setAttribute('aria-label', 'Controles de la demo');
@@ -41,6 +46,19 @@ export function mountDemoBar(api) {
         <button type="button" class="tab" aria-expanded="false">DEMO ▴</button>
       </div>`;
     document.body.appendChild(bar);
+
+    const notice = document.createElement('div');
+    notice.setAttribute('role', 'status');
+    notice.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);bottom:calc(70px + env(safe-area-inset-bottom,0px));z-index:10000;max-width:min(560px,calc(100vw - 32px));background:#fff;color:#0b1020;border-radius:12px;padding:12px 16px;font:14px/1.4 system-ui,sans-serif;box-shadow:0 12px 40px #0008';
+    notice.hidden = true;
+    document.body.appendChild(notice);
+    let timer;
+    function showNotice(text) {
+        notice.textContent = text;
+        notice.hidden = false;
+        clearTimeout(timer);
+        timer = setTimeout(() => { notice.hidden = true; }, 6000);
+    }
 
     const panel = bar.querySelector('.panel');
     const tab = bar.querySelector('.tab');
