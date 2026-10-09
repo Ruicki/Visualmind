@@ -80,7 +80,7 @@ export default function Navbar() {
         className="navbar"
         style={{
           background: scrolled
-            ? 'rgba(2, 6, 23, 0.9)'
+            ? 'color-mix(in srgb, var(--bg-primary) 90%, transparent)'
             : 'transparent',
           backdropFilter: scrolled ? 'blur(20px)' : 'none',
           borderBottom: scrolled ? '1px solid var(--border-light)' : 'none',
