@@ -105,7 +105,7 @@ const CheckoutForm = () => {
       {!user && (
         <div style={{ marginBottom: '2rem', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
           {t('checkout.guest_note', 'Estás comprando como invitado.')}{' '}
-          <Link to="/login" state={{ from: '/checkout' }} style={{ color: 'var(--primary)', fontWeight: 600 }}>
+          <Link to="/login" state={{ from: '/checkout' }} style={{ color: 'var(--primary-text)', fontWeight: 600 }}>
             {t('checkout.guest_login', 'Inicia sesión')}
           </Link>{' '}
           {t('checkout.guest_benefit', 'para guardar tus datos y ver tus pedidos.')}
@@ -275,7 +275,7 @@ export default function Checkout() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.3rem', fontWeight: '900', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
               <span>{t('cart.total')}</span>
-              <span style={{ color: 'var(--primary)' }}>
+              <span style={{ color: 'var(--primary-text)' }}>
                 ${totals.total.toFixed(2)}
               </span>
             </div>

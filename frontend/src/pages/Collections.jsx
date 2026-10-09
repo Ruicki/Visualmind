@@ -60,7 +60,7 @@ export default function Collections() {
                     <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '2rem' }}>
                         <button
                             onClick={() => setActiveCollection(null)}
-                            style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            style={{ background: 'none', border: 'none', color: 'var(--primary-text)', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
                         >
                             <ArrowRight style={{ transform: 'rotate(180deg)' }} size={20} /> {t('collections_page.back')}
                         </button>
@@ -83,7 +83,7 @@ export default function Collections() {
     const featuredProducts = featuredCol ? allProducts.filter(p => p.collection_id === featuredCol.id && isProductVisible(p)).slice(0, 4) : [];
 
     return (
-        <div style={{ background: '#050505', color: 'white', overflowX: 'hidden' }}>
+        <div style={{ background: 'var(--bg-primary)', color: 'var(--text-primary)', overflowX: 'hidden' }}>
             {/* Featured Collection Section (High Impact) */}
             {featuredCol ? (
                 <section style={{ 
@@ -92,14 +92,14 @@ export default function Collections() {
                     flexDirection: 'column',
                     justifyContent: 'center', 
                     padding: '120px 0 6rem 0',
-                    background: 'radial-gradient(circle at 70% 30%, #1a1a1a 0%, #050505 70%)',
+                    background: 'radial-gradient(circle at 70% 30%, var(--bg-secondary) 0%, var(--bg-primary) 70%)',
                     position: 'relative',
                     overflow: 'hidden'
                 }}>
                     <div className="container">
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '4rem', alignItems: 'center' }}>
                             <div className="reveal visible">
-                                <span style={{ color: 'var(--primary)', fontWeight: '800', letterSpacing: '0.4em', fontSize: '0.9rem', textTransform: 'uppercase', marginBottom: '1.5rem', display: 'block' }}>
+                                <span style={{ color: 'var(--primary-text)', fontWeight: '800', letterSpacing: '0.4em', fontSize: '0.9rem', textTransform: 'uppercase', marginBottom: '1.5rem', display: 'block' }}>
                                     {t('collections_page.active_drop') || 'ACTIVE DROP'}
                                 </span>
                                 <h1 style={{ fontSize: 'clamp(3rem, 8vw, 6rem)', fontWeight: '900', lineHeight: 0.9, letterSpacing: '-0.04em', textTransform: 'uppercase', marginBottom: '2rem' }}>
@@ -134,7 +134,7 @@ export default function Collections() {
                         right: '-5%', 
                         fontSize: '20vw', 
                         fontWeight: '900', 
-                        color: 'rgba(255,255,255,0.02)', 
+                        color: 'rgba(var(--tint), 0.02)', 
                         pointerEvents: 'none',
                         zIndex: 0,
                         whiteSpace: 'nowrap',
@@ -146,7 +146,7 @@ export default function Collections() {
             ) : (
                 <section style={{ height: '70vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '0 1.5rem', background: 'radial-gradient(circle at center, #111 0%, #050505 100%)' }}>
                     <div className="container">
-                        <span style={{ color: 'var(--primary)', fontWeight: '800', letterSpacing: '0.5em', fontSize: '0.9rem', textTransform: 'uppercase', marginBottom: '1.5rem', display: 'block' }}>{t('collections_page.archive_title')}</span>
+                        <span style={{ color: 'var(--primary-text)', fontWeight: '800', letterSpacing: '0.5em', fontSize: '0.9rem', textTransform: 'uppercase', marginBottom: '1.5rem', display: 'block' }}>{t('collections_page.archive_title')}</span>
                         <h1 style={{ fontSize: 'clamp(3rem, 12vw, 10rem)', fontWeight: '900', lineHeight: 0.8, letterSpacing: '-0.05em', margin: 0, textTransform: 'uppercase' }}>{t('collections_page.curations')}</h1>
                         <div style={{ marginTop: '3rem' }}>
                             <ChevronDown size={40} strokeWidth={1} style={{ opacity: 0.3 }} />
@@ -190,12 +190,12 @@ export default function Collections() {
                             )}
                         </div>
                         <div style={{ flex: 1, padding: '0 8rem', textAlign: 'left', zIndex: 10 }}>
-                            <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--primary)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>{col.subtitle}</span>
+                            <span style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--primary-text)', letterSpacing: '0.2em', textTransform: 'uppercase' }}>{col.subtitle}</span>
                             <h2 style={{ fontSize: 'clamp(2.5rem, 5vw, 5rem)', fontWeight: '900', margin: '1rem 0 2rem 0', lineHeight: 0.9 }}>{col.title}</h2>
-                            <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.6)', lineHeight: 1.6, marginBottom: '3rem', maxWidth: '400px' }}>
+                            <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '3rem', maxWidth: '400px' }}>
                                 {col.description}
                             </p>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: '700', fontSize: '1.1rem', color: 'white' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontWeight: '700', fontSize: '1.1rem', color: 'var(--text-primary)' }}>
                                 {t('collections_page.view_archive')} <ArrowRight size={20} color="var(--primary)" />
                             </div>
                         </div>

@@ -156,7 +156,7 @@ export default function NewArrivals() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '1.5rem',
-                color: 'white',
+                color: 'var(--text-primary)',
                 padding: '2rem',
                 textAlign: 'center',
             }}>
@@ -189,7 +189,7 @@ export default function NewArrivals() {
     // ── Render: Contenido ───────────────────────────────────────────────────
 
     return (
-        <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: '120px', color: 'white' }}>
+        <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: '120px', color: 'var(--text-primary)' }}>
             <SEO
                 title="Novedades"
                 description="Descubre las últimas campañas y temporadas de Visualmind con sus productos exclusivos."

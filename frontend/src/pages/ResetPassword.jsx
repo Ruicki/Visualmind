@@ -51,10 +51,10 @@ export default function ResetPassword() {
                 {!token ? (
                     <p style={{ color: 'var(--text-secondary)' }}>
                         {t('auth.reset_missing', 'Este enlace no es válido. Pídenos uno nuevo por')}{' '}
-                        <a href={whatsappLink('Hola, necesito un enlace para cambiar mi contraseña.')} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary)' }}>WhatsApp</a>.
+                        <a href={whatsappLink('Hola, necesito un enlace para cambiar mi contraseña.')} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-text)' }}>WhatsApp</a>.
                     </p>
                 ) : status === 'done' ? (
-                    <p role="status" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--primary)', fontWeight: 600 }}>
+                    <p role="status" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', color: 'var(--primary-text)', fontWeight: 600 }}>
                         <CheckCircle size={20} /> {t('auth.reset_done', 'Contraseña actualizada. Te llevamos al inicio de sesión…')}
                     </p>
                 ) : (

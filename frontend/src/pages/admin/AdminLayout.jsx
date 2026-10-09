@@ -73,7 +73,8 @@ export default function AdminLayout() {
         || t('admin.overview') || 'Resumen';
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0a' }}>
+        // El panel de admin usa siempre el tema oscuro, sin importar el de la tienda
+        <div data-theme="dark" style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0a', color: 'var(--text-primary)' }}>
             {/* Sidebar */}
             <div style={{
                 width: '260px',

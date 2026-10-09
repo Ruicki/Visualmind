@@ -103,14 +103,14 @@ export default function Login() {
                 {/* Mensaje de contexto (ej: "Inicia sesión para completar tu compra") */}
                 {contextMsg && (
                     <div style={{
-                        background: 'rgba(59,130,246,0.1)',
+                        background: 'rgba(var(--primary-rgb), 0.1)',
                         color: '#60a5fa',
                         padding: '1rem',
                         borderRadius: '12px',
                         marginBottom: '1rem',
                         fontSize: '0.9rem',
                         textAlign: 'center',
-                        border: '1px solid rgba(59,130,246,0.2)'
+                        border: '1px solid rgba(var(--primary-rgb), 0.2)'
                     }}>
                         {contextMsg}
                     </div>
@@ -147,7 +147,7 @@ export default function Login() {
                                     borderRadius: '16px',
                                     background: 'var(--bg-primary)',
                                     border: '1px solid var(--border-light)',
-                                    color: 'white',
+                                    color: 'var(--text-primary)',
                                     fontSize: '1rem',
                                     outline: 'none'
                                 }}
@@ -173,7 +173,7 @@ export default function Login() {
                                     borderRadius: '16px',
                                     background: 'var(--bg-primary)',
                                     border: '1px solid var(--border-light)',
-                                    color: 'white',
+                                    color: 'var(--text-primary)',
                                     fontSize: '1rem',
                                     outline: 'none'
                                 }}
@@ -221,7 +221,7 @@ export default function Login() {
                     {isLogin ? t('auth.no_account') + " " : t('auth.has_account') + " "}
                     <button
                         onClick={() => setIsLogin(!isLogin)}
-                        style={{ color: 'var(--primary)', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}
+                        style={{ color: 'var(--primary-text)', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}
                     >
                         {isLogin ? t('auth.sign_up') : t('auth.sign_in')}
                     </button>

@@ -151,8 +151,8 @@ export default function Navbar() {
                   className="navbar-icon-btn"
                   title="Panel Admin"
                   style={{ 
-                    background: 'rgba(59, 130, 246, 0.1)', 
-                    color: '#3b82f6',
+                    background: 'rgba(var(--primary-rgb), 0.1)', 
+                    color: 'var(--primary-text)',
                     padding: '0.4rem 0.8rem',
                     borderRadius: '8px',
                     fontSize: '0.75rem',
@@ -202,7 +202,7 @@ export default function Navbar() {
               {getCartCount() > 0 && (
                 <span
                   className="navbar-badge"
-                  style={{ background: 'var(--primary)', color: 'white' }}
+                  style={{ background: 'var(--primary)', color: 'var(--on-primary)' }}
                 >
                   {getCartCount()}
                 </span>

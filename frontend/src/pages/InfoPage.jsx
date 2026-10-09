@@ -50,7 +50,7 @@ export default function InfoPage() {
     const data = getPageData();
 
     return (
-        <div style={{ paddingTop: '140px', paddingBottom: '100px', minHeight: '100vh', background: '#050505', color: 'white' }}>
+        <div style={{ paddingTop: '140px', paddingBottom: '100px', minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
             <div className="container" style={{ maxWidth: '800px' }}>
                 <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-secondary)', marginBottom: '3rem', textDecoration: 'none' }}>
                     <ArrowLeft size={20} /> {t('info.back')}

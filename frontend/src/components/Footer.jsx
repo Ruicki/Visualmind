@@ -41,7 +41,7 @@ export default function Footer() {
   ];
 
   return (
-    <footer style={{ background: '#050505', padding: '6rem 0 2rem 0', color: 'white', position: 'relative', overflow: 'hidden' }}>
+    <footer style={{ background: 'var(--footer-bg)', padding: '6rem 0 2rem 0', color: 'var(--text-primary)', position: 'relative', overflow: 'hidden' }}>
       {/* 
         Textura de fondo decorativa: 
         Implementada mediante un patrón SVG en línea para minimizar peticiones HTTP.
@@ -59,7 +59,7 @@ export default function Footer() {
           {/* Bloque de Marca y Descripción */}
           <div style={{ maxWidth: '300px' }}>
             <h2 style={{ fontSize: '2rem', fontWeight: '900', letterSpacing: '-0.05em', marginBottom: '1rem' }}>VISUALMIND </h2>
-            <p style={{ color: 'rgba(255,255,255,0.4)', lineHeight: 1.6 }}>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>
               {t('footer.description')}
             </p>
           </div>
@@ -92,8 +92,8 @@ export default function Footer() {
         </div>
 
         {/* Barra Inferior (Copyright y Políticas) */}
-        <div className="footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '3rem', paddingBottom: '5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem' }}>
+        <div className="footer-bottom" style={{ borderTop: '1px solid rgba(var(--tint), 0.05)', paddingTop: '3rem', paddingBottom: '5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '2rem' }}>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
             © {new Date().getFullYear()} Visualmind. {t('footer.rights')}
           </p>
           <div style={{ display: 'flex', gap: '2rem' }}>

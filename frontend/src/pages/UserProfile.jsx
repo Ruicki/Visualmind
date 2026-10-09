@@ -143,7 +143,7 @@ export default function UserProfile() {
     if (!authLoading && !user) return <Navigate to="/login" replace />;
 
     if (!user) return (
-        <div className="container" style={{ paddingTop: '150px', textAlign: 'center', color: 'white' }}>
+        <div className="container" style={{ paddingTop: '150px', textAlign: 'center', color: 'var(--text-primary)' }}>
             <p>{t('profile.login_prompt') || "Inicia sesión para ver tu perfil."}</p>
             <Link to="/login" className="btn-primary" style={{ marginTop: '1rem', display: 'inline-block' }}>{t('profile.btn_login') || "Iniciar Sesión"}</Link>
         </div>
@@ -213,7 +213,7 @@ export default function UserProfile() {
                         <button
                             type="submit"
                             disabled={profileLoading}
-                            style={{ padding: '0.8rem 1.5rem', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '8px', cursor: profileLoading ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: profileLoading ? 0.7 : 1 }}
+                            style={{ padding: '0.8rem 1.5rem', background: 'var(--primary)', color: 'var(--on-primary)', border: 'none', borderRadius: '8px', cursor: profileLoading ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: profileLoading ? 0.7 : 1 }}
                         >
                             {profileLoading ? (t('profile.saving') || "Guardando...") : (t('profile.save') || "Guardar cambios")}
                         </button>
@@ -229,7 +229,7 @@ export default function UserProfile() {
                         {!showAddrForm && (
                             <button
                                 onClick={() => { setShowAddrForm(true); setEditingAddrId(null); setAddrForm({ full_name: '', address_line: '', city: '', province: '', postal_code: '', country: 'Panama' }); setAddrMsg(null); }}
-                                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600' }}
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1rem', background: 'var(--primary)', color: 'var(--on-primary)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: '600' }}
                             >
                                 <Plus size={15} /> Agregar dirección
                             </button>
@@ -301,7 +301,7 @@ export default function UserProfile() {
                                 <button
                                     type="submit"
                                     disabled={addrLoading}
-                                    style={{ flex: 1, padding: '0.7rem', background: 'var(--primary)', color: '#fff', border: 'none', borderRadius: '8px', cursor: addrLoading ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: addrLoading ? 0.7 : 1 }}
+                                    style={{ flex: 1, padding: '0.7rem', background: 'var(--primary)', color: 'var(--on-primary)', border: 'none', borderRadius: '8px', cursor: addrLoading ? 'not-allowed' : 'pointer', fontWeight: '600', opacity: addrLoading ? 0.7 : 1 }}
                                 >
                                     {addrLoading ? 'Guardando...' : 'Guardar'}
                                 </button>
