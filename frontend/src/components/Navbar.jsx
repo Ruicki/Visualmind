@@ -15,6 +15,7 @@ import { useAuth } from '../context/AuthContext';
 import SearchModal from './SearchModal';
 import ThemeToggle from './ThemeToggle';
 import { assetUrl } from '../utils/imageUtils';
+import { isCatalogMode } from '../utils/catalogMode';
 
 /**
  * Navbar
@@ -164,7 +165,8 @@ export default function Navbar() {
                   Admin
                 </Link>
               )}
-              <Link
+              {/* En modo catálogo no hay cuentas: se oculta el acceso */}
+              {!isCatalogMode() && <Link
                 to={user ? '/profile' : '/login'}
                 className="navbar-icon-btn"
                 aria-label={user ? 'Perfil' : 'Iniciar sesión'}
@@ -175,7 +177,7 @@ export default function Navbar() {
                 }}
               >
                 <User size={20} />
-              </Link>
+              </Link>}
             </div>
 
             {/* Favoritos con indicador numérico */}

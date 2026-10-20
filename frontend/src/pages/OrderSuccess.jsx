@@ -253,8 +253,8 @@ export default function OrderSuccess() {
             </Link>
           ) : (
             <p style={{ textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              Guarda tu número de pedido <strong>#{shortId}</strong>. Para consultar su estado escríbenos por WhatsApp,
-              o <Link to="/login" style={{ color: 'var(--primary)' }}>crea una cuenta</Link> para seguir tus próximas compras.
+              Guarda tu número de pedido <strong>#{shortId}</strong>. Para consultar su estado escríbenos por WhatsApp
+              {catalog ? '.' : <>, o <Link to="/login" style={{ color: 'var(--primary-text)' }}>crea una cuenta</Link> para seguir tus próximas compras.</>}
             </p>
           )}
         </div>
