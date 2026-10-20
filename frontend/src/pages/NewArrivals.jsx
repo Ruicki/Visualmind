@@ -15,7 +15,7 @@ import { motion } from 'framer-motion';
 import axiosInstance from '../api/axiosConfig';
 import ProductCard from '../components/ProductCard';
 import { getTimeLeft } from '../utils/heroUtils';
-import { getProductImage } from '../utils/imageUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 import SEO from '../components/SEO';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -156,7 +156,7 @@ export default function NewArrivals() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '1.5rem',
-                color: 'white',
+                color: 'var(--text-primary)',
                 padding: '2rem',
                 textAlign: 'center',
             }}>
@@ -189,7 +189,7 @@ export default function NewArrivals() {
     // ── Render: Contenido ───────────────────────────────────────────────────
 
     return (
-        <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: '120px', color: 'white' }}>
+        <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: '120px', color: 'var(--text-primary)' }}>
             <SEO
                 title="Novedades"
                 description="Descubre las últimas campañas y temporadas de Visualmind con sus productos exclusivos."
@@ -273,7 +273,7 @@ export default function NewArrivals() {
                                                 <img
                                                     src={bannerUrl}
                                                     alt={event.name}
-                                                    onError={e => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                                                    onError={e => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                                     style={{
                                                         width: '100%',
                                                         height: '100%',
@@ -469,7 +469,7 @@ export default function NewArrivals() {
                                             <img
                                                 src={bannerUrl}
                                                 alt={event.name}
-                                                onError={e => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                                                onError={e => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'brightness(0.6)' }}
                                             />
                                             {/* Badge PRÓXIMAMENTE */}

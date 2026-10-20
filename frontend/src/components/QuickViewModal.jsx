@@ -8,7 +8,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ShoppingBag, Check } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getProductImage } from '../utils/imageUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 
 /**
  * QuickViewModal
@@ -90,7 +90,7 @@ export default function QuickViewModal({ product, isOpen, onClose }) {
               src={selectedColor?.image || getProductImage(product.image, product.image_url)} 
               alt={product.title} 
               className="quickview-main-image"
-              onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+              onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
             />
             {product.colors && product.colors.length > 1 && (
                 <div className="quickview-thumbs">

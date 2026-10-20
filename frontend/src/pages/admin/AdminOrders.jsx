@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
 import { Eye, Loader, MessageCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
-import { ORDER_STATUSES, getPaymentMethod } from '../../config/storeConfig';
-import { getProductImage } from '../../utils/imageUtils';
+import { ORDER_STATUSES, ORDER_TRANSITIONS, getPaymentMethod } from '../../config/storeConfig';
+import { downloadFromApi } from '../../api/download';
+import { getProductImage, assetUrl } from '../../utils/imageUtils';
 
 /** Los pedidos antiguos pueden traer items/shipping como string JSON. */
 const parseJson = (value, fallback) => {
@@ -27,6 +28,32 @@ export default function AdminOrders() {
     const [selectedOrder, setSelectedOrder] = useState(null);
     const [filter, setFilter] = useState('all');
     const [error, setError] = useState(null);
+    const [events, setEvents] = useState([]);
+    const today = new Date().toISOString().slice(0, 10);
+    const [range, setRange] = useState({ from: `${today.slice(0, 7)}-01`, to: today });
+    const [exporting, setExporting] = useState(false);
+
+    // Historial del pedido abierto (se recarga al cambiar de estado)
+    useEffect(() => {
+        if (!selectedOrder?.id) return;
+        let cancelled = false;
+        api.get(`/orders/${selectedOrder.id}/events`)
+            .then(({ data }) => { if (!cancelled) setEvents(data); })
+            .catch(() => { if (!cancelled) setEvents([]); });
+        return () => { cancelled = true; };
+    }, [selectedOrder?.id, selectedOrder?.status]);
+
+    const exportSales = async () => {
+        setExporting(true);
+        setError(null);
+        try {
+            await downloadFromApi('/admin/reports/sales.csv', `ventas-${range.from}-a-${range.to}.csv`, range);
+        } catch {
+            setError('No se pudo exportar. Revisa las fechas e inténtalo de nuevo.');
+        } finally {
+            setExporting(false);
+        }
+    };
 
     useEffect(() => {
         fetchOrders();
@@ -75,10 +102,14 @@ export default function AdminOrders() {
 
     const renderStatusSelect = (order) => {
         const status = ORDER_STATUSES[order.status] || { color: 'var(--text-primary)' };
+        const next = ORDER_TRANSITIONS[order.status] || [];
+        const options = [order.status, ...next];
+        const locked = next.length === 0;
         return (
             <select
                 value={order.status}
-                disabled={order.status === 'cancelled'}
+                disabled={locked}
+                title={locked ? 'Este pedido ya está cerrado' : 'Cambiar estado'}
                 onChange={(e) => updateStatus(order.id, e.target.value)}
                 aria-label="Estado del pedido"
                 style={{
@@ -88,11 +119,11 @@ export default function AdminOrders() {
                     borderRadius: '100px',
                     fontSize: '0.8rem',
                     border: `1px solid ${status.color}`,
-                    cursor: order.status === 'cancelled' ? 'not-allowed' : 'pointer'
+                    cursor: locked ? 'not-allowed' : 'pointer'
                 }}
             >
-                {Object.entries(ORDER_STATUSES).map(([value, { label }]) => (
-                    <option key={value} value={value}>{label}</option>
+                {options.map((value) => (
+                    <option key={value} value={value}>{ORDER_STATUSES[value]?.label || value}</option>
                 ))}
             </select>
         );
@@ -109,7 +140,23 @@ export default function AdminOrders() {
 
     return (
         <div>
-            <h2 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '1.5rem' }}>{t('admin.orders') || 'Pedidos'}</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: '1rem', marginBottom: '1.5rem' }}>
+                <h2 style={{ fontSize: '1.8rem', fontWeight: '800', margin: 0 }}>{t('admin.orders') || 'Pedidos'}</h2>
+                {/* Exportar ventas cobradas para llevar la contabilidad */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-end', gap: '0.5rem', fontSize: '0.8rem' }}>
+                    <label style={{ display: 'grid', gap: '0.2rem', color: 'var(--text-secondary)' }}>Desde
+                        <input type="date" value={range.from} max={range.to} onChange={e => setRange(r => ({ ...r, from: e.target.value }))}
+                            style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0.4rem' }} />
+                    </label>
+                    <label style={{ display: 'grid', gap: '0.2rem', color: 'var(--text-secondary)' }}>Hasta
+                        <input type="date" value={range.to} min={range.from} onChange={e => setRange(r => ({ ...r, to: e.target.value }))}
+                            style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-light)', borderRadius: '8px', padding: '0.4rem' }} />
+                    </label>
+                    <button onClick={exportSales} disabled={exporting} className="btn-primary" style={{ padding: '0.55rem 1rem', borderRadius: '8px', fontSize: '0.8rem' }}>
+                        {exporting ? 'Exportando…' : 'Exportar ventas (CSV)'}
+                    </button>
+                </div>
+            </div>
 
             {/* Filtros por estado */}
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem' }}>
@@ -200,7 +247,12 @@ export default function AdminOrders() {
                             <section>
                                 <h4 style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>Cliente y envío</h4>
                                 <div style={{ fontWeight: 600 }}>{detail.shipping.name || '—'}</div>
-                                <div>{detail.shipping.email || selectedOrder.user_email}</div>
+                                <div>
+                                    {detail.shipping.email || selectedOrder.user_email}
+                                    {!selectedOrder.user_id && (
+                                        <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', padding: '0.1rem 0.5rem', borderRadius: '999px', border: '1px solid var(--border-light)', color: 'var(--text-secondary)' }}>Invitado</span>
+                                    )}
+                                </div>
                                 {detail.shipping.phone && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                         {detail.shipping.phone}
@@ -222,7 +274,7 @@ export default function AdminOrders() {
                                         <div key={idx} style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
                                             <img
                                                 src={getProductImage(item.product_id, item.image_url)}
-                                                onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                                                onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                                 alt=""
                                                 style={{ width: '44px', height: '44px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0 }}
                                             />
@@ -243,11 +295,21 @@ export default function AdminOrders() {
                                     <>
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Subtotal</span><span>{money(selectedOrder.subtotal)}</span></div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>Envío</span><span>{money(selectedOrder.shipping_cost)}</span></div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>ITBMS</span><span>{money(selectedOrder.tax)}</span></div>
                                     </>
                                 )}
                                 <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 800, fontSize: '1.1rem' }}><span>Total</span><span>{money(selectedOrder.total)}</span></div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--text-secondary)' }}><span>Método de pago</span><span>{detail.payment?.label || '—'}</span></div>
+                                {events.length > 0 && (
+                                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-light)' }}>
+                                        <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>Historial</div>
+                                        {events.map((ev, i) => (
+                                            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', fontSize: '0.8rem', color: 'var(--text-secondary)', padding: '0.15rem 0' }}>
+                                                <span>{ORDER_STATUSES[ev.to_status]?.label || ev.to_status}{ev.note ? ` · ${ev.note}` : ''}{ev.changed_by_email ? ` · ${ev.changed_by_email}` : ''}</span>
+                                                <span style={{ whiteSpace: 'nowrap' }}>{new Date(ev.created_at).toLocaleString()}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </section>
                         </div>
                     </div>

@@ -1,4 +1,5 @@
 import pool from '../src/config/db.js';
+import { toPublicProduct } from './productController.js';
 
 /**
  * @function getAllCollections
@@ -145,7 +146,7 @@ export const getCollectionProducts = async (req, res) => {
       ORDER BY p.created_at DESC
     `, [collectionId]);
 
-    res.json(productsRes.rows);
+    res.json(productsRes.rows.map(toPublicProduct));
   } catch (error) {
     console.error('Error al obtener productos de colección:', error);
     res.status(500).json({ error: 'Error del servidor' });

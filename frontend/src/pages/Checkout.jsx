@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useLanguage } from '../context/LanguageContext';
 import { CheckCircle, Loader } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axiosConfig';
-import { getProductImage } from '../utils/imageUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 import { PAYMENT_METHODS } from '../config/storeConfig';
 import { computeTotals, usePricingConfig } from '../utils/pricing';
+import { isCatalogMode } from '../utils/catalogMode';
+import { trackInitiateCheckout } from '../utils/analytics';
 
 /**
  * @component CheckoutForm
@@ -52,11 +54,6 @@ const CheckoutForm = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!user) {
-      setError(t('checkout.login_required') || "Inicia sesión para completar tu compra.");
-      return;
-    }
-
     if (!paymentMethod) {
       setError('Selecciona un método de pago.');
       return;
@@ -66,7 +63,7 @@ const CheckoutForm = () => {
     setError(null);
 
     try {
-      // El servidor recalcula precios, envío, ITBMS y valida el stock
+      // El servidor recalcula precios y envío, y valida el stock
       const { data: order } = await api.post('/orders', {
         items: cartItems.map(item => ({
           product_id: item.id,
@@ -88,7 +85,6 @@ const CheckoutForm = () => {
             items: Array.isArray(order.items) ? order.items : orderItems,
             subtotal: parseFloat(order.subtotal),
             shipping: parseFloat(order.shipping_cost),
-            tax: parseFloat(order.tax),
             total: parseFloat(order.total),
             paymentMethod: order.payment_method,
             date: new Date(order.created_at).toLocaleDateString(),
@@ -107,6 +103,20 @@ const CheckoutForm = () => {
 
   return (
     <form onSubmit={handleSubmit}>
+      {!user && isCatalogMode() && (
+        <div style={{ marginBottom: '2rem', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+          {t('checkout.catalog_note', 'Completa tus datos y al final envíanos el pedido por WhatsApp para confirmarlo.')}
+        </div>
+      )}
+      {!user && !isCatalogMode() && (
+        <div style={{ marginBottom: '2rem', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+          {t('checkout.guest_note', 'Estás comprando como invitado.')}{' '}
+          <Link to="/login" state={{ from: '/checkout' }} style={{ color: 'var(--primary-text)', fontWeight: 600 }}>
+            {t('checkout.guest_login', 'Inicia sesión')}
+          </Link>{' '}
+          {t('checkout.guest_benefit', 'para guardar tus datos y ver tus pedidos.')}
+        </div>
+      )}
       {/* Sección de Envío: Captura de datos del destinatario */}
       <div style={{ marginBottom: '2.5rem' }}>
         <h2 style={{ fontSize: '1.3rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border-light)', paddingBottom: '0.5rem' }}>
@@ -185,7 +195,7 @@ const CheckoutForm = () => {
         type="submit"
         disabled={loading || cartItems.length === 0}
         className="btn-primary"
-        style={{ width: '100%', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: loading ? 0.7 : 1, marginTop: '1rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+        style={{ width: '100%', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: loading ? 0.7 : 1, marginTop: '1rem', background: 'var(--primary)', color: 'var(--on-primary)', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
       >
         {loading ? <Loader className="spin" /> : <CheckCircle size={20} />}
         {loading ? (t('common.processing') || 'Procesando...') : (t('checkout.btn_complete') || 'Completar Pedido')}
@@ -198,30 +208,25 @@ const CheckoutForm = () => {
 /**
  * @component Checkout
  * @description Contenedor principal de la página de checkout.
- * Implementa un Guard de autenticación para asegurar que solo usuarios logueados accedan.
- * 
- * @returns {JSX.Element|null} La vista de checkout o redirección si no hay sesión.
+ * Se puede comprar con cuenta o como invitado (sin registrarse).
+ *
+ * @returns {JSX.Element|null} La vista de checkout.
  */
 export default function Checkout() {
   const { cartItems, getCartTotal } = useCart();
   const { t } = useLanguage();
-  const { user, loading } = useAuth();
-  const navigate = useNavigate();
+  const { loading } = useAuth();
   const pricing = usePricingConfig();
   const totals = computeTotals(getCartTotal(), pricing);
 
-  /**
-   * Middleware de navegación: Redirige al login si se intenta acceder sin sesión activa,
-   * preservando el destino original mediante el estado de la ruta.
-   */
+  // Evento de analítica al entrar al checkout (una vez por visita)
   useEffect(() => {
-    if (!loading && !user) {
-      navigate('/login', { state: { from: '/checkout', message: 'Inicia sesión para completar tu compra.' }, replace: true });
-    }
-  }, [user, loading, navigate]);
+    if (cartItems.length > 0) trackInitiateCheckout(cartItems, totals.total);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Evitar parpadeo de contenido mientras se verifica la sesión
-  if (loading || !user) {
+  // Evitar parpadeo mientras se recupera la sesión guardada
+  if (loading) {
     return null;
   }
 
@@ -244,7 +249,7 @@ export default function Checkout() {
                 <div style={{ width: '55px', height: '55px', borderRadius: '8px', overflow: 'hidden', background: '#333', flexShrink: 0 }}>
                   <img
                     src={item.image || getProductImage(item.image, item.image_url)}
-                    onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                    onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                     loading="lazy"
                     style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     alt={item.title}
@@ -262,7 +267,7 @@ export default function Checkout() {
             ))}
           </div>
 
-          {/* Cálculo de Totales (Subtotal, Envío, Impuestos) */}
+          {/* Cálculo de Totales (Subtotal, Envío) */}
           <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
               <span>{t('cart.subtotal')}</span>
@@ -274,13 +279,9 @@ export default function Checkout() {
                 {totals.shipping > 0 ? `$${totals.shipping.toFixed(2)}` : t('cart.free')}
               </span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-              <span>{t('cart.taxes')} ({Math.round(pricing.taxRate * 100)}%)</span>
-              <span>${totals.tax.toFixed(2)}</span>
-            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '1.3rem', fontWeight: '900', marginTop: '0.5rem', color: 'var(--text-primary)' }}>
               <span>{t('cart.total')}</span>
-              <span style={{ color: 'var(--primary)' }}>
+              <span style={{ color: 'var(--primary-text)' }}>
                 ${totals.total.toFixed(2)}
               </span>
             </div>

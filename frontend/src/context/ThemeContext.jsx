@@ -30,11 +30,11 @@ export const useTheme = () => {
 export const ThemeProvider = ({ children }) => {
     /**
      * Estado del tema. Prioriza la preferencia guardada en localStorage.
-     * Por defecto es 'dark'.
+     * Por defecto es 'light' (tienda en colores claros); el usuario puede cambiar a oscuro.
      */
     const [theme, setTheme] = useState(() => {
         const saved = localStorage.getItem('theme');
-        return saved || 'dark';
+        return saved || 'light';
     });
 
     /**

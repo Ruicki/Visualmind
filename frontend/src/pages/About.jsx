@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import { assetUrl } from '../utils/imageUtils';
 
 /**
  * @component About
@@ -25,9 +26,9 @@ export default function About() {
                         {t('about.vision_text')}
                     </p>
                 </div>
-                <div style={{ height: '500px', background: '#1e293b', borderRadius: '32px', overflow: 'hidden' }}>
+                <div style={{ height: '500px', background: 'var(--bg-secondary)', borderRadius: '32px', overflow: 'hidden' }}>
                     <img
-                        src="https://images.unsplash.com/photo-1578587018452-892bacefd3f2?q=80&w=1000&auto=format&fit=crop"
+                        src={assetUrl('og-image.jpg')}
                         alt="Design Process"
                         style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                     />
@@ -44,7 +45,7 @@ export default function About() {
                         { title: t('about.value_3_title'), text: t('about.value_3_text') }
                     ].map((v, i) => (
                         <div key={i} style={{ padding: '3rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1px solid var(--border-light)' }}>
-                            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--primary)' }}>{v.title}</h3>
+                            <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: 'var(--primary-text)' }}>{v.title}</h3>
                             <p style={{ color: 'var(--text-secondary)', lineHeight: '1.6' }}>{v.text}</p>
                         </div>
                     ))}

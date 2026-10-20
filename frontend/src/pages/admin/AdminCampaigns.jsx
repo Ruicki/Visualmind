@@ -48,7 +48,7 @@ export default function AdminCampaigns({ onOpenCampaignSlots }) {
     const fetchCampaigns = async () => {
         try {
             setLoading(true);
-            const response = await api.get('/campaigns');
+            const response = await api.get('/campaigns/admin');
             setCampaigns(response.data);
         } catch (error) {
             console.error("Error fetching campaigns:", error);

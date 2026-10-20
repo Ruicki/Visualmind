@@ -8,18 +8,25 @@
    Variables de Diseño
    ===================== */
 :root {
-  /* Colores — Tema oscuro premium */
-  --bg-primary: #020617;
-  --bg-secondary: #0f172a;
-  --bg-card: rgba(30, 41, 59, 0.7);
+  /* Colores — Tema oscuro (también se usa siempre en el panel de admin) */
+  --bg-primary: #0b0c10;
+  --bg-secondary: #14161d;
+  --bg-card: rgba(30, 33, 42, 0.7);
 
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-accent: #38bdf8;
+  --text-primary: #f6f4ee;
+  --text-secondary: #a3a6b1;
+  --text-accent: #ffc820;
 
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
-  --primary-rgb: 59, 130, 246;
+  /* Mostaza del logo */
+  --primary: #ffc820;
+  --primary-hover: #f2b705;
+  --primary-rgb: 255, 200, 32;
+  --primary-text: #ffc820;   /* acento usado como texto */
+  --on-primary: #1a1404;     /* texto sobre botones mostaza */
+
+  /* Matiz para fondos/bordes translúcidos: rgba(var(--tint), a) */
+  --tint: 255, 255, 255;
+  --footer-bg: #050505;
 
   --border-light: rgba(255, 255, 255, 0.1);
   --glass-border: rgba(255, 255, 255, 0.05);
@@ -27,7 +34,7 @@
   /* Sombras */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
-  --glow: 0 0 20px rgba(59, 130, 246, 0.3);
+  --glow: 0 0 20px rgba(255, 200, 32, 0.25);
 
   /* Tipografía */
   --font-heading: 'Outfit', sans-serif;
@@ -44,25 +51,62 @@
   --navbar-height: 80px;
 }
 
-/* Tema claro */
+/* Tema oscuro explícito (el panel de admin lo fuerza con data-theme="dark") */
+[data-theme="dark"] {
+  /* Colores — Tema oscuro (también se usa siempre en el panel de admin) */
+  --bg-primary: #0b0c10;
+  --bg-secondary: #14161d;
+  --bg-card: rgba(30, 33, 42, 0.7);
+
+  --text-primary: #f6f4ee;
+  --text-secondary: #a3a6b1;
+  --text-accent: #ffc820;
+
+  /* Mostaza del logo */
+  --primary: #ffc820;
+  --primary-hover: #f2b705;
+  --primary-rgb: 255, 200, 32;
+  --primary-text: #ffc820;   /* acento usado como texto */
+  --on-primary: #1a1404;     /* texto sobre botones mostaza */
+
+  /* Matiz para fondos/bordes translúcidos: rgba(var(--tint), a) */
+  --tint: 255, 255, 255;
+  --footer-bg: #050505;
+
+  --border-light: rgba(255, 255, 255, 0.1);
+  --glass-border: rgba(255, 255, 255, 0.05);
+
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+  --glow: 0 0 20px rgba(255, 200, 32, 0.25);
+}
+
+/* Tema claro (por defecto en la tienda) */
 [data-theme="light"] {
   --bg-primary: #ffffff;
-  --bg-secondary: #f8fafc;
-  --bg-card: rgba(241, 245, 249, 0.7);
+  --bg-secondary: #f7f6f2;
+  --bg-card: rgba(247, 246, 242, 0.85);
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-accent: #0284c7;
+  --text-primary: #15171c;
+  --text-secondary: #5b606e;
+  --text-accent: #8a6400;
 
-  --primary: #3b82f6;
-  --primary-hover: #2563eb;
+  --primary: #ffc820;
+  --primary-hover: #f2b705;
+  --primary-rgb: 255, 200, 32;
+  --primary-text: #8a6400;   /* mostaza oscuro: legible sobre blanco */
+  --on-primary: #1a1404;
 
-  --border-light: rgba(0, 0, 0, 0.1);
-  --glass-border: rgba(0, 0, 0, 0.05);
+  --tint: 21, 23, 28;
+  --footer-bg: #f2f0ea;
+
+  --border-light: rgba(21, 23, 28, 0.1);
+  --glass-border: rgba(21, 23, 28, 0.06);
 
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --glow: 0 0 20px rgba(59, 130, 246, 0.2);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --glow: 0 0 20px rgba(255, 200, 32, 0.25);
 }
 
 /* =====================
@@ -87,7 +131,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
   line-height: 1.1;
   font-weight: 700;
-  color: #fff;
+  color: var(--text-primary);
 }
 
 a {
@@ -149,17 +193,17 @@ img {
    ===================== */
 .btn-primary {
   background: var(--primary);
-  color: white;
+  color: var(--on-primary);
   padding: 0.75rem 1.5rem;
   border-radius: 9999px;
   font-weight: 600;
   transition: var(--transition-base);
-  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
 }
 
 .btn-primary:hover {
   background: var(--primary-hover);
-  box-shadow: 0 0 25px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 0 25px rgba(var(--primary-rgb), 0.4);
   transform: translateY(-2px);
 }
 
@@ -240,7 +284,7 @@ img {
 }
 
 ::-webkit-scrollbar-track {
-  background: #050505;
+  background: var(--bg-primary);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -325,7 +369,7 @@ img {
   font-weight: 900;
   letter-spacing: -0.02em;
   text-transform: uppercase;
-  color: white;
+  color: var(--text-primary);
   transition: color 0.3s;
 }
 
@@ -348,7 +392,7 @@ img {
 .navbar-link {
   font-size: 0.85rem;
   font-weight: 700;
-  color: rgba(255,255,255,0.7);
+  color: var(--text-secondary);
   transition: var(--transition-base);
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -356,7 +400,7 @@ img {
 }
 
 .navbar-link:hover {
-  color: white;
+  color: var(--text-primary);
   transform: translateY(-2px);
 }
 
@@ -370,7 +414,7 @@ img {
 }
 
 .navbar-icon-btn {
-  color: white;
+  color: var(--text-primary);
   background: none;
   border: none;
   cursor: pointer;
@@ -399,9 +443,9 @@ img {
 }
 
 .navbar-lang-btn {
-  color: white;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.1);
+  color: var(--text-primary);
+  background: rgba(var(--tint), 0.08);
+  border: 1px solid rgba(var(--tint), 0.1);
   border-radius: 8px;
   padding: 0.4rem 0.6rem;
   font-size: 0.7rem;
@@ -415,13 +459,13 @@ img {
 }
 
 .navbar-lang-btn:hover {
-  background: rgba(255,255,255,0.15);
+  background: rgba(var(--tint), 0.15);
 }
 
 /* Botón hamburguesa */
 .navbar-hamburger {
   display: none;
-  color: white;
+  color: var(--text-primary);
   background: none;
   border: none;
   cursor: pointer;
@@ -436,7 +480,7 @@ img {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(2, 6, 23, 0.98);
+  background: var(--bg-primary);
   backdrop-filter: blur(20px);
   z-index: 49;
   flex-direction: column;
@@ -452,7 +496,7 @@ img {
 .navbar-mobile-link {
   font-size: 1.5rem;
   font-weight: 800;
-  color: rgba(255,255,255,0.8);
+  color: var(--text-secondary);
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 0.15em;
@@ -511,7 +555,7 @@ img {
   background: rgba(0,0,0,0.4);
   backdrop-filter: blur(8px);
   border-radius: 50%;
-  border: 1px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(var(--tint), 0.1);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -600,7 +644,7 @@ img {
   font-size: 1.15rem;
   margin-bottom: 0.5rem;
   font-weight: 600;
-  color: white;
+  color: var(--text-primary);
   text-decoration: none;
   display: block;
 }
@@ -641,7 +685,7 @@ img {
   bottom: 0;
   width: 450px;
   max-width: 100%;
-  background: #020617;
+  background: var(--bg-primary);
   z-index: 1001;
   transform: translateX(100%);
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -714,7 +758,7 @@ img {
   border: 1px solid var(--border-light);
   padding: 1rem;
   border-radius: 12px;
-  color: white;
+  color: var(--text-primary);
   width: 100%;
   font-family: inherit;
   outline: none;
@@ -737,15 +781,15 @@ img {
   border-radius: 12px;
   color: var(--text-secondary);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(var(--tint), 0.03);
+  border: 1px solid rgba(var(--tint), 0.05);
 }
 
 .navbar-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(var(--tint), 0.08);
   color: var(--text-primary);
   transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(var(--tint), 0.1);
 }
 
 /* Botones de acción en tablas admin */
@@ -762,7 +806,7 @@ img {
     color: white;
 }
 
-.icon-btn-blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+.icon-btn-blue { background: rgba(var(--primary-rgb), 0.1); color: #3b82f6; }
 .icon-btn-blue:hover { background: #3b82f6; color: white; }
 
 .icon-btn-red { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
@@ -775,14 +819,14 @@ img {
   width: 45px;
   height: 45px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(var(--tint), 0.03);
+  border: 1px solid rgba(var(--tint), 0.05);
   transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
 }
 
 .social-icon-wrapper:hover {
-  background: rgba(255,255,255,0.1);
+  background: rgba(var(--tint), 0.1);
   transform: translateY(-5px);
   border-color: var(--primary);
 }
@@ -790,12 +834,14 @@ img {
 .social-favicon {
   width: 22px;
   height: 22px;
-  filter: grayscale(1) brightness(2);
-  transition: filter 0.4s;
+  color: var(--text-primary);
+  opacity: 0.8;
+  transition: opacity 0.4s, color 0.4s;
 }
 
 .social-icon-wrapper:hover .social-favicon {
-  filter: grayscale(0) brightness(1);
+  opacity: 1;
+  color: var(--primary);
 }
 
 /* =====================
@@ -832,7 +878,7 @@ img {
    Links del Footer
    ===================== */
 .footer-link {
-  color: rgba(255,255,255,0.6);
+  color: var(--text-secondary);
   text-decoration: none;
   transition: color 0.3s;
 }
@@ -846,11 +892,11 @@ img {
    ===================== */
 .custom-select {
   appearance: none;
-  background: rgba(255,255,255,0.05);
+  background: rgba(var(--tint), 0.05);
   border: 1px solid var(--border-light);
   padding: 0.8rem 2.5rem 0.8rem 1.2rem;
   border-radius: 10px;
-  color: white;
+  color: var(--text-primary);
   cursor: pointer;
   outline: none;
   font-family: inherit;
@@ -858,7 +904,7 @@ img {
 
 .custom-select option {
   background: var(--bg-secondary);
-  color: white;
+  color: var(--text-primary);
 }
 
 /* =====================
@@ -880,7 +926,7 @@ img {
   background: var(--bg-secondary);
   border: 1px solid var(--border-light);
   border-radius: 12px;
-  color: white;
+  color: var(--text-primary);
   font-family: inherit;
   font-size: 1rem;
   outline: none;

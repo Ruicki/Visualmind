@@ -7,7 +7,7 @@
 
 import axios from 'axios';
 
-if (import.meta.env.PROD && !import.meta.env.VITE_API_URL) {
+if (import.meta.env.PROD && !import.meta.env.VITE_API_URL && !import.meta.env.VITE_DEMO) {
     // Sin esta variable el sitio publicado intenta hablar con localhost y se ve sin datos.
     console.error('[API] Falta VITE_API_URL en el build de producción (Vercel → Settings → Environment Variables).');
 }
@@ -41,5 +41,29 @@ api.interceptors.request.use((config) => {
      */
     return Promise.reject(error);
 });
+
+/**
+ * Interceptor de Respuestas.
+ * Si el servidor dice que la sesión ya no vale (expiró, cambió el rol o se cerró),
+ * se limpia la sesión local y se lleva al usuario a iniciar sesión de nuevo.
+ */
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error.response?.status;
+        const url = error.config?.url || '';
+        const hadToken = !!localStorage.getItem('token');
+        if (status === 401 && hadToken && !url.includes('/auth/login')) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            if (import.meta.env.VITE_DEMO) {
+                window.location.hash = '#/login';
+            } else if (!window.location.pathname.startsWith('/login')) {
+                window.location.assign('/login');
+            }
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default api;

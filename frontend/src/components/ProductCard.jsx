@@ -11,7 +11,7 @@ import { useCart } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { Link } from 'react-router-dom';
 import QuickViewModal from './QuickViewModal';
-import { getProductImage } from '../utils/imageUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 
 /**
  * ProductCard
@@ -82,7 +82,7 @@ export default function ProductCard(props) {
                 {/* Contenedor de Imagen */}
                 <div className="product-card-image" style={{
                     width: '100%',
-                    background: '#1e293b',
+                    background: 'var(--bg-secondary)',
                     position: 'relative',
                     overflow: 'hidden',
                     aspectRatio: '4/5'
@@ -93,7 +93,7 @@ export default function ProductCard(props) {
                             src={displayImage}
                             alt={title}
                             loading="lazy"
-                            onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                            onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                             style={{
                                 width: '100%',
                                 height: '100%',
@@ -111,7 +111,7 @@ export default function ProductCard(props) {
                                 src={hoverImage}
                                 alt={`${title} hover`}
                                 loading="lazy"
-                                onError={(e) => { e.target.onerror = null; e.target.src = '/placeholder-product.png'; }}
+                                onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                 style={{
                                     width: '100%',
                                     height: '100%',
@@ -164,7 +164,7 @@ export default function ProductCard(props) {
                             background: 'rgba(0,0,0,0.4)',
                             backdropFilter: 'blur(8px)',
                             borderRadius: '50%',
-                            border: '1px solid rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(var(--tint), 0.1)',
                             color: isInWishlist(id) ? '#ff4d4d' : 'white',
                             cursor: 'pointer',
                             display: 'flex',
@@ -204,7 +204,7 @@ export default function ProductCard(props) {
                             height: '40px',
                             background: isOutOfStock ? '#334155' : 'white',
                             borderRadius: '50%',
-                            color: isOutOfStock ? 'rgba(255,255,255,0.4)' : 'black',
+                            color: isOutOfStock ? 'rgba(var(--tint), 0.4)' : 'black',
                             boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
                             zIndex: 10,
                             border: 'none',
@@ -243,12 +243,12 @@ export default function ProductCard(props) {
                     </div>
 
                     <Link to={`/product/${id}`} style={{ textDecoration: 'none' }}>
-                        <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem', fontWeight: '600', color: 'white' }}>{title}</h3>
+                        <h3 style={{ fontSize: '1.15rem', marginBottom: '0.5rem', fontWeight: '600', color: 'var(--text-primary)' }}>{title}</h3>
                     </Link>
 
                     {/* Precio */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                        <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'white' }}>
+                        <div style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                             ${price}
                         </div>
                     </div>

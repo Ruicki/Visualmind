@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import api from '../../api/axiosConfig';
 import { Outlet, Link, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
@@ -15,6 +16,25 @@ export default function AdminLayout() {
     const { user, loading, signOut } = useAuth();
     const { t } = useLanguage();
     const location = useLocation();
+    const [pendingCount, setPendingCount] = useState(0);
+    const isAdmin = user?.role === 'admin';
+
+    // Pedidos esperando pago: se consulta cada minuto para ver los nuevos sin recargar
+    useEffect(() => {
+        if (!isAdmin) return;
+        let active = true;
+        const load = () => api.get('/admin/stats')
+            .then(({ data }) => { if (active) setPendingCount(data?.stats?.pendingPayment?.count || 0); })
+            .catch(() => {});
+        load();
+        const timer = setInterval(load, 60 * 1000);
+        return () => { active = false; clearInterval(timer); };
+    }, [isAdmin, location.pathname]);
+
+    useEffect(() => {
+        const base = 'Admin · Visualmind';
+        document.title = pendingCount > 0 ? `(${pendingCount}) ${base}` : base;
+    }, [pendingCount]);
 
     /**
      * Seguridad: Redirige al login si el usuario no está autenticado 
@@ -46,8 +66,15 @@ export default function AdminLayout() {
         { path: '/admin/settings', icon: <Settings size={20} />, label: t('admin.settings') || 'Ajustes' },
     ];
 
+    // Título de la cabecera según la sección abierta (la ruta más específica gana)
+    const currentSectionLabel = [...navItems]
+        .sort((a, b) => b.path.length - a.path.length)
+        .find(item => location.pathname === item.path || location.pathname.startsWith(item.path + '/'))?.label
+        || t('admin.overview') || 'Resumen';
+
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0a' }}>
+        // El panel de admin usa siempre el tema oscuro, sin importar el de la tienda
+        <div data-theme="dark" style={{ display: 'flex', minHeight: '100vh', background: '#0a0a0a', color: 'var(--text-primary)' }}>
             {/* Sidebar */}
             <div style={{
                 width: '260px',
@@ -81,6 +108,11 @@ export default function AdminLayout() {
                         >
                             {item.icon}
                             {item.label}
+                            {item.path === '/admin/orders' && pendingCount > 0 && (
+                                <span title="Pedidos esperando pago" style={{ marginLeft: 'auto', minWidth: '1.5rem', padding: '0.1rem 0.45rem', borderRadius: '999px', background: '#ffc107', color: '#1a1300', fontSize: '0.75rem', fontWeight: 800, textAlign: 'center' }}>
+                                    {pendingCount}
+                                </span>
+                            )}
                         </Link>
                     ))}
                 </nav>
@@ -120,7 +152,7 @@ export default function AdminLayout() {
                     justifyContent: 'space-between',
                     padding: '0 3rem'
                 }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{t('admin.overview') || 'Resumen'}</h2>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700' }}>{currentSectionLabel}</h2>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                         <div style={{ textAlign: 'right' }}>
                             <div style={{ fontSize: '0.9rem', fontWeight: 'bold' }}>{t('admin.user_label') || 'Administrador'}</div>

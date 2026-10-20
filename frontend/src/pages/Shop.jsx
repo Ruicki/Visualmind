@@ -194,7 +194,7 @@ export default function Shop() {
   });
 
   return (
-    <div style={{ paddingTop: '120px', paddingBottom: '100px', minHeight: '100vh', background: 'var(--bg-primary)', color: 'white' }}>
+    <div style={{ paddingTop: '120px', paddingBottom: '100px', minHeight: '100vh', background: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
       <SEO 
         title={t('shop.title') || 'Shop'} 
         description="Explora nuestra colección exclusiva de productos premium."
@@ -207,16 +207,16 @@ export default function Shop() {
             marginBottom: '4rem', 
             borderRadius: '32px', 
             overflow: 'hidden', 
-            background: activeCampaignData.banner_url ? `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${activeCampaignData.banner_url})` : 'rgba(255,255,255,0.02)',
+            background: activeCampaignData.banner_url ? `linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url(${activeCampaignData.banner_url})` : 'rgba(var(--tint), 0.02)',
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             padding: '4rem 2rem',
             textAlign: 'center',
-            border: activeCampaignData.accent_color ? `1px solid ${activeCampaignData.accent_color}` : '1px solid rgba(255,255,255,0.1)'
+            border: activeCampaignData.accent_color ? `1px solid ${activeCampaignData.accent_color}` : '1px solid rgba(var(--tint), 0.1)'
           }}>
             <span style={{ color: activeCampaignData.accent_color || 'var(--primary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.2em' }}>{t('shop.campaign_special')}</span>
             <h1 style={{ fontSize: '3.5rem', fontWeight: '900', marginTop: '1rem' }}>{activeCampaignData.name}</h1>
-            <p style={{ color: 'rgba(255,255,255,0.8)', maxWidth: '600px', margin: '1.5rem auto' }}>{activeCampaignData.description}</p>
+            <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', margin: '1.5rem auto' }}>{activeCampaignData.description}</p>
           </div>
         )}
 
@@ -230,9 +230,9 @@ export default function Shop() {
               style={{
                 padding: '0.8rem 1.5rem',
                 borderRadius: '50px',
-                background: category === "all" ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                color: 'white',
-                border: category === "all" ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                background: category === "all" ? 'var(--primary)' : 'rgba(var(--tint), 0.05)',
+                color: category === "all" ? 'var(--on-primary)' : 'var(--text-primary)',
+                border: category === "all" ? 'none' : '1px solid rgba(var(--tint), 0.1)',
                 fontWeight: '600',
                 fontSize: '0.9rem',
                 cursor: 'pointer',
@@ -250,9 +250,9 @@ export default function Shop() {
                 style={{
                   padding: '0.8rem 1.5rem',
                   borderRadius: '50px',
-                  background: category === cat ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                  color: 'white',
-                  border: category === cat ? 'none' : '1px solid rgba(255,255,255,0.1)',
+                  background: category === cat ? 'var(--primary)' : 'rgba(var(--tint), 0.05)',
+                  color: category === cat ? 'var(--on-primary)' : 'var(--text-primary)',
+                  border: category === cat ? 'none' : '1px solid rgba(var(--tint), 0.1)',
                   fontWeight: '600',
                   fontSize: '0.9rem',
                   cursor: 'pointer',
@@ -268,7 +268,7 @@ export default function Shop() {
 
         {/* Toolbar de Filtros: Búsqueda y Dropdowns */}
         <div style={{ marginBottom: '3rem' }}>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', background: 'rgba(255,255,255,0.02)', padding: '1.2rem', borderRadius: '24px', border: '1px solid rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center', background: 'rgba(var(--tint), 0.02)', padding: '1.2rem', borderRadius: '24px', border: '1px solid rgba(var(--tint), 0.05)', backdropFilter: 'blur(10px)' }}>
 
             {/* Input de Búsqueda */}
             <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
@@ -280,11 +280,11 @@ export default function Shop() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{ 
                   width: '100%', 
-                  background: 'rgba(255,255,255,0.03)', 
-                  border: '1px solid rgba(255,255,255,0.1)', 
+                  background: 'rgba(var(--tint), 0.03)', 
+                  border: '1px solid rgba(var(--tint), 0.1)', 
                   borderRadius: '14px',
                   padding: '1rem 1rem 1rem 3.5rem', 
-                  color: 'white', 
+                  color: 'var(--text-primary)', 
                   outline: 'none', 
                   fontFamily: 'inherit',
                   transition: 'all 0.3s'
@@ -299,11 +299,11 @@ export default function Shop() {
                 onChange={(e) => setPriceRange(e.target.value)}
                 style={{
                   width: '100%',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(var(--tint), 0.03)',
+                  border: '1px solid rgba(var(--tint), 0.1)',
                   borderRadius: '14px',
                   padding: '1rem 2.5rem 1rem 1.2rem',
-                  color: 'white',
+                  color: 'var(--text-primary)',
                   appearance: 'none',
                   cursor: 'pointer',
                   fontSize: '0.9rem',
@@ -325,11 +325,11 @@ export default function Shop() {
                 onChange={(e) => setSelectedSize(e.target.value)}
                 style={{
                   width: '100%',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(var(--tint), 0.03)',
+                  border: '1px solid rgba(var(--tint), 0.1)',
                   borderRadius: '14px',
                   padding: '1rem 2.5rem 1rem 1.2rem',
-                  color: 'white',
+                  color: 'var(--text-primary)',
                   appearance: 'none',
                   cursor: 'pointer',
                   fontSize: '0.9rem',
@@ -351,11 +351,11 @@ export default function Shop() {
                 onChange={(e) => setSelectedColor(e.target.value)}
                 style={{
                   width: '100%',
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(var(--tint), 0.03)',
+                  border: '1px solid rgba(var(--tint), 0.1)',
                   borderRadius: '14px',
                   padding: '1rem 2.5rem 1rem 1.2rem',
-                  color: 'white',
+                  color: 'var(--text-primary)',
                   appearance: 'none',
                   cursor: 'pointer',
                   fontSize: '0.9rem',

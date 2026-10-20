@@ -35,9 +35,9 @@ export default function Lookbook() {
     }, []);
 
     return (
-        <div style={{ background: '#000', minHeight: '100vh', paddingTop: '120px', paddingBottom: '100px', color: 'white' }}>
+        <div style={{ background: 'var(--bg-primary)', minHeight: '100vh', paddingTop: '120px', paddingBottom: '100px', color: 'var(--text-primary)' }}>
             <div className="container">
-                <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', textDecoration: 'none', fontWeight: '800', marginBottom: '3rem', letterSpacing: '0.1em', fontSize: '0.9rem' }}>
+                <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-text)', textDecoration: 'none', fontWeight: '800', marginBottom: '3rem', letterSpacing: '0.1em', fontSize: '0.9rem' }}>
                     <ArrowLeft size={18} /> {t('lookbook.back')}
                 </Link>
 
@@ -47,12 +47,12 @@ export default function Lookbook() {
                     transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
                     transition: 'all 1s ease-out'
                 }}>
-                    <span style={{ color: 'var(--primary)', fontWeight: '800', letterSpacing: '0.5em', textTransform: 'uppercase', fontSize: '0.9rem' }}>{t('lookbook.editorial')}</span>
+                    <span style={{ color: 'var(--primary-text)', fontWeight: '800', letterSpacing: '0.5em', textTransform: 'uppercase', fontSize: '0.9rem' }}>{t('lookbook.editorial')}</span>
                     <h1 style={{ fontSize: 'clamp(4rem, 10vw, 8rem)', fontWeight: '900', lineHeight: 0.9, letterSpacing: '-0.04em', margin: '1rem 0 3rem 0' }}>
                         {t('lookbook.the')} <br />
                         <span className="text-gradient">{t('lookbook.chronicles')}</span>
                     </h1>
-                    <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.5)', maxWidth: '500px' }}>
+                    <p style={{ fontSize: '1.2rem', color: 'var(--text-secondary)', maxWidth: '500px' }}>
                         {t('lookbook.subtitle')}
                     </p>
                 </header>

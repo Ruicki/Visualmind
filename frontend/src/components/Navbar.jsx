@@ -14,6 +14,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import SearchModal from './SearchModal';
 import ThemeToggle from './ThemeToggle';
+import { assetUrl } from '../utils/imageUtils';
 
 /**
  * Navbar
@@ -79,7 +80,7 @@ export default function Navbar() {
         className="navbar"
         style={{
           background: scrolled
-            ? 'rgba(2, 6, 23, 0.9)'
+            ? 'color-mix(in srgb, var(--bg-primary) 90%, transparent)'
             : 'transparent',
           backdropFilter: scrolled ? 'blur(20px)' : 'none',
           borderBottom: scrolled ? '1px solid var(--border-light)' : 'none',
@@ -91,7 +92,7 @@ export default function Navbar() {
           <div className="navbar-logo">
             <Link to="/">
               <img 
-                src="/Logo.png" 
+                src={assetUrl('Logo.png')} 
                 alt="Visualmind" 
                 className="navbar-logo-img"
                 onError={(e) => {
@@ -150,8 +151,8 @@ export default function Navbar() {
                   className="navbar-icon-btn"
                   title="Panel Admin"
                   style={{ 
-                    background: 'rgba(59, 130, 246, 0.1)', 
-                    color: '#3b82f6',
+                    background: 'rgba(var(--primary-rgb), 0.1)', 
+                    color: 'var(--primary-text)',
                     padding: '0.4rem 0.8rem',
                     borderRadius: '8px',
                     fontSize: '0.75rem',
@@ -201,7 +202,7 @@ export default function Navbar() {
               {getCartCount() > 0 && (
                 <span
                   className="navbar-badge"
-                  style={{ background: 'var(--primary)', color: 'white' }}
+                  style={{ background: 'var(--primary)', color: 'var(--on-primary)' }}
                 >
                   {getCartCount()}
                 </span>

@@ -14,6 +14,7 @@ import axiosInstance from '../api/axiosConfig';
 import { ChevronRight, ChevronLeft, ArrowRight, Clock, Zap } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import { isProductVisible } from '../utils/productUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 
 /**
  * Componente Home
@@ -30,7 +31,7 @@ import { isProductVisible } from '../utils/productUtils';
  * Orquestador principal que renderiza el Hero estacional, secciones de 
  * productos destacados, categorías principales y contenido de campaña.
  */
-const FALLBACK_IMG = 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=800';
+const FALLBACK_IMG = assetUrl('og-image.jpg');
 
 export default function Home() {
   const { t } = useLanguage();
@@ -136,7 +137,8 @@ export default function Home() {
     if (!newsletterEmail) return;
     setNewsletterStatus('sending');
     try {
-      const res = await axiosInstance.post('/newsletter/subscribe', { email: newsletterEmail });
+      const website = e.target.elements?.website?.value || '';
+      const res = await axiosInstance.post('/newsletter/subscribe', { email: newsletterEmail, website });
       setNewsletterStatus(res.data.alreadySubscribed ? 'already' : 'success');
       setNewsletterEmail('');
     } catch {
@@ -177,7 +179,7 @@ export default function Home() {
       <section className="container" style={{ padding: '40px 0 6rem 0' }}>
         <div className="carousel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem' }}>
           <div>
-            <span style={{ color: 'var(--primary)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.85rem' }}>
+            <span style={{ color: 'var(--primary-text)', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.2em', fontSize: '0.85rem' }}>
               {t('home_extended.featured_drops')}
             </span>
             <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: '900', marginTop: '0.8rem' }}>
@@ -185,10 +187,10 @@ export default function Home() {
             </h2>
           </div>
           <div style={{ display: 'flex', gap: '0.8rem' }}>
-            <button onClick={prevSlide} aria-label="Slide anterior" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'white', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
+            <button onClick={prevSlide} aria-label="Slide anterior" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'var(--text-primary)', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
               <ChevronLeft size={22} />
             </button>
-            <button onClick={nextSlide} aria-label="Siguiente slide" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'white', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
+            <button onClick={nextSlide} aria-label="Siguiente slide" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'var(--text-primary)', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
               <ChevronRight size={22} />
             </button>
           </div>
@@ -212,7 +214,9 @@ export default function Home() {
                 transform: `scale(${index === currentSlide ? 1 : 1.1})`,
                 padding: 'clamp(1.5rem, 4vw, 4rem)',
                 display: 'flex', alignItems: 'flex-end',
-                background: 'linear-gradient(45deg, var(--bg-primary) 20%, transparent 100%)'
+                // Texto sobre foto: sombra oscura fija y texto claro en ambos temas
+                background: 'linear-gradient(45deg, rgba(0,0,0,0.78) 15%, rgba(0,0,0,0.15) 70%, transparent 100%)',
+                color: '#ffffff'
               }}
             >
               <img
@@ -226,7 +230,7 @@ export default function Home() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', color: 'var(--primary)', fontWeight: '700', marginBottom: '1rem', fontSize: '0.9rem' }}>
                   <Zap size={18} fill="var(--primary)" /> {t('home_extended.exclusive_release')}
                 </div>
-                <h3 className="carousel-slide-title" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: '900', lineHeight: 1, marginBottom: '1rem' }}>
+                <h3 className="carousel-slide-title" style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: '900', lineHeight: 1, marginBottom: '1rem', color: '#ffffff' }}>
                   {product.title}
                 </h3>
                 <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -253,7 +257,7 @@ export default function Home() {
                 style={{
                   width: i === currentSlide ? '32px' : '10px', height: '10px',
                   borderRadius: '10px',
-                  background: i === currentSlide ? 'var(--primary)' : 'rgba(255,255,255,0.3)',
+                  background: i === currentSlide ? 'var(--primary)' : 'rgba(var(--tint), 0.3)',
                   cursor: 'pointer', transition: 'all 0.3s'
                 }}
               />
@@ -267,7 +271,7 @@ export default function Home() {
       <section style={{ background: 'var(--bg-secondary)', padding: 'clamp(4rem, 8vw, 10rem) 0' }}>
         <div className="container">
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.8rem', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.6rem 1.2rem', borderRadius: '100px', color: 'var(--primary)', fontWeight: '700', fontSize: '0.85rem', marginBottom: '1.2rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.8rem', background: 'rgba(var(--primary-rgb), 0.1)', padding: '0.6rem 1.2rem', borderRadius: '100px', color: 'var(--primary-text)', fontWeight: '700', fontSize: '0.85rem', marginBottom: '1.2rem' }}>
               <Clock size={16} /> {t('home_extended.limited_time_drop')}
             </div>
             <h2 style={{ fontSize: 'clamp(2rem, 5vw, 3.5rem)', fontWeight: '900', marginBottom: '1rem' }}>
@@ -302,13 +306,13 @@ export default function Home() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'center' }}>
             <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', height: '600px' }}>
               <img 
-                src={featuredCollection.image_url || FALLBACK_IMG} 
+                src={featuredCollection.image_url ? getProductImage(null, featuredCollection.image_url) : FALLBACK_IMG} 
                 alt={featuredCollection.name}
                 loading="lazy"
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />
               <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', padding: '3rem' }}>
-                <span style={{ color: 'var(--primary)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                <span style={{ color: 'var(--primary-text)', fontWeight: '700', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
                   Colección Exclusiva
                 </span>
                 <h3 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '1rem' }}>
@@ -334,7 +338,7 @@ export default function Home() {
       <section className="container" style={{ padding: '6rem 0' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3rem' }}>
           <h2 style={{ fontSize: '2.5rem', fontWeight: '900' }}>{t('home_extended.catalog_title')}</h2>
-          <Link to="/shop" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', fontWeight: '700', textDecoration: 'none' }}>
+          <Link to="/shop" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-text)', fontWeight: '700', textDecoration: 'none' }}>
             {t('home_extended.view_all')} <ArrowRight size={20} />
           </Link>
         </div>
@@ -366,18 +370,21 @@ export default function Home() {
             {t('home_extended.newsletter_desc')}
           </p>
           {newsletterStatus === 'success' || newsletterStatus === 'already' ? (
-            <p style={{ color: 'var(--primary)', fontWeight: '700', fontSize: '1.1rem' }}>
+            <p style={{ color: 'var(--primary-text)', fontWeight: '700', fontSize: '1.1rem' }}>
               {newsletterStatus === 'already' ? t('home_extended.newsletter_already') : t('home_extended.newsletter_success')}
             </p>
           ) : (
             <form style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }} onSubmit={handleNewsletterSubmit}>
+              {/* Campo trampa para bots: invisible para personas */}
+              <input type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true"
+                style={{ position: 'absolute', left: '-10000px', width: '1px', height: '1px', opacity: 0 }} />
               <input 
                 type="email"
                 value={newsletterEmail}
                 onChange={(e) => setNewsletterEmail(e.target.value)}
                 placeholder="tu@email.com"
                 required
-                style={{ flex: 1, padding: '1.2rem 1.5rem', borderRadius: '16px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'white', fontSize: '1rem' }}
+                style={{ flex: 1, padding: '1.2rem 1.5rem', borderRadius: '16px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '1rem' }}
               />
               <button type="submit" className="btn-primary" disabled={newsletterStatus === 'sending'} style={{ padding: '1.2rem 3rem', borderRadius: '16px', fontSize: '1rem', fontWeight: '700' }}>
                 {newsletterStatus === 'sending' ? t('home_extended.newsletter_sending') : t('home_extended.newsletter_btn')}

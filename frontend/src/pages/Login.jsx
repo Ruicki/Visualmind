@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { Mail, Lock, User, ArrowRight, Loader } from 'lucide-react';
+import { whatsappLink } from '../config/storeConfig';
 
 /**
  * @component Login
@@ -102,14 +103,14 @@ export default function Login() {
                 {/* Mensaje de contexto (ej: "Inicia sesión para completar tu compra") */}
                 {contextMsg && (
                     <div style={{
-                        background: 'rgba(59,130,246,0.1)',
+                        background: 'rgba(var(--primary-rgb), 0.1)',
                         color: '#60a5fa',
                         padding: '1rem',
                         borderRadius: '12px',
                         marginBottom: '1rem',
                         fontSize: '0.9rem',
                         textAlign: 'center',
-                        border: '1px solid rgba(59,130,246,0.2)'
+                        border: '1px solid rgba(var(--primary-rgb), 0.2)'
                     }}>
                         {contextMsg}
                     </div>
@@ -146,7 +147,7 @@ export default function Login() {
                                     borderRadius: '16px',
                                     background: 'var(--bg-primary)',
                                     border: '1px solid var(--border-light)',
-                                    color: 'white',
+                                    color: 'var(--text-primary)',
                                     fontSize: '1rem',
                                     outline: 'none'
                                 }}
@@ -161,7 +162,9 @@ export default function Login() {
                                 type="password"
                                 placeholder={t('auth.password')}
                                 required
-                                minLength={isLogin ? undefined : 6}
+                                minLength={isLogin ? undefined : 8}
+                                pattern={isLogin ? undefined : '(?=.*[A-Za-z])(?=.*\\d).{8,}'}
+                                title={isLogin ? undefined : t('auth.password_rules', 'Mínimo 8 caracteres, con letras y números')}
                                 value={formData.password}
                                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                                 style={{
@@ -170,12 +173,22 @@ export default function Login() {
                                     borderRadius: '16px',
                                     background: 'var(--bg-primary)',
                                     border: '1px solid var(--border-light)',
-                                    color: 'white',
+                                    color: 'var(--text-primary)',
                                     fontSize: '1rem',
                                     outline: 'none'
                                 }}
                             />
                         </div>
+                        {isLogin && (
+                            <a
+                                href={whatsappLink(`Hola, olvidé la contraseña de mi cuenta en Visualmind${formData.email ? ` (${formData.email})` : ''}. ¿Me ayudan a cambiarla?`)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ display: 'block', textAlign: 'right', marginTop: '0.6rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}
+                            >
+                                {t('auth.forgot', '¿Olvidaste tu contraseña?')}
+                            </a>
+                        )}
                     </div>
 
                     <button
@@ -208,7 +221,7 @@ export default function Login() {
                     {isLogin ? t('auth.no_account') + " " : t('auth.has_account') + " "}
                     <button
                         onClick={() => setIsLogin(!isLogin)}
-                        style={{ color: 'var(--primary)', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}
+                        style={{ color: 'var(--primary-text)', background: 'none', border: 'none', fontWeight: '700', cursor: 'pointer' }}
                     >
                         {isLogin ? t('auth.sign_up') : t('auth.sign_in')}
                     </button>

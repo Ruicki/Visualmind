@@ -8,6 +8,15 @@
 import pool from '../src/config/db.js';
 import fs from 'fs';
 import path from 'path';
+import { syncProductStock } from '../services/orderExpiry.js';
+
+/** Campos internos que nunca se envían a la tienda pública. */
+const INTERNAL_FIELDS = ['admin_notes'];
+export const toPublicProduct = (row) => {
+    const copy = { ...row };
+    for (const field of INTERNAL_FIELDS) delete copy[field];
+    return copy;
+};
 
 /**
  * getAllProducts
@@ -61,7 +70,7 @@ export const getAllProducts = async (req, res) => {
         }
 
         const result = await pool.query(query, params);
-        res.json(result.rows);
+        res.json(result.rows.map(toPublicProduct));
     } catch (error) {
         console.error('Error al obtener productos:', error);
         res.status(500).json({ error: 'Error del servidor' });
@@ -106,16 +115,20 @@ export const getAdminProducts = async (req, res) => {
 export const getProductById = async (req, res) => {
     const { id } = req.params;
     try {
-        const productResult = await pool.query('SELECT * FROM products WHERE id = $1', [id]);
+        // Solo productos visibles en la tienda: los borradores y archivados no se exponen
+        const productResult = await pool.query(
+            "SELECT * FROM products WHERE id::text = $1 AND lifecycle_state IN ('Published', 'Legacy')",
+            [id]
+        );
         if (productResult.rows.length === 0) {
             return res.status(404).json({ error: 'Producto no encontrado' });
         }
         
         const variantsResult = await pool.query('SELECT * FROM product_variants WHERE product_id = $1', [id]);
         
-        const product = productResult.rows[0];
+        const product = toPublicProduct(productResult.rows[0]);
         product.variants = variantsResult.rows;
-        
+
         res.json(product);
     } catch (error) {
         console.error('Error al obtener producto:', error);
@@ -161,8 +174,12 @@ export const createProduct = async (req, res) => {
         
         // Normalización de valores para evitar errores de tipo en PostgreSQL
         const normalizedPrice = parseFloat(price) || 0;
+        if (!(normalizedPrice > 0) || normalizedPrice > 100000) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'El precio debe ser mayor que 0.' });
+        }
         const normalizedStock = parseInt(stock) || 0;
-        const normalizedDiscount = parseFloat(discount) || 0;
+        const normalizedDiscount = Math.min(Math.max(parseFloat(discount) || 0, 0), 100);
         const normalizedPriority = parseInt(priority) || 0;
         
         // Convertir strings vacíos a null para columnas UUID o fechas
@@ -212,7 +229,7 @@ export const createProduct = async (req, res) => {
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error al crear producto:', error);
-        res.status(500).json({ error: 'Error al crear el producto: ' + error.message });
+        res.status(500).json({ error: 'Error al crear el producto' });
     } finally {
         client.release();
     }
@@ -241,7 +258,24 @@ export const updateProduct = async (req, res) => {
     const client = await pool.connect();
     try {
         await client.query('BEGIN');
-        
+
+        // Si el producto cambió desde que el admin abrió el formulario (p. ej. una venta
+        // descontó stock), no se sobrescribe: se pide recargar.
+        const currentRes = await client.query('SELECT updated_at FROM products WHERE id::text = $1 FOR UPDATE', [id]);
+        if (currentRes.rows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Producto no encontrado' });
+        }
+        const expected = req.body.expected_updated_at;
+        const current = currentRes.rows[0].updated_at;
+        if (expected && current && new Date(expected).getTime() !== new Date(current).getTime()) {
+            await client.query('ROLLBACK');
+            return res.status(409).json({
+                code: 'STALE_PRODUCT',
+                error: 'Este producto cambió mientras lo editabas (por ejemplo, se vendió una unidad). Cierra el formulario y vuelve a abrirlo para ver el stock actual.'
+            });
+        }
+
         // Validación de SKU único
         if (sku && sku.trim() !== '') {
             const skuCheck = await client.query('SELECT id FROM products WHERE sku = $1 AND id != $2', [sku, id]);
@@ -253,8 +287,12 @@ export const updateProduct = async (req, res) => {
 
         // Normalización de valores
         const normalizedPrice = parseFloat(price) || 0;
+        if (!(normalizedPrice > 0) || normalizedPrice > 100000) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'El precio debe ser mayor que 0.' });
+        }
         const normalizedStock = parseInt(stock) || 0;
-        const normalizedDiscount = parseFloat(discount) || 0;
+        const normalizedDiscount = Math.min(Math.max(parseFloat(discount) || 0, 0), 100);
         const normalizedPriority = parseInt(priority) || 0;
         
         const nCampaignId = campaign_id && campaign_id !== '' ? campaign_id : null;
@@ -268,7 +306,7 @@ export const updateProduct = async (req, res) => {
             'new_arrival = $11', 'parent_category = $12', 'launch_date = $13',
             'lifecycle_state = $14', 'priority = $15', 'campaign_id = $16',
             'collection_id = $17', 'layout_preference = $18', 'admin_notes = $19',
-            'tags = $20', 'show_on_home = $21'
+            'tags = $20', 'show_on_home = $21', 'updated_at = NOW()'
         ];
 
         const values = [
@@ -327,29 +365,50 @@ export const updateProduct = async (req, res) => {
         }
 
         if (processedVariants && Array.isArray(processedVariants) && processedVariants.length > 0) {
-            await client.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
-            let totalStock = 0;
+            // Se conservan los IDs de las variantes existentes (los pedidos las referencian):
+            // se actualizan las que siguen, se crean las nuevas y se borran las quitadas.
+            const existingRes = await client.query('SELECT id, size, color FROM product_variants WHERE product_id = $1', [id]);
+            const norm = (v) => String(v ?? '').trim().toLowerCase();
+            const keep = new Set();
             for (const variant of processedVariants) {
-                totalStock += parseInt(variant.stock || 0);
-                await client.query(
-                    `INSERT INTO product_variants (product_id, size, color, stock, sku) 
-                     VALUES ($1, $2, $3, $4, $5)`,
-                    [id, variant.size, variant.color, parseInt(variant.stock) || 0, variant.sku]
-                );
+                const stockValue = Math.max(parseInt(variant.stock) || 0, 0);
+                const match = existingRes.rows.find(e => !keep.has(e.id) && (
+                    (variant.id && e.id === variant.id) ||
+                    (!variant.id && norm(e.size) === norm(variant.size) && norm(e.color) === norm(variant.color))
+                ));
+                if (match) {
+                    keep.add(match.id);
+                    await client.query(
+                        'UPDATE product_variants SET size = $1, color = $2, stock = $3, sku = $4 WHERE id = $5',
+                        [variant.size, variant.color, stockValue, variant.sku, match.id]
+                    );
+                } else {
+                    const inserted = await client.query(
+                        `INSERT INTO product_variants (product_id, size, color, stock, sku)
+                         VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+                        [id, variant.size, variant.color, stockValue, variant.sku]
+                    );
+                    keep.add(inserted.rows[0].id);
+                }
             }
-            await client.query('UPDATE products SET stock = $1 WHERE id = $2', [totalStock, id]);
+            await client.query(
+                'DELETE FROM product_variants WHERE product_id = $1 AND NOT (id = ANY($2::uuid[]))',
+                [id, [...keep]]
+            );
+            await syncProductStock(client, id);
         } else if (processedVariants && Array.isArray(processedVariants) && processedVariants.length === 0) {
             // Si el array de variantes llega vacío, eliminamos las variantes existentes
             // El stock ya fue actualizado en la consulta principal de products
             await client.query('DELETE FROM product_variants WHERE product_id = $1', [id]);
         }
 
+        const refreshed = await client.query('SELECT * FROM products WHERE id = $1', [id]);
         await client.query('COMMIT');
-        res.json(result.rows[0]);
+        res.json(refreshed.rows[0] || result.rows[0]);
     } catch (error) {
         await client.query('ROLLBACK');
         console.error('Error al actualizar producto:', error);
-        res.status(500).json({ error: 'Error al actualizar producto: ' + error.message });
+        res.status(500).json({ error: 'Error al actualizar el producto' });
     } finally {
         client.release();
     }

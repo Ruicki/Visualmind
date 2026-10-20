@@ -8,10 +8,15 @@
  * - SHIPPING_COST (por defecto 0 → envío gratis para todos)
  * - FREE_SHIPPING_THRESHOLD (por defecto 0 → sin umbral; si es > 0, el envío es gratis
  *   cuando el subtotal lo supera)
- * - TAX_RATE (por defecto 0.07 → ITBMS de Panamá)
+ *
+ * Los productos no llevan ITBMS: total = subtotal + envío.
  */
 
 export const PAYMENT_METHODS = ['yappy', 'transfer', 'cash_on_delivery'];
+
+/** Límites por pedido: evitan que un solo pedido aparte todo el inventario. */
+export const MAX_UNITS_PER_LINE = 20;
+export const MAX_LINES_PER_ORDER = 30;
 
 const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
@@ -25,7 +30,6 @@ export function getPricingConfig() {
   return {
     shippingCost: envNumber('SHIPPING_COST', 0),
     freeShippingThreshold: envNumber('FREE_SHIPPING_THRESHOLD', 0),
-    taxRate: envNumber('TAX_RATE', 0.07),
   };
 }
 
@@ -39,8 +43,7 @@ export function computeTotals(subtotal, config = getPricingConfig()) {
   const sub = round2(subtotal);
   const freeByThreshold = config.freeShippingThreshold > 0 && sub > config.freeShippingThreshold;
   const shipping = freeByThreshold ? 0 : round2(config.shippingCost);
-  const tax = round2(sub * config.taxRate);
-  return { subtotal: sub, shipping, tax, total: round2(sub + shipping + tax) };
+  return { subtotal: sub, shipping, total: round2(sub + shipping) };
 }
 
 /** Normaliza el color que llega del carrito (puede ser string u objeto {name}). */
@@ -81,14 +84,21 @@ export function normalizeCartItems(items) {
   const map = new Map();
   for (const raw of items) {
     const quantity = Number(raw?.quantity);
-    if (!raw?.product_id || !Number.isInteger(quantity) || quantity < 1 || quantity > 100) {
+    if (!raw?.product_id || !Number.isInteger(quantity) || quantity < 1 || quantity > MAX_UNITS_PER_LINE) {
       throw Object.assign(new Error('Artículo inválido en el carrito'), { status: 400 });
     }
     const size = raw.size ?? null;
     const color = colorName(raw.color);
     const key = `${raw.product_id}|${size}|${color}`;
     const prev = map.get(key);
-    map.set(key, { product_id: String(raw.product_id), size, color, quantity: (prev?.quantity || 0) + quantity });
+    const total = (prev?.quantity || 0) + quantity;
+    if (total > MAX_UNITS_PER_LINE) {
+      throw Object.assign(new Error(`Máximo ${MAX_UNITS_PER_LINE} unidades por talla en un pedido`), { status: 400 });
+    }
+    map.set(key, { product_id: String(raw.product_id), size, color, quantity: total });
+  }
+  if (map.size > MAX_LINES_PER_ORDER) {
+    throw Object.assign(new Error(`Un pedido admite como máximo ${MAX_LINES_PER_ORDER} artículos distintos`), { status: 400 });
   }
   return [...map.values()];
 }

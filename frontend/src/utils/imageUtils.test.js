@@ -5,7 +5,12 @@ describe('imageUtils', () => {
   describe('getProductImage', () => {
     it('returns default placeholder when no imageUrl is provided', () => {
       const result = getProductImage(null, null);
-      expect(result).toBe('https://placehold.co/800x1000?text=Visualmind');
+      expect(result).toBe('/placeholder-product.png');
+    });
+
+    it('serves frontend assets (like /Post photos) from the site, not the backend', () => {
+      expect(getProductImage(null, '/Post/One pice/Luffy.webp')).toBe('/Post/One pice/Luffy.webp');
+      expect(getProductImage(null, 'Post/a.webp')).toBe('/Post/a.webp');
     });
 
     it('returns the same url when it starts with http', () => {

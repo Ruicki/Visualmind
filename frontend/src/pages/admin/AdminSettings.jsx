@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../../api/axiosConfig';
+import { downloadFromApi } from '../../api/download';
 import { useAuth } from '../../context/AuthContext';
 import { Shield, Check, Loader, AlertTriangle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -25,6 +26,49 @@ export default function AdminSettings() {
     const [emailToPromote, setEmailToPromote] = useState('');
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState(null);
+    const [subscribers, setSubscribers] = useState(null);
+    const [exportError, setExportError] = useState(null);
+    const [resetEmail, setResetEmail] = useState('');
+    const [resetLink, setResetLink] = useState(null);
+    const [resetError, setResetError] = useState(null);
+    const [copied, setCopied] = useState(false);
+
+    const createResetLink = async (e) => {
+        e.preventDefault();
+        setResetError(null);
+        setResetLink(null);
+        setCopied(false);
+        try {
+            const { data } = await api.post('/auth/reset-link', { email: resetEmail });
+            setResetLink(data);
+        } catch (err) {
+            setResetError(err.response?.data?.message || 'No se pudo generar el enlace.');
+        }
+    };
+
+    const copyResetLink = async () => {
+        try {
+            await navigator.clipboard.writeText(resetLink.url);
+            setCopied(true);
+        } catch {
+            setCopied(false);
+        }
+    };
+
+    useEffect(() => {
+        api.get('/admin/stats')
+            .then(({ data }) => setSubscribers(data?.stats?.newsletterSubscribers ?? 0))
+            .catch(() => setSubscribers(null));
+    }, []);
+
+    const exportSubscribers = async () => {
+        setExportError(null);
+        try {
+            await downloadFromApi('/admin/reports/newsletter.csv', 'suscriptores.csv');
+        } catch {
+            setExportError('No se pudo descargar la lista. Inténtalo de nuevo.');
+        }
+    };
 
     /**
      * Promueve un usuario existente al rol de administrador mediante su email.
@@ -103,6 +147,48 @@ export default function AdminSettings() {
                         </div>
                     )}
                 </div>
+            </div>
+
+            <div style={{ background: 'var(--bg-secondary)', padding: '2rem', borderRadius: '24px', border: '1px solid var(--border-light)', marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>Restablecer contraseña de un cliente</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                    Cuando un cliente te escriba porque olvidó su contraseña, genera un enlace y envíaselo por WhatsApp.
+                    Sirve una sola vez y vence en 24 horas.
+                </p>
+                <form onSubmit={createResetLink} style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <input type="email" required value={resetEmail} onChange={e => setResetEmail(e.target.value)} placeholder="email@cliente.com" aria-label="Email del cliente"
+                        style={{ flex: '1 1 240px', padding: '0.8rem 1rem', borderRadius: '12px', background: 'var(--bg-primary)', border: '1px solid var(--border-light)', color: 'var(--text-primary)' }} />
+                    <button type="submit" className="btn-primary" style={{ padding: '0.8rem 1.4rem', borderRadius: '12px' }}>Generar enlace</button>
+                </form>
+                {resetError && <p role="alert" style={{ color: '#ef4444', marginTop: '0.75rem', fontSize: '0.85rem' }}>{resetError}</p>}
+                {resetLink && (
+                    <div style={{ marginTop: '1rem', padding: '1rem', borderRadius: '12px', background: 'var(--bg-primary)', border: '1px solid var(--border-light)', display: 'grid', gap: '0.75rem' }}>
+                        <code style={{ fontSize: '0.8rem', overflowWrap: 'anywhere' }}>{resetLink.url}</code>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                            <button type="button" onClick={copyResetLink} style={{ padding: '0.5rem 1rem', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'transparent', color: 'var(--text-primary)', cursor: 'pointer' }}>
+                                {copied ? 'Copiado' : 'Copiar enlace'}
+                            </button>
+                            <a href={`https://wa.me/?text=${encodeURIComponent(`Hola, este es tu enlace para crear una nueva contraseña en Visualmind (vence en 24 horas): ${resetLink.url}`)}`}
+                                target="_blank" rel="noopener noreferrer"
+                                style={{ padding: '0.5rem 1rem', borderRadius: '10px', background: '#25d366', color: '#04230f', fontWeight: 700, textDecoration: 'none' }}>
+                                Enviar por WhatsApp
+                            </a>
+                        </div>
+                        <small style={{ color: 'var(--text-secondary)' }}>Vence: {new Date(resetLink.expires_at).toLocaleString()}</small>
+                    </div>
+                )}
+            </div>
+
+            <div style={{ background: 'var(--bg-secondary)', padding: '2rem', borderRadius: '24px', border: '1px solid var(--border-light)', marginBottom: '2rem' }}>
+                <h3 style={{ fontSize: '1.2rem', marginBottom: '0.4rem' }}>Newsletter</h3>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                    {subscribers === null ? 'Personas suscritas desde la página de inicio.' : `${subscribers} persona(s) suscrita(s) desde la página de inicio.`}
+                    {' '}Descarga la lista para importarla en tu herramienta de correo o en Meta Ads.
+                </p>
+                <button onClick={exportSubscribers} className="btn-primary" style={{ padding: '0.7rem 1.4rem', borderRadius: '12px', fontSize: '0.9rem' }}>
+                    Descargar suscriptores (CSV)
+                </button>
+                {exportError && <p role="alert" style={{ color: '#ef4444', marginTop: '0.75rem', fontSize: '0.85rem' }}>{exportError}</p>}
             </div>
 
             <div style={{ background: 'var(--bg-secondary)', padding: '2rem', borderRadius: '24px', border: '1px solid var(--border-light)' }}>

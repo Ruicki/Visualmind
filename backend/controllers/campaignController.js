@@ -45,6 +45,23 @@ export const getAllCampaigns = async (req, res) => {
     }
 };
 
+/** Lista pública: solo eventos activos o anunciados como próximos (nunca borradores). */
+export const getPublicCampaigns = async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT *, COALESCE(type, 'campaign') as type,
+                   COALESCE(secondary_images, '[]'::jsonb) as secondary_images
+            FROM campaigns
+            WHERE is_active = true AND (end_date IS NULL OR end_date >= NOW())
+            ORDER BY COALESCE(start_date, '1970-01-01') DESC
+        `);
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error en getPublicCampaigns:', error.message);
+        res.status(500).json({ error: 'Error al obtener eventos' });
+    }
+};
+
 export const getActiveCampaign = async (req, res) => {
     try {
         const result = await pool.query(`
@@ -97,7 +114,7 @@ export const getUpcomingCampaigns = async (req, res) => {
             SELECT *, COALESCE(type, 'campaign') as type,
                    COALESCE(secondary_images, '[]'::jsonb) as secondary_images
             FROM campaigns
-            WHERE start_date > NOW()
+            WHERE start_date > NOW() AND is_active = true
             ORDER BY start_date ASC
         `);
         res.json(result.rows);
@@ -131,7 +148,7 @@ export const createCampaign = async (req, res) => {
     } catch (error) {
         console.error('Error al crear campaña:', error);
         if (error.code === '23505') return res.status(400).json({ error: 'Ya existe un evento con ese nombre o URL.' });
-        res.status(500).json({ error: 'Error al crear la campaña', details: error.message });
+        res.status(500).json({ error: 'Error al crear la campaña' });
     }
 };
 
@@ -169,7 +186,7 @@ export const updateCampaign = async (req, res) => {
         res.json(result.rows[0]);
     } catch (error) {
         console.error('Error al actualizar campaña:', error);
-        res.status(500).json({ error: 'Error al actualizar la campaña', details: error.message });
+        res.status(500).json({ error: 'Error al actualizar la campaña' });
     }
 };
 
@@ -180,7 +197,7 @@ export const deleteCampaign = async (req, res) => {
         res.json({ message: 'Campaña eliminada correctamente' });
     } catch (error) {
         console.error('Error al eliminar campaña:', error);
-        res.status(500).json({ error: 'Error al eliminar la campaña', details: error.message });
+        res.status(500).json({ error: 'Error al eliminar la campaña' });
     }
 };
 

@@ -86,6 +86,6 @@ export const updateFeaturedSlots = async (req, res) => {
         res.json({ message: 'Slots actualizados correctamente' });
     } catch (error) {
         console.error('Error en updateFeaturedSlots:', error.message);
-        res.status(500).json({ error: 'Error al actualizar slots', details: error.message });
+        res.status(500).json({ error: 'Error al actualizar slots' });
     }
 };

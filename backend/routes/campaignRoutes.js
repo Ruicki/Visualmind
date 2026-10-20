@@ -1,6 +1,6 @@
 import express from 'express';
 import { 
-    getAllCampaigns, getActiveCampaign, getActiveAllCampaigns, getUpcomingCampaigns,
+    getAllCampaigns, getPublicCampaigns, getActiveCampaign, getActiveAllCampaigns, getUpcomingCampaigns,
     createCampaign, updateCampaign, deleteCampaign, expireCampaigns
 } from '../controllers/campaignController.js';
 import { protect, checkRole } from '../middleware/authMiddleware.js';
@@ -9,7 +9,8 @@ import upload from '../middleware/uploadMiddleware.js';
 const router = express.Router();
 
 // Rutas públicas
-router.get('/', getAllCampaigns);
+router.get('/', getPublicCampaigns);
+router.get('/admin', protect, checkRole('admin'), getAllCampaigns);
 router.get('/active', getActiveCampaign);
 router.get('/active-all', getActiveAllCampaigns);
 router.get('/upcoming', getUpcomingCampaigns);

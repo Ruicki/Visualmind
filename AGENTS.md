@@ -37,10 +37,11 @@ visualmind/
 │   ├── routes/               # 9 routers (auth, products, orders, admin, campaigns, etc.)
 │   ├── controllers/          # Lógica por recurso
 │   ├── middleware/            # authMiddleware (JWT), uploadMiddleware (multer)
-│   ├── services/eventService.js  # Expira campañas vencidas automáticamente
-│   ├── schema.sql            # DDL ejecutado automáticamente si no existen tablas
-│   ├── scripts/              # Scripts DB ad-hoc
-│   ├── tests/campaigns.test.js
+│   ├── services/             # orderPricing (precios), orderExpiry (stock y vencimiento de pedidos),
+│   │                         # eventService (campañas vencidas), csv, storefront (compartir y catálogo)
+│   ├── schema.sql            # DDL idempotente, se aplica en cada arranque
+│   ├── scripts/init_prod_db.js  # Aplica el esquema contra DATABASE_URL a mano
+│   ├── tests/                # campaigns, orderPricing, csv, storefront
 │   └── uploads/              # Imágenes subidas (statiqo via /uploads)
 ├── frontend/                 # React SPA (:5173)
 │   ├── vite.config.js        # Proxy /api → :5000, /uploads → :5000
@@ -58,12 +59,20 @@ visualmind/
 ## Convenciones importantes
 
 - **Admin**: en local (sin `DATABASE_URL`) se crea `visualmind@admin.com` con una contraseña aleatoria mostrada en consola si no hay ningún admin (o la de `ADMIN_PASSWORD` si está en `.env`). No escribir contraseñas en el código. En despliegues el admin se define con `ADMIN_PASSWORD` (+ `ADMIN_EMAIL` opcional); nunca se resetea la contraseña en cada arranque. El registro público siempre crea `customer`.
-- **Pedidos**: precios, envío, ITBMS y stock los calcula el servidor (`backend/services/orderPricing.js`, configurable con `SHIPPING_COST`/`FREE_SHIPPING_THRESHOLD`/`TAX_RATE`; envío gratis por defecto). El frontend usa la misma fórmula (`frontend/src/utils/pricing.js`) con la config de `GET /api/orders/pricing`. Sin descuentos automáticos por estado del producto. Pago manual: `pending → paid → shipped → delivered` o `cancelled` (devuelve stock). El dashboard solo cuenta como venta paid/shipped/delivered.
+- **Pedidos**: precios, envío y stock los calcula el servidor (los productos no llevan ITBMS: total = subtotal + envío) (`backend/services/orderPricing.js`, configurable con `SHIPPING_COST`/`FREE_SHIPPING_THRESHOLD`; envío gratis por defecto). El frontend usa la misma fórmula (`frontend/src/utils/pricing.js`) con la config de `GET /api/orders/pricing`. Sin descuentos automáticos por estado del producto. Pago manual: `pending → paid → shipped → delivered`; se puede cancelar desde pending o paid (devuelve stock). Las transiciones válidas están en `ORDER_TRANSITIONS` (backend `orderController.js` y frontend `storeConfig.js`, mantenerlas iguales) y cada cambio queda en `order_events`. Los pedidos Yappy/transferencia sin pago vencen a las `PENDING_ORDER_HOURS` (48 h) y devuelven stock; contra entrega no vence. Un cliente puede tener hasta `MAX_PENDING_ORDERS` (3) sin pagar. Si un producto tiene tallas, la talla pedida debe existir y `products.stock` siempre es la suma de sus variantes (`syncProductStock`). El dashboard solo cuenta como venta paid/shipped/delivered.
+- **Productos**: al editar, las variantes conservan su ID y el formulario manda `expected_updated_at`; si el producto cambió (p. ej. una venta) el servidor responde 409 `STALE_PRODUCT`. La tienda pública nunca recibe `admin_notes` (`toPublicProduct`) ni productos que no estén `Published`/`Legacy`.
+- **Sesiones**: `protect` lee el usuario de la BD en cada petición; el rol efectivo es el de la BD y `users.token_version` (campo `tv` del JWT) invalida sesiones. Emails siempre en minúsculas; contraseñas de 8+ caracteres con letras y números.
+- **Compra como invitado**: `POST /api/orders` usa `optionalAuth`; sin sesión el pedido queda con `user_id` NULL, exige email válido y el tope de pendientes se cuenta por teléfono/email. Límite de 5 pedidos/hora por IP para invitados.
+- **Recuperar contraseña (sin correo)**: el admin genera en Ajustes un enlace de un solo uso (24 h, `POST /api/auth/reset-link`, se guarda solo el hash en `password_resets`) y lo envía por WhatsApp; el cliente lo usa en `/reset-password` (`POST /api/auth/reset-password`), lo que sube `token_version` y cierra sus sesiones.
+- **Compartir y catálogo**: `GET /share/p/:id` (fuera de `/api`) devuelve metadatos Open Graph del producto y redirige a la ficha; `GET /api/feeds/catalog.csv` es el feed para Meta Commerce/Google Merchant (`services/storefront.js`). El píxel de Meta (`frontend/src/utils/analytics.js`) solo se activa con `VITE_META_PIXEL_ID`.
+- **Admin del negocio**: `GET /api/admin/reports/sales.csv?from&to` (ventas cobradas) y `/api/admin/reports/newsletter.csv`. Campañas: `/api/campaigns` es la lista pública (solo activas); el admin usa `/api/campaigns/admin`.
+- **Tema y colores**: la tienda abre en tema claro (el usuario puede cambiar a oscuro); el panel de admin fuerza `data-theme="dark"`. El acento es el mostaza del logo (`--primary: #ffc820`). Usa siempre tokens: `--text-primary`/`--text-secondary` para texto, `--primary-text` cuando el acento es texto (mostaza oscuro en claro), `--on-primary` para texto sobre botones mostaza y `rgba(var(--tint), a)` para fondos/bordes translúcidos. Nunca `color: 'white'` salvo sobre fotos o fondos de color fijo.
 - **i18n**: `LanguageContext` maneja español/inglés. `t(clave, respaldo?)` devuelve el respaldo (o la clave) si falta la traducción; añade toda clave nueva en `es` y `en`.
-- **Imágenes**: además del disco se guardan en la tabla `uploaded_files`; `/uploads/*` las sirve desde la BD si faltan en disco.
+- **Imágenes**: además del disco se guardan en la tabla `uploaded_files`; `/uploads/*` las sirve desde la BD si faltan en disco. Solo se aceptan JPEG/PNG/WebP verificados por su firma real. Las fotos de `frontend/public/Post` están en WebP (máx. 1600 px).
 - **CORS**: Desarrollo permite todo; producción usa `ALLOWED_ORIGINS` (default: localhost:5173)
-- **Rate limiting**: Login (10/15min), Register (5/60min) — solo en producción
-- **Proxy Vite**: `/api/*` y `/uploads/*` se redirigen a `localhost:5000` en dev
+- **Rate limiting**: Login (10 fallos/15 min por IP+email), Register (5/60 min), Newsletter (5/60 min) — solo en producción. `trust proxy` = `TRUST_PROXY` (1 por defecto, Railway/Render).
+- **Seguridad HTTP**: `helmet` en el backend; cabeceras del frontend en `frontend/vercel.json`.
+- **Proxy Vite**: `/api/*`, `/uploads/*` y `/share/*` se redirigen a `localhost:5000` en dev
 - **Uploads**: Multer guarda en `backend/uploads/`, expuesto estáticamente en `/uploads`
 - **Refresh**: Sin refresh manual — Vite HMR para frontend, nodemon para backend
 - **Campañas**: Sistema de eventos con `type: campaign|season`, banners, countdown, expiración automática
@@ -75,19 +84,32 @@ visualmind/
 PORT=5000
 DATABASE_URL=postgresql://...  # Opción cloud (SSL rejectUnauthorized: false)
 DB_USER/DB_PASSWORD/DB_HOST/DB_PORT/DB_NAME  # Opción local
-JWT_SECRET=<string>
+JWT_SECRET=<32+ caracteres>   # en producción el servidor no arranca sin él
 ALLOWED_ORIGINS=http://localhost:5173
 ADMIN_EMAIL=/ADMIN_PASSWORD=   # obligatorio en despliegues
-SHIPPING_COST=0 / FREE_SHIPPING_THRESHOLD=0 / TAX_RATE=0.07   # opcionales
+SHIPPING_COST=0 / FREE_SHIPPING_THRESHOLD=0                    # opcionales
+PENDING_ORDER_HOURS=48 / MAX_PENDING_ORDERS=3                   # opcionales
+TRUST_PROXY=1                                                   # opcional
+FRONTEND_URL / API_PUBLIC_URL                                   # opcionales: URLs públicas para enlaces y vistas previas
 ```
 
 ### Frontend (.env en frontend/)
 ```
 VITE_API_URL=http://localhost:5000/api  # Opcional en dev (proxy de Vite); obligatoria en Vercel
 VITE_WHATSAPP_NUMBER / VITE_YAPPY_NUMBER / VITE_BANK_*  # Datos de cobro mostrados al cliente
+VITE_INSTAGRAM_URL / VITE_FACEBOOK_URL / VITE_TIKTOK_URL  # Redes del pie (vacío = oculto)
+VITE_SITE_URL                           # URL pública para vistas previas; en Vercel se detecta sola
+VITE_META_PIXEL_ID                      # opcional: píxel de Meta
 ```
+
+## Demo sin backend
+`cd frontend && npm run build:demo` (modo Vite `demo`, variables en `frontend/.env.demo`) genera `dist-demo/`: la tienda completa con un servidor simulado en el navegador (`src/demo/mockBackend.js`, datos en localStorage, `HashRouter`, base relativa). Sirve para probar flujos sin desplegar. Si cambias reglas del backend (precios, estados, stock), replícalas en `mockBackend.js`. El catálogo simulado usa las fotos reales de `public/Post`.
+
+## Modo catálogo (sitio publicado sin backend)
+En el build de producción, `main.jsx` consulta `GET /health` (4 s máx.) antes de montar la app. Si el backend no responde, carga `mockBackend.js` con `{ catalog: true }` (import dinámico, chunk aparte) y activa `utils/catalogMode.js`: la tienda muestra el catálogo integrado (sin cuentas, panel ni boletín: responden 503) y el pedido como invitado termina en un mensaje de WhatsApp con todo el detalle (`OrderSuccess.jsx`). Datos en localStorage (`visualmind-catalog-v2`). Con el backend arriba todo funciona como siempre.
+- Las imágenes del frontend (`/Post/...`, logo, placeholders) se sirven desde el propio sitio con `assetUrl`/`getProductImage`; solo `/uploads/...` va al backend.
 
 ## Notas de testing
 - Los tests importan lógica pura duplicada (no los componentes reales) para hacer property-based testing sin montar React
 - fast-check arbitraries están definidos por archivo de test
-- Sin tests de integración con DB — todos son unitarios
+- Sin tests de integración con DB — todos son unitarios, salvo `frontend/src/pages/Home.health.test.js`, que necesita backend (:5000) y Vite (:5173) encendidos

@@ -6,7 +6,10 @@
  */
 
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { BrowserRouter, HashRouter, Routes, Route, useLocation } from 'react-router-dom';
+
+// La demo publicada como página única usa rutas con # (no hay servidor que las resuelva)
+const Router = import.meta.env.VITE_DEMO ? HashRouter : BrowserRouter;
 import { useEffect } from 'react';
 
 // Páginas principales (Publicas)
@@ -20,6 +23,7 @@ import ProductDetails from './pages/ProductDetails';
 import Wishlist from './pages/Wishlist';
 import Lookbook from './pages/Lookbook';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import UserProfile from './pages/UserProfile';
 import InfoPage from './pages/InfoPage';
 import OrderSuccess from './pages/OrderSuccess';
@@ -51,6 +55,7 @@ import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import SEO from './components/SEO';
 import ScrollToTopButton from './components/ScrollToTopButton';
+import { trackPageView } from './utils/analytics';
 
 /**
  * PageController
@@ -66,6 +71,7 @@ function PageController() {
   useEffect(() => {
     // 1. Reset de scroll instantáneo
     window.scrollTo(0, 0);
+    if (!location.pathname.startsWith('/admin')) trackPageView();
 
     // 2. Configuración del Observer para animaciones de revelación
     const observerOptions = {
@@ -157,6 +163,7 @@ function InnerApp() {
             <Route path="/wishlist" element={<Wishlist />} />
             <Route path="/lookbook" element={<Lookbook />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/info/:page" element={<InfoPage />} />
             <Route path="/order-success" element={<OrderSuccess />} />

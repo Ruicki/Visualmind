@@ -158,7 +158,7 @@ export default function AdminProducts() {
                 categoriesRes
             ] = await Promise.all([
                 api.get('/products/admin'),
-                api.get('/campaigns'),
+                api.get('/campaigns/admin'),
                 api.get('/collections'),
                 api.get('/categories')
             ]);
@@ -176,7 +176,7 @@ export default function AdminProducts() {
 
     const _fetchCampaigns = async () => {
         try {
-            const response = await api.get('/campaigns');
+            const response = await api.get('/campaigns/admin');
             setAvailableCampaigns(response.data || []);
         } catch (error) {
             console.error('Error fetching campaigns:', error);
@@ -250,7 +250,9 @@ export default function AdminProducts() {
             collection_id: product.collection_id || '',
             layout_preference: product.layout_preference || 'standard',
             admin_notes: product.admin_notes || '',
-            variants: product.variants || []
+            variants: product.variants || [],
+            // El servidor rechaza el guardado si el producto cambió (p. ej. una venta) desde aquí
+            expected_updated_at: product.updated_at || ''
         });
         setImageError(false);
         setHoverImageError(false);
@@ -345,7 +347,11 @@ export default function AdminProducts() {
             fetchProducts();
         } catch (error) {
             console.error("Error al guardar:", error);
-            if (error.response?.status === 409) {
+            if (error.response?.data?.code === 'STALE_PRODUCT') {
+                alert(error.response.data.error);
+                setIsModalOpen(false);
+                fetchProducts();
+            } else if (error.response?.status === 409) {
                 setSkuError(error.response.data.error || 'El SKU ya existe');
                 setActiveTab('basic');
             } else {

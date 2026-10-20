@@ -10,6 +10,8 @@ import { getProductImage } from '../utils/imageUtils';
 import { isProductVisible } from '../utils/productUtils';
 import { usePricingConfig } from '../utils/pricing';
 import SEO from '../components/SEO';
+import ShareButtons from '../components/ShareButtons';
+import { trackViewContent, trackAddToCart } from '../utils/analytics';
 
 /**
  * @component ProductDetails
@@ -64,6 +66,7 @@ export default function ProductDetails() {
           };
           
           setProduct(found);
+          trackViewContent(found);
           
           // Configuración inicial de selección
           const firstColor = found.colors?.[0] || null;
@@ -156,7 +159,7 @@ export default function ProductDetails() {
         <ChevronRight size={14} />
         <Link to="/shop" style={{ color: 'inherit', textDecoration: 'none' }}>{t('nav.shop')}</Link>
         <ChevronRight size={14} />
-        <span style={{ color: 'white' }}>{product.title}</span>
+        <span style={{ color: 'var(--text-primary)' }}>{product.title}</span>
       </div>
 
       <div className="container product-detail-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: '3rem', marginBottom: '6rem' }}>
@@ -236,7 +239,7 @@ export default function ProductDetails() {
                       cursor: 'pointer'
                     }}
                   >
-                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: color.hex, border: '1px solid rgba(255,255,255,0.1)' }} />
+                    <div style={{ width: '100%', height: '100%', borderRadius: '50%', background: color.hex, border: '1px solid rgba(var(--tint), 0.1)' }} />
                   </button>
                 ))}
               </div>
@@ -271,9 +274,9 @@ export default function ProductDetails() {
           <div className="product-detail-actions" style={{ display: 'flex', gap: '1rem', marginBottom: '3rem', flexWrap: 'wrap' }}>
             {/* Selector de Cantidad */}
             <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-secondary)', borderRadius: '14px', border: '1px solid var(--border-light)', padding: '0.4rem' }}>
-              <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{ width: '36px', height: '36px', background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.3rem' }}>−</button>
+              <button onClick={() => setQuantity(q => Math.max(1, q - 1))} style={{ width: '36px', height: '36px', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '1.3rem' }}>−</button>
               <span style={{ width: '36px', textAlign: 'center', fontWeight: '700' }}>{quantity}</span>
-              <button onClick={() => setQuantity(q => q + 1)} style={{ width: '36px', height: '36px', background: 'none', border: 'none', color: 'white', cursor: 'pointer', fontSize: '1.3rem' }}>+</button>
+              <button onClick={() => setQuantity(q => q + 1)} style={{ width: '36px', height: '36px', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', fontSize: '1.3rem' }}>+</button>
             </div>
 
             {/* Botón Añadir al Carrito */}
@@ -298,6 +301,7 @@ export default function ProductDetails() {
                 for (let i = 0; i < quantity; i++) {
                   addToCart({ ...product, image: mainImage, selectedColor, selectedSize });
                 }
+                trackAddToCart(product, quantity);
               }}
             >
               <ShoppingBag size={20} /> {inStock ? (t('product.add_to_bag') || 'Agregar') : 'Agotado'}
@@ -307,16 +311,18 @@ export default function ProductDetails() {
             <button
               onClick={() => toggleWishlist(product)}
               aria-label="Agregar a favoritos"
-              style={{ width: '55px', height: '55px', borderRadius: '14px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: isInWishlist(product.id) ? '#ff4d4d' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
+              style={{ width: '55px', height: '55px', borderRadius: '14px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: isInWishlist(product.id) ? '#ff4d4d' : 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
             >
               <Heart size={22} fill={isInWishlist(product.id) ? '#ff4d4d' : 'none'} />
             </button>
           </div>
 
+          <ShareButtons product={product} />
+
           {/* Trust Badges: USP (Unique Selling Propositions) */}
           <div className="product-detail-trust" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', borderTop: '1px solid var(--border-light)', paddingTop: '2rem' }}>
             <div style={{ textAlign: 'center' }}>
-              <Truck size={22} style={{ color: 'var(--primary)', marginBottom: '0.4rem' }} />
+              <Truck size={22} style={{ color: 'var(--primary-text)', marginBottom: '0.4rem' }} />
               <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>
                 {pricing.shippingCost === 0
                   ? t('product.free_shipping')
@@ -326,11 +332,11 @@ export default function ProductDetails() {
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <ShieldCheck size={22} style={{ color: 'var(--primary)', marginBottom: '0.4rem' }} />
+              <ShieldCheck size={22} style={{ color: 'var(--primary-text)', marginBottom: '0.4rem' }} />
               <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>{t('product.secure_pay')}</div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <RotateCcw size={22} style={{ color: 'var(--primary)', marginBottom: '0.4rem' }} />
+              <RotateCcw size={22} style={{ color: 'var(--primary-text)', marginBottom: '0.4rem' }} />
               <div style={{ fontSize: '0.75rem', fontWeight: '600' }}>{t('product.returns_30')}</div>
             </div>
           </div>

@@ -8,7 +8,7 @@ import { X, Trash2, Minus, Plus, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
-import { getProductImage } from '../utils/imageUtils';
+import { getProductImage, assetUrl } from '../utils/imageUtils';
 import { computeTotals, usePricingConfig } from '../utils/pricing';
 
 export default function Cart() {
@@ -48,7 +48,7 @@ export default function Cart() {
                                 ({getCartCount()} {t('cart.items_count')})
                             </span>
                         </h2>
-                        <button onClick={() => setIsCartOpen(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }}>
+                        <button onClick={() => setIsCartOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer' }}>
                             <X size={24} />
                         </button>
                     </div>
@@ -60,7 +60,7 @@ export default function Cart() {
                             <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
                                 <Trash2 size={48} strokeWidth={1} style={{ marginBottom: '1.5rem', opacity: 0.5 }} />
                                 <p>{t('cart.empty')}</p>
-                                <button onClick={() => setIsCartOpen(false)} style={{ marginTop: '1.5rem', padding: '0.75rem 1.5rem', border: '1px solid var(--border-light)', borderRadius: '100px', color: 'white', background: 'none', cursor: 'pointer' }}>
+                                <button onClick={() => setIsCartOpen(false)} style={{ marginTop: '1.5rem', padding: '0.75rem 1.5rem', border: '1px solid var(--border-light)', borderRadius: '100px', color: 'var(--text-primary)', background: 'none', cursor: 'pointer' }}>
                                     {t('cart.back')}
                                 </button>
                             </div>
@@ -74,7 +74,7 @@ export default function Cart() {
                                             <img
                                                 src={item.image || getProductImage(item.image, item.image_url)}
                                                 alt={item.title}
-                                                onError={(e) => { e.target.src = 'https://via.placeholder.com/100x100?text=?'; }}
+                                                onError={(e) => { e.target.onerror = null; e.target.src = assetUrl('placeholder-product.png'); }}
                                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                             />
                                         </div>
@@ -92,14 +92,14 @@ export default function Cart() {
                                             <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', fontSize: '0.85rem' }}>
                                                 {item.selectedColor && (
                                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: item.selectedColor.hex, border: '1px solid rgba(255,255,255,0.2)' }} />
+                                                        <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: item.selectedColor.hex, border: '1px solid rgba(var(--tint), 0.2)' }} />
                                                         <span style={{ color: 'var(--text-secondary)' }}>{item.selectedColor.name}</span>
     
                                                     </div>
                                                 )}
                                                 {item.selectedSize && (
                                                     <div style={{ color: 'var(--text-secondary)' }}>
-                                                        Talla seleccionada: <span style={{ color: 'white', fontWeight: '600' }}>{item.selectedSize}</span>
+                                                        Talla seleccionada: <span style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{item.selectedSize}</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -107,10 +107,10 @@ export default function Cart() {
 
                                             {/* Controles de Cantidad y Precio por Item */}
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(255,255,255,0.05)', padding: '0.5rem 0.8rem', borderRadius: '100px', border: '1px solid var(--border-light)' }}>
-                                                    <button onClick={() => updateQuantity(item.variantUniqueId, -1)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><Minus size={16} /></button>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'rgba(var(--tint), 0.05)', padding: '0.5rem 0.8rem', borderRadius: '100px', border: '1px solid var(--border-light)' }}>
+                                                    <button onClick={() => updateQuantity(item.variantUniqueId, -1)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex' }}><Minus size={16} /></button>
                                                     <span style={{ minWidth: '20px', textAlign: 'center', fontSize: '0.9rem', fontWeight: '600' }}>{item.quantity}</span>
-                                                    <button onClick={() => updateQuantity(item.variantUniqueId, 1)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}><Plus size={16} /></button>
+                                                    <button onClick={() => updateQuantity(item.variantUniqueId, 1)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex' }}><Plus size={16} /></button>
                                                 </div>
                                                 <p style={{ fontWeight: '700' }}>${(item.price * item.quantity).toFixed(2)}</p>
                                             </div>
@@ -133,15 +133,11 @@ export default function Cart() {
                                     <span style={{ color: 'var(--text-secondary)' }}>{t('cart.shipping')}</span>
                                     <span>{totals.shipping > 0 ? `$${totals.shipping.toFixed(2)}` : t('cart.free')}</span>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ color: 'var(--text-secondary)' }}>{t('cart.taxes')}</span>
-                                    <span>${totals.tax.toFixed(2)}</span>
-                                </div>
 
                                 {/* Total Final acumulado */}
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(var(--tint), 0.05)' }}>
                                     <span style={{ fontWeight: '700' }}>{t('cart.total')}</span>
-                                    <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--primary)' }}>
+                                    <span style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--primary-text)' }}>
                                         ${totals.total.toFixed(2)}
                                     </span>
                                 </div>
