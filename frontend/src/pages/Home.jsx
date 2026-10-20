@@ -187,10 +187,10 @@ export default function Home() {
             </h2>
           </div>
           <div style={{ display: 'flex', gap: '0.8rem' }}>
-            <button onClick={prevSlide} aria-label="Slide anterior" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'white', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
+            <button onClick={prevSlide} aria-label="Slide anterior" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'var(--text-primary)', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
               <ChevronLeft size={22} />
             </button>
-            <button onClick={nextSlide} aria-label="Siguiente slide" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'white', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
+            <button onClick={nextSlide} aria-label="Siguiente slide" aria-disabled={carouselProducts.length === 0} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-light)', background: 'transparent', color: carouselProducts.length === 0 ? 'var(--text-secondary)' : 'var(--text-primary)', cursor: carouselProducts.length === 0 ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: carouselProducts.length === 0 ? 0.3 : 1 }}>
               <ChevronRight size={22} />
             </button>
           </div>

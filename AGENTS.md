@@ -103,7 +103,10 @@ VITE_META_PIXEL_ID                      # opcional: píxel de Meta
 ```
 
 ## Demo sin backend
-`cd frontend && npm run build:demo` (modo Vite `demo`, variables en `frontend/.env.demo`) genera `dist-demo/`: la tienda completa con un servidor simulado en el navegador (`src/demo/mockBackend.js`, datos en localStorage, `HashRouter`, base relativa). Sirve para probar flujos sin desplegar. El build normal no incluye nada de `src/demo/`. Si cambias reglas del backend (precios, estados, stock), replícalas en `mockBackend.js`. Las fotos de la demo usan nombres `img/<slug>.webp`: al publicarla, copia las de `public/Post` con esos nombres (ver el mapa `img/... → Post/...` que sale de las rutas del seed).
+`cd frontend && npm run build:demo` (modo Vite `demo`, variables en `frontend/.env.demo`) genera `dist-demo/`: la tienda completa con un servidor simulado en el navegador (`src/demo/mockBackend.js`, datos en localStorage, `HashRouter`, base relativa). Sirve para probar flujos sin desplegar. Si cambias reglas del backend (precios, estados, stock), replícalas en `mockBackend.js`. El catálogo simulado usa las fotos reales de `public/Post`.
+
+## Modo catálogo (sitio publicado sin backend)
+En el build de producción, `main.jsx` consulta `GET /health` (4 s máx.) antes de montar la app. Si el backend no responde, carga `mockBackend.js` con `{ catalog: true }` (import dinámico, chunk aparte) y activa `utils/catalogMode.js`: la tienda muestra el catálogo integrado (sin cuentas, panel ni boletín: responden 503) y el pedido como invitado termina en un mensaje de WhatsApp con todo el detalle (`OrderSuccess.jsx`). Datos en localStorage (`visualmind-catalog-v2`). Con el backend arriba todo funciona como siempre.
 - Las imágenes del frontend (`/Post/...`, logo, placeholders) se sirven desde el propio sitio con `assetUrl`/`getProductImage`; solo `/uploads/...` va al backend.
 
 ## Notas de testing

@@ -133,6 +133,7 @@ export const translations = {
         },
         checkout: {
             guest_note: 'You are checking out as a guest.',
+            catalog_note: 'Fill in your details and, at the end, send us the order on WhatsApp to confirm it.',
             guest_login: 'Sign in',
             guest_benefit: 'to save your details and track your orders.',
             login_required: 'Log in to complete your purchase.',
@@ -613,6 +614,7 @@ export const translations = {
         },
         checkout: {
             guest_note: 'Estás comprando como invitado.',
+            catalog_note: 'Completa tus datos y al final envíanos el pedido por WhatsApp para confirmarlo.',
             guest_login: 'Inicia sesión',
             guest_benefit: 'para guardar tus datos y ver tus pedidos.',
             login_required: 'Inicia sesión para completar tu compra.',

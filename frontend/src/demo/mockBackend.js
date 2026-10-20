@@ -10,6 +10,8 @@
 import { AxiosError } from 'axios';
 
 const STORAGE_KEY = 'visualmind-demo-db-v1';
+// Modo catálogo: se renueva al cambiar el catálogo integrado (v2 = fotos reales de /Post)
+const CATALOG_KEY = 'visualmind-catalog-v2';
 export const DEMO_ADMIN = { email: 'admin@demo.visualmind', password: 'Admin2026' };
 export const DEMO_CUSTOMER = { email: 'cliente@demo.visualmind', password: 'Cliente2026' };
 
@@ -37,19 +39,22 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 /* Datos iniciales                                                     */
 /* ------------------------------------------------------------------ */
 
-function seed() {
+// Fotos reales de public/Post (se sirven desde el propio sitio con assetUrl)
+const JJK = '/Post/Jujutsu kaisen/', OP = '/Post/One pice/', FP = '/Post/Fiestas Patrias 2024/';
+
+function seed({ catalog = false } = {}) {
     const cat = (name, slug) => ({ id: uid(), name, slug, icon: null, description: '', created_at: now() });
     const categories = [cat('Anime', 'anime'), cat('Cartoons', 'cartoons'), cat('Deportes', 'deportes'), cat('Panamá', 'panama')];
     const col = (name, slug, description, image_url) => ({ id: uid(), name, slug, description, description_long: '', image_url, is_active: true, created_at: now() });
     const collections = [
-        col('Jujutsu Kaisen', 'jujutsu-kaisen', 'Gojo y Sukuna en cuatro colores', 'img/black-satoru-gojo.webp'),
-        col('One Piece', 'one-piece', 'Luffy y Zoro', 'img/black-onepiece-luffy.webp'),
-        col('Fiestas Patrias', 'fiestas-patrias', 'Pollera, guna, emberá', 'img/pollera.webp'),
+        col('Jujutsu Kaisen', 'jujutsu-kaisen', 'Gojo y Sukuna en cuatro colores', JJK + 'Black-satoru-gojo.webp'),
+        col('One Piece', 'one-piece', 'Luffy y Zoro', OP + 'Black-onepiece-luffy.webp'),
+        col('Fiestas Patrias', 'fiestas-patrias', 'Pollera, guna, emberá', FP + 'pollera.webp'),
     ];
     const colId = (slug) => collections.find(c => c.slug === slug).id;
     const campaign = {
         id: uid(), name: 'Halloween 2026', slug: 'halloween-2026', description: 'Colección de terror: Uzumaki, alien y más',
-        banner_url: 'img/uzumaki.webp', accent_color: '#ff6a00', template_type: 'grid',
+        banner_url: '/Post/halloween/uzumaki.webp', accent_color: '#ff6a00', template_type: 'grid',
         start_date: daysAgo(3), end_date: new Date(Date.now() + 30 * 864e5).toISOString(), is_active: true,
         countdown_enabled: true, type: 'season', button_text: 'Ver colección', button_link: '/shop',
         secondary_images: [], created_at: daysAgo(3), updated_at: daysAgo(3)
@@ -62,19 +67,30 @@ function seed() {
         admin_notes: '', show_on_home: false, created_at: daysAgo(10), updated_at: daysAgo(10), ...extra
     });
     const products = [
-        P('Camiseta Satoru Gojo Negra', 'Anime', 24.99, 'img/black-satoru-gojo.webp', 'img/blanco-satoru-gojo.webp', { featured: true, is_new: true, new_arrival: true, show_on_home: true, collection_id: colId('jujutsu-kaisen') }),
-        P('Camiseta Sukuna Beige', 'Anime', 24.99, 'img/beige-sukuna.webp', 'img/black-sukuna.webp', { featured: true, new_arrival: true, collection_id: colId('jujutsu-kaisen') }),
-        P('Camiseta Luffy Negra', 'Anime', 22.99, 'img/black-onepiece-luffy.webp', 'img/blanco-onepiece-luffy.webp', { featured: true, collection_id: colId('one-piece') }),
-        P('Camiseta Zoro Gris', 'Anime', 22.99, 'img/gris-onepiece-zoro.webp', 'img/black-onepiece-zoro.webp', { collection_id: colId('one-piece') }),
-        P('Camiseta Snoopy Pink', 'Cartoons', 19.99, 'img/pink-snoopy.webp', 'img/blanco-snoopy.webp', { new_arrival: true, is_new: true }),
-        P('Camiseta Garfield Beige', 'Cartoons', 19.99, 'img/beige-garfield.webp', 'img/black-garfield.webp'),
-        P('Camiseta Tom & Jerry Gris', 'Cartoons', 19.99, 'img/gris-tom-jerry.webp', 'img/blanco-tom-jerry.webp'),
-        P('Camiseta Messi Negra', 'Deportes', 26.99, 'img/black-messi.webp', 'img/blanco-messi.webp', { featured: true, new_arrival: true }),
-        P('Camiseta Hollow Knight Negra', 'Anime', 23.99, 'img/blackhollow.webp', 'img/blancohollow.webp', { new_arrival: true }),
-        P('Camiseta Pollera', 'Panamá', 21.99, 'img/pollera.webp', 'img/guna.webp', { featured: true, collection_id: colId('fiestas-patrias') }),
-        P('Camiseta Guna', 'Panamá', 21.99, 'img/guna.webp', 'img/embera.webp', { collection_id: colId('fiestas-patrias') }),
-        P('Camiseta Uzumaki', 'Anime', 25.99, 'img/uzumaki.webp', 'img/alien.webp', { campaign_id: campaign.id, new_arrival: true }),
-        P('Camiseta Smile Every Day', 'Cartoons', 18.99, 'img/smile-black.webp', 'img/smile-pink.webp', { lifecycle_state: 'Draft', admin_notes: 'Borrador: no debe verse en la tienda' }),
+        P('Camiseta Satoru Gojo Negra', 'Anime', 24.99, JJK + 'Black-satoru-gojo.webp', JJK + 'Blanco-satoru-gojo.webp', { featured: true, is_new: true, new_arrival: true, show_on_home: true, collection_id: colId('jujutsu-kaisen') }),
+        P('Camiseta Sukuna Beige', 'Anime', 24.99, JJK + 'Beige-sukuna.webp', JJK + 'Black-sukuna.webp', { featured: true, new_arrival: true, collection_id: colId('jujutsu-kaisen') }),
+        P('Camiseta Luffy Negra', 'Anime', 22.99, OP + 'Black-onepiece-luffy.webp', OP + 'Blanco-onepiece-luffy.webp', { featured: true, collection_id: colId('one-piece') }),
+        P('Camiseta Zoro Gris', 'Anime', 22.99, OP + 'Gris-onepiece-zoro.webp', OP + 'Black-onepiece-zoro.webp', { collection_id: colId('one-piece') }),
+        P('Camiseta Snoopy Pink', 'Cartoons', 19.99, '/Post/snoopy/pink-snoopy.webp', '/Post/snoopy/Blanco-snoopy.webp', { new_arrival: true, is_new: true }),
+        P('Camiseta Garfield Beige', 'Cartoons', 19.99, '/Post/GARFIELD/Beige-garfield.webp', '/Post/GARFIELD/Black-garfield.webp'),
+        P('Camiseta Tom & Jerry Gris', 'Cartoons', 19.99, '/Post/Tomy jerry/Gris-tom&jerry.webp', '/Post/Tomy jerry/Blanco-tom&jerry.webp'),
+        P('Camiseta Messi Negra', 'Deportes', 26.99, '/Post/futbol/Black-messi.webp', '/Post/futbol/Blanco-messi.webp', { featured: true, new_arrival: true }),
+        P('Camiseta Hollow Knight Negra', 'Anime', 23.99, '/Post/HOllownaig/Blackhollow.webp', '/Post/HOllownaig/Blancohollow.webp', { new_arrival: true }),
+        P('Camiseta Pollera', 'Panamá', 21.99, FP + 'pollera.webp', FP + 'guna.webp', { featured: true, collection_id: colId('fiestas-patrias') }),
+        P('Camiseta Guna', 'Panamá', 21.99, FP + 'guna.webp', FP + 'embera.webp', { collection_id: colId('fiestas-patrias') }),
+        P('Camiseta Uzumaki', 'Anime', 25.99, '/Post/halloween/uzumaki.webp', '/Post/halloween/alien.webp', { campaign_id: campaign.id, new_arrival: true }),
+        P('Camiseta Ban Negra', 'Anime', 23.99, '/Post/7 PECADOS/ban-negro.webp', '/Post/7 PECADOS/ban-beige.webp', { new_arrival: true }),
+        P('Camiseta Escanor Beige', 'Anime', 23.99, '/Post/7 PECADOS/escanor-beige.webp', '/Post/7 PECADOS/escanor-negro.webp'),
+        P('Camiseta Meliodas Negra', 'Anime', 23.99, '/Post/7 PECADOS/meliodas-negro.webp', '/Post/7 PECADOS/meliodas-blanco.webp'),
+        P('Camiseta Momo Dandadan', 'Anime', 24.99, '/Post/Dandadan/dandan-momo.webp', '/Post/Dandadan/dandan-turbo-abuela.webp', { new_arrival: true, is_new: true }),
+        P('Camiseta Turbo Abuela', 'Anime', 24.99, '/Post/Dandadan/dandan-turbo-abuela.webp', '/Post/Dandadan/dandan-momo.webp'),
+        P('Camiseta Silksong', 'Anime', 23.99, '/Post/HOllownaig/silksong2.webp', '/Post/HOllownaig/silkson3.webp'),
+        P('Camiseta Satoru Gojo Gris', 'Anime', 24.99, JJK + 'Gris-satoru-gojo.webp', JJK + 'Beige-satoru-gojo.webp', { collection_id: colId('jujutsu-kaisen') }),
+        P('Camiseta Luffy Beige', 'Anime', 22.99, OP + 'Beige-onepiece-luffy.webp', OP + 'Gris-onepiece-luffy.webp', { collection_id: colId('one-piece') }),
+        P('Camiseta Snoopy Negra', 'Cartoons', 19.99, '/Post/snoopy/Black-snoopy.webp', '/Post/snoopy/Gris-snoopy.webp'),
+        P('Camiseta Fatal Fatal', 'Anime', 25.99, '/Post/halloween/fatalfatal.webp', '/Post/halloween/alien.webp', { campaign_id: campaign.id }),
+        P('Camiseta Ngäbe', 'Panamá', 21.99, FP + 'ngobe.webp', FP + 'nasso.webp', { collection_id: colId('fiestas-patrias') }),
+        P('Camiseta Smile Every Day', 'Cartoons', 18.99, '/Post/Smile-every day/Smile-Black.webp', '/Post/Smile-every day/Smile-pink.webp', { lifecycle_state: 'Draft', admin_notes: 'Borrador: no debe verse en la tienda' }),
     ];
     const variants = [];
     const sizes = [['S', 4], ['M', 8], ['L', 6], ['XL', 3]];
@@ -90,6 +106,15 @@ function seed() {
     const featured = products.filter(p => p.featured).slice(0, 5).map((p, i) => ({ slot_order: i + 1, product_id: p.id, rotation: 'weekly', campaign_id: null }));
 
     const db = { users, products, variants, categories, collections, campaigns: [campaign], featured, orders: [], events: [], addresses: [], newsletter: [], resets: [] };
+
+    // Modo catálogo (sitio publicado sin servidor): solo el catálogo, sin cuentas ni pedidos de ejemplo
+    if (catalog) {
+        const drafts = new Set(products.filter(p => !visible(p)).map(p => p.id));
+        db.users = [];
+        db.products = products.filter(p => !drafts.has(p.id));
+        db.variants = variants.filter(v => !drafts.has(v.product_id));
+        return db;
+    }
 
     // Pedidos de ejemplo en distintos estados
     const customer = users[1];
@@ -125,15 +150,17 @@ function seed() {
 /* ------------------------------------------------------------------ */
 
 let db;
+let catalogMode = false;
+const storageKey = () => (catalogMode ? CATALOG_KEY : STORAGE_KEY);
 function load() {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(storageKey());
         if (raw) return JSON.parse(raw);
     } catch { /* sin almacenamiento: se usa memoria */ }
-    return seed();
+    return seed({ catalog: catalogMode });
 }
 function save() {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch { /* sin almacenamiento */ }
+    try { localStorage.setItem(storageKey(), JSON.stringify(db)); } catch { /* sin almacenamiento */ }
 }
 export function resetDemo() {
     try {
@@ -566,6 +593,9 @@ async function adapter(config) {
     const query = { ...Object.fromEntries(url.searchParams), ...(config.params || {}) };
     const respond = (status, data) => ({ data, status, statusText: String(status), headers: {}, config, request: {} });
     try {
+        if (catalogMode && !catalogAllows(method, path)) {
+            fail(503, 'Esta función estará disponible pronto. Por ahora puedes comprar como invitado y confirmar tu pedido por WhatsApp.');
+        }
         const route = routes.find(r => r.method === method && r.re.test(path));
         if (!route) fail(404, `Ruta no disponible en la demo: ${method.toUpperCase()} ${path}`);
         const match = path.match(route.re);
@@ -586,8 +616,27 @@ async function adapter(config) {
     }
 }
 
-/** Activa la demo sobre la instancia de Axios de la tienda. */
-export function installDemo(api) {
+/**
+ * En modo catálogo solo funciona la parte pública: ver productos y hacer el pedido como
+ * invitado (el pedido se confirma por WhatsApp). Cuentas, panel y boletín quedan cerrados.
+ */
+function catalogAllows(method, path) {
+    if (method === 'post') return path === '/orders';
+    if (method !== 'get') return false;
+    return !/^\/(auth|admin|addresses)(\/|$)|\/admin$|^\/orders\/(my|all)$|^\/orders\/[^/]+\/events$/.test(path);
+}
+
+/**
+ * Activa el servidor simulado sobre la instancia de Axios de la tienda.
+ * @param {object} [options]
+ * @param {boolean} [options.catalog] Modo catálogo: lo usa el sitio publicado cuando el backend no responde.
+ */
+export function installDemo(api, { catalog = false } = {}) {
+    catalogMode = catalog;
+    if (catalog) {
+        // Una sesión guardada del backend real no vale aquí: se descarta sin redirigir al login
+        try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch { /* sin almacenamiento */ }
+    }
     db = load();
     save();
     api.defaults.adapter = adapter;

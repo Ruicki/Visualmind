@@ -8,6 +8,7 @@ import html2canvas from 'html2canvas';
 import { getPaymentMethod, whatsappLink } from '../config/storeConfig';
 import { useAuth } from '../context/AuthContext';
 import { trackPurchase } from '../utils/analytics';
+import { isCatalogMode } from '../utils/catalogMode';
 
 /**
  * @component OrderSuccess
@@ -80,7 +81,21 @@ export default function OrderSuccess() {
     );
   }
 
-  const whatsappMessage = `Hola! Hice el pedido #${shortId} por ${money(orderData.total)} (${payment?.label || orderData.paymentMethod}). Adjunto el comprobante de pago.`;
+  // En modo catálogo el pedido solo existe en este navegador: el mensaje lleva todo el detalle
+  const catalog = isCatalogMode();
+  const ship = orderData.shippingDetails || {};
+  const whatsappMessage = catalog
+    ? [
+        `Hola! Quiero hacer este pedido (#${shortId}):`,
+        ...(orderData.items || []).map(i => `• ${i.quantity} x ${i.title}${i.size ? ` (talla ${i.size})` : ''} - ${money(i.price * i.quantity)}`),
+        `Total: ${money(orderData.total)}`,
+        `Pago: ${payment?.label || orderData.paymentMethod}`,
+        `Nombre: ${ship.name || ''}`,
+        `Teléfono: ${ship.phone || ''}`,
+        `Dirección: ${[ship.address, ship.city].filter(Boolean).join(', ')}`,
+        ship.notes ? `Notas: ${ship.notes}` : '',
+      ].filter(Boolean).join('\n')
+    : `Hola! Hice el pedido #${shortId} por ${money(orderData.total)} (${payment?.label || orderData.paymentMethod}). Adjunto el comprobante de pago.`;
 
   return (
     <div className="container" style={{ paddingTop: '140px', paddingBottom: '6rem', maxWidth: '800px', margin: '0 auto' }}>
@@ -92,9 +107,13 @@ export default function OrderSuccess() {
         <div style={{ display: 'inline-flex', background: 'rgba(16, 185, 129, 0.1)', padding: '1.5rem', borderRadius: '50%', color: '#10b981', marginBottom: '1.5rem' }}>
           <CheckCircle size={64} />
         </div>
-        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', fontWeight: '900' }}>¡Pedido recibido!</h1>
+        <h1 style={{ fontSize: '2.5rem', marginBottom: '1rem', fontWeight: '900' }}>{catalog ? '¡Pedido listo!' : '¡Pedido recibido!'}</h1>
         <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
-          Tu pedido <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>#{shortId}</span> está registrado y pendiente de pago.
+          {catalog ? (
+            <>Último paso: envíanos tu pedido <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>#{shortId}</span> por WhatsApp para confirmarlo.</>
+          ) : (
+            <>Tu pedido <span style={{ color: 'var(--text-primary)', fontWeight: 'bold' }}>#{shortId}</span> está registrado y pendiente de pago.</>
+          )}
         </p>
       </motion.div>
 
@@ -126,7 +145,7 @@ export default function OrderSuccess() {
           className="btn-primary"
           style={{ marginTop: '1.2rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.9rem 1.4rem', borderRadius: '12px', textDecoration: 'none' }}
         >
-          <MessageCircle size={18} /> {orderData.paymentMethod === 'cash_on_delivery' ? 'Coordinar entrega por WhatsApp' : 'Enviar comprobante por WhatsApp'}
+          <MessageCircle size={18} /> {catalog ? 'Enviar pedido por WhatsApp' : orderData.paymentMethod === 'cash_on_delivery' ? 'Coordinar entrega por WhatsApp' : 'Enviar comprobante por WhatsApp'}
         </a>
       </div>
 

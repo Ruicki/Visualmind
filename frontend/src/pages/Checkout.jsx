@@ -8,6 +8,7 @@ import api from '../api/axiosConfig';
 import { getProductImage, assetUrl } from '../utils/imageUtils';
 import { PAYMENT_METHODS } from '../config/storeConfig';
 import { computeTotals, usePricingConfig } from '../utils/pricing';
+import { isCatalogMode } from '../utils/catalogMode';
 import { trackInitiateCheckout } from '../utils/analytics';
 
 /**
@@ -102,7 +103,12 @@ const CheckoutForm = () => {
 
   return (
     <form onSubmit={handleSubmit}>
-      {!user && (
+      {!user && isCatalogMode() && (
+        <div style={{ marginBottom: '2rem', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+          {t('checkout.catalog_note', 'Completa tus datos y al final envíanos el pedido por WhatsApp para confirmarlo.')}
+        </div>
+      )}
+      {!user && !isCatalogMode() && (
         <div style={{ marginBottom: '2rem', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
           {t('checkout.guest_note', 'Estás comprando como invitado.')}{' '}
           <Link to="/login" state={{ from: '/checkout' }} style={{ color: 'var(--primary-text)', fontWeight: 600 }}>
@@ -189,7 +195,7 @@ const CheckoutForm = () => {
         type="submit"
         disabled={loading || cartItems.length === 0}
         className="btn-primary"
-        style={{ width: '100%', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: loading ? 0.7 : 1, marginTop: '1rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
+        style={{ width: '100%', padding: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', opacity: loading ? 0.7 : 1, marginTop: '1rem', background: 'var(--primary)', color: 'var(--on-primary)', border: 'none', borderRadius: '12px', fontWeight: 'bold', fontSize: '1.1rem', cursor: 'pointer', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
       >
         {loading ? <Loader className="spin" /> : <CheckCircle size={20} />}
         {loading ? (t('common.processing') || 'Procesando...') : (t('checkout.btn_complete') || 'Completar Pedido')}

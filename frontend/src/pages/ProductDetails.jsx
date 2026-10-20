@@ -311,7 +311,7 @@ export default function ProductDetails() {
             <button
               onClick={() => toggleWishlist(product)}
               aria-label="Agregar a favoritos"
-              style={{ width: '55px', height: '55px', borderRadius: '14px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: isInWishlist(product.id) ? '#ff4d4d' : 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
+              style={{ width: '55px', height: '55px', borderRadius: '14px', border: '1px solid var(--border-light)', background: 'var(--bg-secondary)', color: isInWishlist(product.id) ? '#ff4d4d' : 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}
             >
               <Heart size={22} fill={isInWishlist(product.id) ? '#ff4d4d' : 'none'} />
             </button>
